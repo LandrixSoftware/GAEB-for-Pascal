@@ -77,3 +77,32 @@ __recovery/
 
 # Castalia statistics file (since XE7 Castalia is distributed with Delphi)
 *.stat
+
+# GAEB-Spezifikation und Schemas (urheberrechtlich geschuetzt, nur lokal)
+Specification/
+
+# Lokales Backlog (nie committen)
+BACKLOG.md
+
+# Echte GAEB-Dateien (ggf. Kundendaten), nur lokal
+tests/data/local/
+
+# Lokale Anleitungen (nie committen)
+CLAUDE.md
+
+# Build-Ausgaben und FPC-Artefakte
+build/
+*.ppu
+*.compiled
+lib/
+backup/
+GPATH
+GRTAGS
+GTAGS
+__pycache__/
+*.pyc
+.claude/settings.local.json
+
+# Lokaler Planungsstand
+PLAN.md
+LEGACY-FINDINGS.md

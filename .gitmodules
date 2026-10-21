@@ -1,0 +1,3 @@
+[submodule "external/landrix-xml"]
+	path = external/landrix-xml
+	url = https://github.com/LandrixSoftware/LandrixXML-for-Pascal.git
