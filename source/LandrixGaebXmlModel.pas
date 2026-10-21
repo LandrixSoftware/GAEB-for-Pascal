@@ -4242,7 +4242,8 @@ end;
 
 function TLandrixGaebXmlAddress.IsEmpty: Boolean;
 begin
-  Result := (Name1 = '') and
+  Result := inherited IsEmpty and
+    (Name1 = '') and
     (Name2 = '') and
     (Name3 = '') and
     (Name4 = '') and
@@ -4322,7 +4323,8 @@ end;
 
 function TLandrixGaebXmlAddText.IsEmpty: Boolean;
 begin
-  Result := not HasOutlineAddText and
+  Result := inherited IsEmpty and
+    not HasOutlineAddText and
     not HasDetailAddText;
 end;
 
@@ -4371,7 +4373,8 @@ end;
 
 function TLandrixGaebXmlArticle.IsEmpty: Boolean;
 begin
-  Result := (Brand = '') and
+  Result := inherited IsEmpty and
+    (Brand = '') and
     (ArtNo = '') and
     not Qty.HasValue and
     (QU = '') and
@@ -4518,7 +4521,8 @@ end;
 
 function TLandrixGaebXmlAward.IsEmpty: Boolean;
 begin
-  Result := (DP = '') and
+  Result := inherited IsEmpty and
+    (DP = '') and
     not HasAwardInfo and
     not HasOWN and
     not HasRequester and
@@ -4584,7 +4588,8 @@ end;
 
 function TLandrixGaebXmlAwardCnstSiteGroup.IsEmpty: Boolean;
 begin
-  Result := not HasCnstSite and
+  Result := inherited IsEmpty and
+    not HasCnstSite and
     not HasNotifSite;
 end;
 
@@ -4675,7 +4680,8 @@ end;
 
 function TLandrixGaebXmlAwardInfo.IsEmpty: Boolean;
 begin
-  Result := (BoQID = '') and
+  Result := inherited IsEmpty and
+    (BoQID = '') and
     (Cat = '') and
     (SpecialType = '') and
     (Cur = '') and
@@ -4743,7 +4749,8 @@ end;
 
 function TLandrixGaebXmlBank.IsEmpty: Boolean;
 begin
-  Result := (LblBank = '') and
+  Result := inherited IsEmpty and
+    (LblBank = '') and
     (BRNo = '') and
     (AcctNo = '') and
     (BIC = '') and
@@ -4814,7 +4821,8 @@ end;
 
 function TLandrixGaebXmlBoQ.IsEmpty: Boolean;
 begin
-  Result := (ID = '') and
+  Result := inherited IsEmpty and
+    (ID = '') and
     not HasBoQInfo and
     not HasBoQBody and
     not HasLotGrp;
@@ -4838,7 +4846,8 @@ end;
 
 function TLandrixGaebXmlBoQBkdn.IsEmpty: Boolean;
 begin
-  Result := (TypeElement = '') and
+  Result := inherited IsEmpty and
+    (TypeElement = '') and
     (LblBoQBkdn = '') and
     (LengthElement = '') and
     (Num = '') and
@@ -4914,7 +4923,8 @@ end;
 
 function TLandrixGaebXmlBoQBody.IsEmpty: Boolean;
 begin
-  Result := not HasItemlist and
+  Result := inherited IsEmpty and
+    not HasItemlist and
     not HasChildren;
 end;
 
@@ -5008,7 +5018,8 @@ end;
 
 function TLandrixGaebXmlBoQCtgy.IsEmpty: Boolean;
 begin
-  Result := (CONo = '') and
+  Result := inherited IsEmpty and
+    (CONo = '') and
     (COStatus = '') and
     (ALNBGroupNo = '') and
     (ALNBSerNo = '') and
@@ -5228,7 +5239,8 @@ end;
 
 function TLandrixGaebXmlBoQInfo.IsEmpty: Boolean;
 begin
-  Result := (Name = '') and
+  Result := inherited IsEmpty and
+    (Name = '') and
     (LblBoQ = '') and
     (CONo = '') and
     (COStatus = '') and
@@ -5332,7 +5344,8 @@ end;
 
 function TLandrixGaebXmlBoQText.IsEmpty: Boolean;
 begin
-  Result := (StyleAttr = '') and
+  Result := inherited IsEmpty and
+    (StyleAttr = '') and
     not HasStyle and
     not HasChildren;
 end;
@@ -5370,7 +5383,8 @@ end;
 
 function TLandrixGaebXmlCashDiscount.IsEmpty: Boolean;
 begin
-  Result := (CashDiscDate = '') and
+  Result := inherited IsEmpty and
+    (CashDiscDate = '') and
     not DiscountPcnt.HasValue and
     not HasCashDiscDays;
 end;
@@ -5392,7 +5406,8 @@ end;
 
 function TLandrixGaebXmlCashDiscountCashDiscDays.IsEmpty: Boolean;
 begin
-  Result := (TypeOfDays = '') and
+  Result := inherited IsEmpty and
+    (TypeOfDays = '') and
     (Days = '');
 end;
 
@@ -5441,7 +5456,8 @@ end;
 
 function TLandrixGaebXmlCnstSite.IsEmpty: Boolean;
 begin
-  Result := (CnstSiteIDNo = '') and
+  Result := inherited IsEmpty and
+    (CnstSiteIDNo = '') and
     (CnstSiteName = '') and
     not HasAddress and
     not HasAddText;
@@ -5481,7 +5497,8 @@ end;
 
 function TLandrixGaebXmlCOInfo.IsEmpty: Boolean;
 begin
-  Result := (CONo = '') and
+  Result := inherited IsEmpty and
+    (CONo = '') and
     (COPhase = '') and
     (COStatus = '') and
     (COInit = '') and
@@ -5511,7 +5528,8 @@ end;
 
 function TLandrixGaebXmlComplBodyDec.IsEmpty: Boolean;
 begin
-  Result := not Value.HasValue;
+  Result := inherited IsEmpty and
+    not Value.HasValue;
 end;
 
 procedure TLandrixGaebXmlComplBodyDec.Clear;
@@ -5529,7 +5547,8 @@ end;
 
 function TLandrixGaebXmlComplBodyInt.IsEmpty: Boolean;
 begin
-  Result := (Value = '');
+  Result := inherited IsEmpty and
+    (Value = '');
 end;
 
 procedure TLandrixGaebXmlComplBodyInt.Clear;
@@ -5579,7 +5598,8 @@ end;
 
 function TLandrixGaebXmlCompleteText.IsEmpty: Boolean;
 begin
-  Result := (ComplTSA = '') and
+  Result := inherited IsEmpty and
+    (ComplTSA = '') and
     (ComplTSB = '') and
     not HasDetailTxt and
     not HasOutlineText;
@@ -5603,7 +5623,8 @@ end;
 
 function TLandrixGaebXmlContrValCode.IsEmpty: Boolean;
 begin
-  Result := not Percent.HasValue and
+  Result := inherited IsEmpty and
+    not Percent.HasValue and
     (Number = '');
 end;
 
@@ -5623,7 +5644,8 @@ end;
 
 function TLandrixGaebXmlCPVCode.IsEmpty: Boolean;
 begin
-  Result := (CPVNo = '') and
+  Result := inherited IsEmpty and
+    (CPVNo = '') and
     (CPVText = '');
 end;
 
@@ -5643,7 +5665,8 @@ end;
 
 function TLandrixGaebXmlCtlg.IsEmpty: Boolean;
 begin
-  Result := (CtlgID = '') and
+  Result := inherited IsEmpty and
+    (CtlgID = '') and
     (CtlgType = '') and
     (CtlgName = '') and
     (CtlgAssignType = '');
@@ -5683,7 +5706,8 @@ end;
 
 function TLandrixGaebXmlCtlgAssign.IsEmpty: Boolean;
 begin
-  Result := (CtlgID = '') and
+  Result := inherited IsEmpty and
+    (CtlgID = '') and
     (CtlgCode = '') and
     not HasQuantity;
 end;
@@ -5705,7 +5729,8 @@ end;
 
 function TLandrixGaebXmlCtlgAssignQuantity.IsEmpty: Boolean;
 begin
-  Result := not Value.HasValue and
+  Result := inherited IsEmpty and
+    not Value.HasValue and
     (TypeAttr = '');
 end;
 
@@ -5770,7 +5795,8 @@ end;
 
 function TLandrixGaebXmlCTR.IsEmpty: Boolean;
 begin
-  Result := (DPNo = '') and
+  Result := inherited IsEmpty and
+    (DPNo = '') and
     (AwardNo = '') and
     (AcctsPayNo = '') and
     (CntryType = '') and
@@ -5872,7 +5898,8 @@ end;
 
 function TLandrixGaebXmlDescription.IsEmpty: Boolean;
 begin
-  Result := (WICNo = '') and
+  Result := inherited IsEmpty and
+    (WICNo = '') and
     (ID = '') and
     not HasSTLBBau and
     not HasStLNo and
@@ -5925,7 +5952,8 @@ end;
 
 function TLandrixGaebXmlDiv.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     not HasChildren;
 end;
@@ -5979,7 +6007,8 @@ end;
 
 function TLandrixGaebXmlDivTC.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     not HasChildren;
 end;
@@ -6073,7 +6102,8 @@ end;
 
 function TLandrixGaebXmlFText.IsEmpty: Boolean;
 begin
-  Result := (StyleAttr = '') and
+  Result := inherited IsEmpty and
+    (StyleAttr = '') and
     (TextWidth = '') and
     not HasChildren;
 end;
@@ -6174,7 +6204,8 @@ end;
 
 function TLandrixGaebXmlFTextTC.IsEmpty: Boolean;
 begin
-  Result := (StyleAttr = '') and
+  Result := inherited IsEmpty and
+    (StyleAttr = '') and
     (TextWidth = '') and
     not HasChildren;
 end;
@@ -6257,7 +6288,8 @@ end;
 
 function TLandrixGaebXmlGAEB.IsEmpty: Boolean;
 begin
-  Result := not HasGAEBInfo and
+  Result := inherited IsEmpty and
+    not HasGAEBInfo and
     not HasPrjInfo and
     not HasAward and
     not HasAddText;
@@ -6281,7 +6313,8 @@ end;
 
 function TLandrixGaebXmlGAEBInfo.IsEmpty: Boolean;
 begin
-  Result := (Version = '') and
+  Result := inherited IsEmpty and
+    (Version = '') and
     (VersDate = '') and
     (Date = '') and
     (Time = '') and
@@ -6311,7 +6344,8 @@ end;
 
 function TLandrixGaebXmlImage.IsEmpty: Boolean;
 begin
-  Result := (Align = '') and
+  Result := inherited IsEmpty and
+    (Align = '') and
     (Border = '') and
     (Hspace = '') and
     (Vspace = '') and
@@ -6345,7 +6379,8 @@ end;
 
 function TLandrixGaebXmlInsAs.IsEmpty: Boolean;
 begin
-  Result := (InsAsName = '') and
+  Result := inherited IsEmpty and
+    (InsAsName = '') and
     (InsAsDate = '') and
     (InsAsNo = '');
 end;
@@ -6512,7 +6547,8 @@ end;
 
 function TLandrixGaebXmlItem.IsEmpty: Boolean;
 begin
-  Result := (ALNGroupNo = '') and
+  Result := inherited IsEmpty and
+    (ALNGroupNo = '') and
     (ALNSerNo = '') and
     (Provis = '') and
     (LumpSumItem = '') and
@@ -6655,7 +6691,8 @@ end;
 
 function TLandrixGaebXmlItemlist.IsEmpty: Boolean;
 begin
-  Result := not HasChildren;
+  Result := inherited IsEmpty and
+    not HasChildren;
 end;
 
 procedure TLandrixGaebXmlItemlist.Clear;
@@ -6673,7 +6710,8 @@ end;
 
 function TLandrixGaebXmlLblUpComp.IsEmpty: Boolean;
 begin
-  Result := (Value = '') and
+  Result := inherited IsEmpty and
+    (Value = '') and
     (TypeAttr = '');
 end;
 
@@ -6746,7 +6784,8 @@ end;
 
 function TLandrixGaebXmlLi.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     not HasChildren;
 end;
@@ -6828,7 +6867,8 @@ end;
 
 function TLandrixGaebXmlLiTC.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     not HasChildren;
 end;
@@ -6892,7 +6932,8 @@ end;
 
 function TLandrixGaebXmlLotGrp.IsEmpty: Boolean;
 begin
-  Result := (LotGrNo = '') and
+  Result := inherited IsEmpty and
+    (LotGrNo = '') and
     (ID = '') and
     not HasRefLotNo and
     not HasTotals and
@@ -6918,7 +6959,8 @@ end;
 
 function TLandrixGaebXmlMaintInfo.IsEmpty: Boolean;
 begin
-  Result := (MaintType = '') and
+  Result := inherited IsEmpty and
+    (MaintType = '') and
     (ProcessType = '') and
     (ContrTransDate = '') and
     (ContrTransTime = '') and
@@ -7020,7 +7062,8 @@ end;
 
 function TLandrixGaebXmlMarkupItem.IsEmpty: Boolean;
 begin
-  Result := (ALNGroupNo = '') and
+  Result := inherited IsEmpty and
+    (ALNGroupNo = '') and
     (ALNSerNo = '') and
     (Provis = '') and
     (HourIt = '') and
@@ -7094,7 +7137,8 @@ end;
 
 function TLandrixGaebXmlMarkupSubQty.IsEmpty: Boolean;
 begin
-  Result := not SubQty.HasValue and
+  Result := inherited IsEmpty and
+    not SubQty.HasValue and
     not HasRefItem;
 end;
 
@@ -7194,7 +7238,8 @@ end;
 
 function TLandrixGaebXmlMastAgrInfo.IsEmpty: Boolean;
 begin
-  Result := (BidUpDown = '') and
+  Result := inherited IsEmpty and
+    (BidUpDown = '') and
     (MastAgrNo = '') and
     (MastAgrBeg = '') and
     (MastAgrDur = '') and
@@ -7281,7 +7326,8 @@ end;
 
 function TLandrixGaebXmlMLText.IsEmpty: Boolean;
 begin
-  Result := (StyleAttr = '') and
+  Result := inherited IsEmpty and
+    (StyleAttr = '') and
     (TextWidth = '') and
     not HasChildren;
 end;
@@ -7332,7 +7378,8 @@ end;
 
 function TLandrixGaebXmlNotifSite.IsEmpty: Boolean;
 begin
-  Result := (NotifSiteIDNo = '') and
+  Result := inherited IsEmpty and
+    (NotifSiteIDNo = '') and
     (NotifSiteName = '') and
     not HasAddress and
     not HasAddText;
@@ -7369,7 +7416,8 @@ end;
 
 function TLandrixGaebXmlOl.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     (Start = '') and
     not HasLi;
@@ -7406,7 +7454,8 @@ end;
 
 function TLandrixGaebXmlOlTC.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     (Start = '') and
     not HasLi;
@@ -7446,7 +7495,8 @@ end;
 
 function TLandrixGaebXmlOutlineText.IsEmpty: Boolean;
 begin
-  Result := (OutlTSA = '') and
+  Result := inherited IsEmpty and
+    (OutlTSA = '') and
     not HasOutlTxt;
 end;
 
@@ -7509,7 +7559,8 @@ end;
 
 function TLandrixGaebXmlOutlTxt.IsEmpty: Boolean;
 begin
-  Result := (StyleAttr = '') and
+  Result := inherited IsEmpty and
+    (StyleAttr = '') and
     not HasStyle and
     not HasChildren;
 end;
@@ -7560,7 +7611,8 @@ end;
 
 function TLandrixGaebXmlOWN.IsEmpty: Boolean;
 begin
-  Result := (DPNo = '') and
+  Result := inherited IsEmpty and
+    (DPNo = '') and
     (AwardNo = '') and
     (AcctRecNo = '') and
     (CntryType = '') and
@@ -7622,7 +7674,8 @@ end;
 
 function TLandrixGaebXmlP.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     not HasChildren;
 end;
@@ -7670,7 +7723,8 @@ end;
 
 function TLandrixGaebXmlPerfDescr.IsEmpty: Boolean;
 begin
-  Result := (PerfNo = '') and
+  Result := inherited IsEmpty and
+    (PerfNo = '') and
     (PerfLbl = '') and
     (CONo = '') and
     (ID = '') and
@@ -7775,7 +7829,8 @@ end;
 
 function TLandrixGaebXmlPerfDescription.IsEmpty: Boolean;
 begin
-  Result := (WICNo = '') and
+  Result := inherited IsEmpty and
+    (WICNo = '') and
     (ID = '') and
     not HasSTLBBau and
     not HasStLNo and
@@ -7830,7 +7885,8 @@ end;
 
 function TLandrixGaebXmlPMLText.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     not HasChildren;
 end;
@@ -7894,7 +7950,8 @@ end;
 
 function TLandrixGaebXmlPrjInfo.IsEmpty: Boolean;
 begin
-  Result := (NamePrj = '') and
+  Result := inherited IsEmpty and
+    (NamePrj = '') and
     (PrjID = '') and
     (LblPrj = '') and
     (Cur = '') and
@@ -7974,7 +8031,8 @@ end;
 
 function TLandrixGaebXmlProduct.IsEmpty: Boolean;
 begin
-  Result := not HasAddress and
+  Result := inherited IsEmpty and
+    not HasAddress and
     not HasAddText and
     not HasArticle;
 end;
@@ -8035,7 +8093,8 @@ end;
 
 function TLandrixGaebXmlPTC.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     not HasChildren;
 end;
@@ -8086,7 +8145,8 @@ end;
 
 function TLandrixGaebXmlQDetermItem.IsEmpty: Boolean;
 begin
-  Result := not HasQTakeoff and
+  Result := inherited IsEmpty and
+    not HasQTakeoff and
     not HasCtlgAssign;
 end;
 
@@ -8106,7 +8166,8 @@ end;
 
 function TLandrixGaebXmlQDetermItemQTakeoff.IsEmpty: Boolean;
 begin
-  Result := (Row = '');
+  Result := inherited IsEmpty and
+    (Row = '');
 end;
 
 procedure TLandrixGaebXmlQDetermItemQTakeoff.Clear;
@@ -8137,7 +8198,8 @@ end;
 
 function TLandrixGaebXmlQtyDeterm.IsEmpty: Boolean;
 begin
-  Result := not Qty.HasValue and
+  Result := inherited IsEmpty and
+    not Qty.HasValue and
     not HasQDetermItem;
 end;
 
@@ -8202,7 +8264,8 @@ end;
 
 function TLandrixGaebXmlQtyDetermInfo.IsEmpty: Boolean;
 begin
-  Result := (MethodDescription = '') and
+  Result := inherited IsEmpty and
+    (MethodDescription = '') and
     (OrdDescr = '') and
     (ProjDescr = '') and
     (ServiceProvisionStartDate = '') and
@@ -8249,7 +8312,8 @@ end;
 
 function TLandrixGaebXmlQtySplit.IsEmpty: Boolean;
 begin
-  Result := not QtyPcnt.HasValue and
+  Result := inherited IsEmpty and
+    not QtyPcnt.HasValue and
     not Qty.HasValue and
     not HasCtlgAssign;
 end;
@@ -8271,7 +8335,8 @@ end;
 
 function TLandrixGaebXmlRefBoQ.IsEmpty: Boolean;
 begin
-  Result := (IDRef = '');
+  Result := inherited IsEmpty and
+    (IDRef = '');
 end;
 
 procedure TLandrixGaebXmlRefBoQ.Clear;
@@ -8289,7 +8354,8 @@ end;
 
 function TLandrixGaebXmlRefBoQCtgy.IsEmpty: Boolean;
 begin
-  Result := (IDRef = '');
+  Result := inherited IsEmpty and
+    (IDRef = '');
 end;
 
 procedure TLandrixGaebXmlRefBoQCtgy.Clear;
@@ -8307,7 +8373,8 @@ end;
 
 function TLandrixGaebXmlRefItem.IsEmpty: Boolean;
 begin
-  Result := (IDRef = '');
+  Result := inherited IsEmpty and
+    (IDRef = '');
 end;
 
 procedure TLandrixGaebXmlRefItem.Clear;
@@ -8325,7 +8392,8 @@ end;
 
 function TLandrixGaebXmlRefLotGrp.IsEmpty: Boolean;
 begin
-  Result := (IDRef = '');
+  Result := inherited IsEmpty and
+    (IDRef = '');
 end;
 
 procedure TLandrixGaebXmlRefLotGrp.Clear;
@@ -8372,7 +8440,8 @@ end;
 
 function TLandrixGaebXmlRemark.IsEmpty: Boolean;
 begin
-  Result := (CONo = '') and
+  Result := inherited IsEmpty and
+    (CONo = '') and
     (ID = '') and
     not HasDescription and
     not HasCtlgAssign;
@@ -8425,7 +8494,8 @@ end;
 
 function TLandrixGaebXmlRequester.IsEmpty: Boolean;
 begin
-  Result := (RequestIDNo = '') and
+  Result := inherited IsEmpty and
+    (RequestIDNo = '') and
     (RequestName = '') and
     not HasAddress and
     not HasAddText;
@@ -8449,7 +8519,8 @@ end;
 
 function TLandrixGaebXmlSpan.IsEmpty: Boolean;
 begin
-  Result := (Value = '') and
+  Result := inherited IsEmpty and
+    (Value = '') and
     (ClassAttr = '') and
     (StyleAttr = '');
 end;
@@ -8500,7 +8571,8 @@ end;
 
 function TLandrixGaebXmlSTLBBau.IsEmpty: Boolean;
 begin
-  Result := not HasSTLBBauCtlg and
+  Result := inherited IsEmpty and
+    not HasSTLBBauCtlg and
     not HasSTLBBauID;
 end;
 
@@ -8520,7 +8592,8 @@ end;
 
 function TLandrixGaebXmlSTLBBauCtlg.IsEmpty: Boolean;
 begin
-  Result := (CtlgName = '') and
+  Result := inherited IsEmpty and
+    (CtlgName = '') and
     (VersDate = '') and
     (WCtg = '') and
     (Group = '') and
@@ -8546,7 +8619,8 @@ end;
 
 function TLandrixGaebXmlSTLBBauID.IsEmpty: Boolean;
 begin
-  Result := (ArtChrIdent = '') and
+  Result := inherited IsEmpty and
+    (ArtChrIdent = '') and
     (ArtChIdx = '') and
     (ChVIdent = '') and
     (OutlTextPart = '');
@@ -8570,7 +8644,8 @@ end;
 
 function TLandrixGaebXmlStLNo.IsEmpty: Boolean;
 begin
-  Result := (Value = '') and
+  Result := inherited IsEmpty and
+    (Value = '') and
     (TypeAttr = '');
 end;
 
@@ -8590,7 +8665,8 @@ end;
 
 function TLandrixGaebXmlStyle.IsEmpty: Boolean;
 begin
-  Result := (Value = '') and
+  Result := inherited IsEmpty and
+    (Value = '') and
     (TypeAttr = '');
 end;
 
@@ -8639,7 +8715,8 @@ end;
 
 function TLandrixGaebXmlSubDescr.IsEmpty: Boolean;
 begin
-  Result := (SubDNo = '') and
+  Result := inherited IsEmpty and
+    (SubDNo = '') and
     (QtySpec = '') and
     (QtyTBD = '') and
     not Qty.HasValue and
@@ -8700,7 +8777,8 @@ end;
 
 function TLandrixGaebXmlTable.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     (Align = '') and
     (Border = '') and
@@ -8749,7 +8827,8 @@ end;
 
 function TLandrixGaebXmlTableTC.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     (Align = '') and
     (Border = '') and
@@ -8845,7 +8924,8 @@ end;
 
 function TLandrixGaebXmlTd.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     (Align = '') and
     (Colspan = '') and
@@ -8942,7 +9022,8 @@ end;
 
 function TLandrixGaebXmlTdTC.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     (Align = '') and
     (Colspan = '') and
@@ -9065,7 +9146,8 @@ end;
 
 function TLandrixGaebXmlTextComplement.IsEmpty: Boolean;
 begin
-  Result := (ID = '') and
+  Result := inherited IsEmpty and
+    (ID = '') and
     (MarkLbl = '') and
     (Kind = '') and
     (Empty = '') and
@@ -9163,7 +9245,8 @@ end;
 
 function TLandrixGaebXmlTh.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     (Align = '') and
     (Valign = '') and
@@ -9189,7 +9272,8 @@ end;
 
 function TLandrixGaebXmlTotalNetUpComp.IsEmpty: Boolean;
 begin
-  Result := not UpComp1.HasValue and
+  Result := inherited IsEmpty and
+    not UpComp1.HasValue and
     not UpComp2.HasValue and
     not UpComp3.HasValue and
     not UpComp4.HasValue and
@@ -9246,7 +9330,8 @@ end;
 
 function TLandrixGaebXmlTotals.IsEmpty: Boolean;
 begin
-  Result := not Total.HasValue and
+  Result := inherited IsEmpty and
+    not Total.HasValue and
     not DiscountPcnt.HasValue and
     not DiscountAmt.HasValue and
     not TotAfterDisc.HasValue and
@@ -9311,7 +9396,8 @@ end;
 
 function TLandrixGaebXmlTr.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     (Align = '') and
     (Valign = '') and
@@ -9364,7 +9450,8 @@ end;
 
 function TLandrixGaebXmlTrTC.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     (Align = '') and
     (Valign = '') and
@@ -9403,7 +9490,8 @@ end;
 
 function TLandrixGaebXmlUl.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     not HasLi;
 end;
@@ -9438,7 +9526,8 @@ end;
 
 function TLandrixGaebXmlUlTC.IsEmpty: Boolean;
 begin
-  Result := (ClassAttr = '') and
+  Result := inherited IsEmpty and
+    (ClassAttr = '') and
     (StyleAttr = '') and
     not HasLi;
 end;
@@ -9460,7 +9549,8 @@ end;
 
 function TLandrixGaebXmlVATPart.IsEmpty: Boolean;
 begin
-  Result := not TotalNetPart.HasValue and
+  Result := inherited IsEmpty and
+    not TotalNetPart.HasValue and
     not VATAmount.HasValue and
     not VATPcnt.HasValue;
 end;
@@ -9495,7 +9585,8 @@ end;
 
 function TLandrixGaebXmlWgChange.IsEmpty: Boolean;
 begin
-  Result := (LblRefWage = '') and
+  Result := inherited IsEmpty and
+    (LblRefWage = '') and
     not RedPriceComp.HasValue and
     not HasRefGroup;
 end;
@@ -9558,7 +9649,8 @@ end;
 
 function TLandrixGaebXmlWgChangeRefGroup.IsEmpty: Boolean;
 begin
-  Result := not WgChangeRate.HasValue and
+  Result := inherited IsEmpty and
+    not WgChangeRate.HasValue and
     not HasChildren;
 end;
 

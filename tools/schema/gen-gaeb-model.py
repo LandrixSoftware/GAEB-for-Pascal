@@ -8,6 +8,10 @@
                                    with conversion from and to the codes
   source/LandrixGaebXmlReader.pas  reader on the pull reader of LandrixXml
                                    (context in LandrixGaebXmlReadBase)
+  source/LandrixGaebXmlProfiles.pas slots per target and class: allowed
+                                   members, child rows, fraction digits
+  source/LandrixGaebXmlWriter.pas  writer on the streaming writer of
+                                   LandrixXml (context in LandrixGaebXmlWriteBase)
 
 Only published contexts (3.2, 3.3) make it into the units; members that exist
 only in the 3.4 beta are left out (plan, decisions of 21.10.2026).
@@ -677,18 +681,15 @@ def gen_class_impl(info, w):
     w("")
     w("function %s.IsEmpty: Boolean;" % name)
     w("begin")
-    conds = [value_empty(m) for m in values]
+    conds = ["inherited IsEmpty"] + [value_empty(m) for m in values]
     conds += ["(Base64 = '')" for _ in b64]
     conds += ["not Has%s" % m["name"] for m in objs]
     conds += ["not HasChildren" for _ in kids]
-    if not conds:
-        w("  Result := True;")
-    else:
-        line = "  Result := " + conds[0]
-        for cnd in conds[1:]:
-            w(line + " and")
-            line = "    " + cnd
-        w(line + ";")
+    line = "  Result := " + conds[0]
+    for cnd in conds[1:]:
+        w(line + " and")
+        line = "    " + cnd
+    w(line + ";")
     w("end;")
     w("")
     w("procedure %s.Clear;" % name)
@@ -884,7 +885,9 @@ def read_member(m, target, ind):
             return [ind + "C.ElementDecimal(%s.%s);" % (target, m["name"])]
         if m["vtype"] == "TLandrixGaebDecimalText":
             return [ind + "C.ElementDecimalText(%s.%s);" % (target, m["name"])]
-        return [ind + "%s.%s := C.ElementText;" % (target, m["name"])]
+        return [ind + "%s.%s := C.ElementText;" % (target, m["name"]),
+                ind + "if %s.%s = '' then" % (target, m["name"]),
+                ind + "  %s.MarkEmpty('%s');" % (target, m["schema"])]
     reader = "Read" + m["cls"][len(CLASS_PREFIX):]
     if m["kind"] == "object":
         return [ind + "%s(C, %s.%s);" % (reader, target, m["name"])]
@@ -924,7 +927,11 @@ def gen_read_proc(model, info, w):
         elif a["vtype"] == "TLandrixGaebDecimalText":
             w("        C.AttributeDecimalText(I, O.%s)" % a["name"])
         else:
-            w("        O.%s := C.AttributeText(I)" % a["name"])
+            w("      begin")
+            w("        O.%s := C.AttributeText(I);" % a["name"])
+            w("        if O.%s = '' then" % a["name"])
+            w("          O.MarkEmpty('@%s');" % a["schema"])
+            w("      end")
     w("      %sC.UnknownAttribute(I);" % ("" if first else "else "))
     if content:
         m = content[0]
@@ -1186,6 +1193,505 @@ end.""" % (root["name"], proc_name(root)))
     return "\r\n".join("\n".join(out).split("\n")) + "\r\n"
 
 
+# ---- profiles and writer ----
+
+PROFILES_UNIT = os.path.join(ROOT, "source", "LandrixGaebXmlProfiles.pas")
+WRITER_UNIT = os.path.join(ROOT, "source", "LandrixGaebXmlWriter.pas")
+SLOT_FORBIDDEN = -1
+SLOT_VALUE = -2
+TEXT_CHILDREN = {"p", "span", "br"}
+
+
+def load_merge_module():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("merge_gaeb", os.path.join(HERE, "merge-gaeb.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def slot_layout(info):
+    """Slots of a class in order: (kind, member or attribute or child)."""
+    slots = []
+    for m in info["members"]:
+        if m["kind"] == "base64" or (m["kind"] == "value" and not m["schema"]):
+            slots.append(("content", m))
+    for a in info["attributes"]:
+        slots.append(("attr", a))
+    for m in info["members"]:
+        if m["kind"] == "children":
+            for k in m["children"]:
+                slots.append(("child", k))
+        elif m["kind"] in ("value", "object", "list") and m["schema"]:
+            slots.append(("member", m))
+    return slots
+
+
+def fraction_of(types, tname):
+    if tname.startswith("xs:"):
+        return -1
+    t = types[tname]
+    if t["kind"] == "complex":
+        return fraction_of(types, t["simple"]) if "simple" in t else -1
+    if t["kind"] != "simple" or t["base"] != "xs:decimal":
+        return -1
+    fd = t["facets"].get("fractionDigits")
+    return int(fd) if fd is not None else -1
+
+
+class Profiles(object):
+    def __init__(self, model):
+        self.model = model
+        self.merge = load_merge_module()
+        self.contexts = []
+        for ctx in model.contexts:
+            if not ctx["publish"]:
+                continue
+            path = os.path.join(HERE, "out", ctx["id"] + ".json")
+            self.contexts.append((ctx, json.load(io.open(path, encoding="utf-8"))))
+        self.rows = {}        # (class schema, type, ctx id) -> offset
+        self.slots = []       # (row, fraction, comment)
+        self.roots = []       # (ctx, offset)
+        self.layouts = dict((n, slot_layout(i)) for n, i in model.emit.items())
+
+    def shape(self, types, tname, group):
+        s = self.merge.shape_of(types[tname].get("particle"), tname)
+        if group:
+            if s.group is None:
+                fail("%s has no group" % tname)
+            return s.group[0]
+        return s
+
+    def build(self):
+        for ctx, data in self.contexts:
+            root = self.row("tgGAEB", data["root"]["type"], ctx["id"], data["types"])
+            self.roots.append((ctx, root))
+
+    def row(self, cls, tname, cid, types):
+        key = (cls, tname, cid)
+        if key in self.rows:
+            return self.rows[key]
+        info = self.model.emit[cls]
+        layout = self.layouts[cls]
+        offset = len(self.slots)
+        self.rows[key] = offset
+        self.slots.extend([None] * len(layout))
+        t = types[tname]
+        is_group = info["kind"] == "group"
+        shape = None
+        if t["kind"] == "complex" and "simple" not in t:
+            shape = self.shape(types, tname, is_group)
+        attrs = {} if is_group else dict((a["name"], a["type"]) for a in t["attributes"])
+        for i, (kind, m) in enumerate(layout):
+            where = "%s %s %s" % (cid, cls, kind)
+            if kind == "content":
+                self.slots[offset + i] = (SLOT_VALUE, fraction_of(types, tname), "content")
+            elif kind == "attr":
+                if m["schema"] in attrs:
+                    self.slots[offset + i] = (SLOT_VALUE, fraction_of(types, attrs[m["schema"]]), "@" + m["schema"])
+                else:
+                    self.slots[offset + i] = (SLOT_FORBIDDEN, -1, "@" + m["schema"])
+            elif kind == "child":
+                etype = None
+                if shape is not None:
+                    if m["schema"] in shape.child:
+                        etype = shape.child[m["schema"]]
+                    elif m["schema"] in shape.field:
+                        etype = shape.field[m["schema"]][0]
+                self.slots[offset + i] = self.slot_for(m, etype, cid, types, m["schema"])
+            else:
+                if m["schema"] == "#group":
+                    if shape is not None and shape.group is not None:
+                        child = self.row(m["type"], tname, cid, types)
+                        self.slots[offset + i] = (child, -1, "group")
+                    else:
+                        self.slots[offset + i] = (SLOT_FORBIDDEN, -1, "group")
+                    continue
+                etype = shape.field[m["schema"]][0] if shape is not None and m["schema"] in shape.field else None
+                self.slots[offset + i] = self.slot_for(m, etype, cid, types, m["schema"])
+        return offset
+
+    def slot_for(self, m, etype, cid, types, name):
+        if etype is None:
+            return (SLOT_FORBIDDEN, -1, name)
+        simple = etype.startswith("xs:") or types[etype]["kind"] in ("simple", "union")
+        if m.get("simple") or m.get("kind") == "value":
+            if not simple:
+                fail("%s: %s is complex in %s" % (name, etype, cid))
+            return (SLOT_VALUE, fraction_of(types, etype), name)
+        if simple:
+            fail("%s: %s is simple in %s" % (name, etype, cid))
+        cls = m["type"]
+        return (self.row(cls, etype, cid, types), -1, name)
+
+
+def gen_profiles(model, prof):
+    out = []
+    w = out.append
+    w(HEADER)
+    w("""{ Profiles of the GAEB DA XML targets of the syntax model: for every
+  target (version, edition, phase) and every class as it appears there, one
+  row of slots, one slot per attribute, element or child element name of the
+  class. A slot tells whether the target allows the member, where the row of
+  a complex child starts and how many fraction digits a bounded decimal has.
+  Used by the writer and the check.
+
+  DE: Profile der GAEB-DA-XML-Ziele des Syntaxmodells: fuer jedes Ziel
+  (Version, Ausgabe, Phase) und jede Klasse, wie sie dort vorkommt, eine
+  Zeile von Slots, ein Slot je Attribut, Element oder Kindelementname der
+  Klasse. Ein Slot sagt, ob das Ziel das Mitglied erlaubt, wo die Zeile
+  eines komplexen Kinds beginnt und wie viele Nachkommastellen eine
+  begrenzte Dezimalzahl hat. Benutzt von Schreiber und Pruefung. }
+
+{ API: internal. May change in any release before 1.0.
+  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+
+unit LandrixGaebXmlProfiles;
+
+{$I LandrixGaeb.inc}
+
+interface
+
+uses
+  LandrixGaebTypes;
+
+const
+  { Slot value: the member is not allowed in the target.
+    DE: Slotwert: Das Mitglied ist im Ziel nicht erlaubt. }
+  LandrixGaebXmlSlotForbidden = %d;
+  { Slot value: allowed simple value (no row).
+    DE: Slotwert: erlaubter einfacher Wert (keine Zeile). }
+  LandrixGaebXmlSlotValue = %d;
+
+type
+  { One slot. Row: start of the child's row, or LandrixGaebXmlSlotForbidden,
+    or LandrixGaebXmlSlotValue. Fraction: fraction digits of a bounded
+    decimal, -1 otherwise.
+    DE: Ein Slot. Row: Beginn der Zeile des Kinds oder
+    LandrixGaebXmlSlotForbidden oder LandrixGaebXmlSlotValue. Fraction:
+    Nachkommastellen einer begrenzten Dezimalzahl, sonst -1. }
+  TLandrixGaebXmlSlot = record
+    Row: Integer;
+    Fraction: Integer;
+  end;
+
+const""" % (SLOT_FORBIDDEN, SLOT_VALUE))
+    w("  { All slots of all targets. DE: Alle Slots aller Ziele. }")
+    w("  LandrixGaebXmlSlots: array[0..%d] of TLandrixGaebXmlSlot = (" % (len(prof.slots) - 1))
+    for i, (row, frac, comment) in enumerate(prof.slots):
+        sep = "," if i < len(prof.slots) - 1 else ");"
+        w("    (Row: %d; Fraction: %d)%s { %d %s }" % (row, frac, sep, i, comment))
+    w("")
+    w("""{ Start of the row of the root element for a target; -1 if the model has
+  no profile for it.
+  DE: Beginn der Zeile des Wurzelelements fuer ein Ziel; -1, wenn das
+  Modell kein Profil dafuer hat. }
+function LandrixGaebXmlTargetRow(const ATarget: TLandrixGaebTarget): Integer;
+
+implementation
+
+function LandrixGaebXmlTargetRow(const ATarget: TLandrixGaebTarget): Integer;
+begin
+  Result := -1;""")
+    for ctx, offset in prof.roots:
+        w("  if (ATarget.Version = gv%s) and (ATarget.Edition = ge%s) and (ATarget.Phase = gp%s) then" % (
+            ctx["version"].replace(".", ""), ctx["edition"].replace("-", "_"), ctx["phase"].replace(".", "_")))
+        w("    Result := %d;" % offset)
+    w("end;")
+    w("")
+    w("end.")
+    return "\r\n".join("\n".join(out).split("\n")) + "\r\n"
+
+
+def write_proc(info):
+    return "Write" + info["name"][len(CLASS_PREFIX):]
+
+
+def is_mixed(info):
+    for m in info["members"]:
+        if m["kind"] == "children" and any(k["schema"] in TEXT_CHILDREN for k in m["children"]):
+            return True
+    return False
+
+
+def value_write(m, slot, target, info):
+    name = m["schema"]
+    if info["schema"] == "tgGAEBInfo" and name in ("Version", "VersDate"):
+        return ["  W.ValueText(ARow + %d, '%s', W.Target%s(%s.%s));" % (slot, name, name, target, m["name"])]
+    if name == "DP" and m["type"] == "tgDP":
+        return ["  W.ValueText(ARow + %d, 'DP', W.TargetDP(%s.%s));" % (slot, target, m["name"])]
+    if m["vtype"] == "TLandrixGaebDecimal":
+        return ["  if %s.%s.HasValue then" % (target, m["name"]),
+                "    W.ValueDecimal(ARow + %d, '%s', %s.%s);" % (slot, name, target, m["name"])]
+    if m["vtype"] == "TLandrixGaebDecimalText":
+        return ["  if %s.%s.HasValue then" % (target, m["name"]),
+                "    W.ValueDecimalText(ARow + %d, '%s', %s.%s);" % (slot, name, target, m["name"])]
+    return ["  if %s.%s <> '' then" % (target, m["name"]),
+            "    W.ValueText(ARow + %d, '%s', %s.%s)" % (slot, name, target, m["name"]),
+            "  else if %s.IsMarkedEmpty('%s') then" % (target, name),
+            "    W.ValueText(ARow + %d, '%s', '');" % (slot, name)]
+
+
+def gen_write_proc(model, prof, info, w):
+    layout = prof.layouts[info["schema"]]
+    slot_of = {}
+    for i, (kind, m) in enumerate(layout):
+        slot_of[(kind, id(m))] = i
+    is_group = info["kind"] == "group"
+    is_root = info["schema"] == "tgGAEB"
+    has_lists = any(m["kind"] in ("list", "children") for m in info["members"])
+    has_children = any(m["kind"] == "children" for m in info["members"])
+    if is_group:
+        w("procedure %s(W: TLandrixGaebXmlWriteContext; O: %s; ARow: Integer);" % (write_proc(info), info["name"]))
+    else:
+        w("procedure %s(W: TLandrixGaebXmlWriteContext; O: %s; const AName: TLandrixXmlUtf8;" % (
+            write_proc(info), info["name"]))
+        w("  ARow: Integer);")
+    if has_lists:
+        w("var")
+        w("  I: TLandrixGaebListIndex;")
+        if has_children:
+            w("  N: TLandrixGaebXmlNode;")
+    w("begin")
+    if not is_group:
+        if is_root:
+            w("  W.StartRoot(AName);")
+        else:
+            w("  W.StartElement(AName, %s);" % ("True" if is_mixed(info) else "False"))
+    for a in info["attributes"]:
+        slot = slot_of[("attr", id(a))]
+        if a["vtype"] == "TLandrixGaebDecimal":
+            w("  if O.%s.HasValue then" % a["name"])
+            w("    W.AttrDecimal(ARow + %d, '%s', O.%s);" % (slot, a["schema"], a["name"]))
+        elif a["vtype"] == "TLandrixGaebDecimalText":
+            w("  if O.%s.HasValue then" % a["name"])
+            w("    W.AttrDecimalText(ARow + %d, '%s', O.%s);" % (slot, a["schema"], a["name"]))
+        else:
+            w("  if O.%s <> '' then" % a["name"])
+            w("    W.AttrText(ARow + %d, '%s', O.%s)" % (slot, a["schema"], a["name"]))
+            w("  else if O.IsMarkedEmpty('@%s') then" % a["schema"])
+            w("    W.AttrText(ARow + %d, '%s', '');" % (slot, a["schema"]))
+    for m in info["members"]:
+        if m["kind"] == "base64":
+            w("  W.ContentUtf8(O.Base64);")
+        elif m["kind"] == "value" and not m["schema"]:
+            slot = slot_of[("content", id(m))]
+            if m["vtype"] == "TLandrixGaebDecimal":
+                w("  W.ContentDecimal(ARow + %d, O.Value);" % slot)
+            elif m["vtype"] == "TLandrixGaebDecimalText":
+                w("  W.ContentDecimalText(O.Value);")
+            else:
+                w("  W.ContentText(O.Value);")
+        elif m["kind"] == "value":
+            for line in value_write(m, slot_of[("member", id(m))], "O", info):
+                w(line)
+        elif m["kind"] == "object":
+            slot = slot_of[("member", id(m))]
+            w("  if O.Has%s and W.Allowed(ARow + %d, '%s', False) then" % (m["name"], slot, m["schema"]))
+            w("    %s(W, O.%s, '%s', W.ChildRow(ARow + %d));" % (
+                write_proc(model.emit[m["type"]]), m["name"], m["schema"], slot))
+        elif m["kind"] == "list":
+            slot = slot_of[("member", id(m))]
+            target = model.emit[m["type"]]
+            label = m["schema"] if m["schema"] != "#group" else m["name"]
+            w("  if O.Has%s then" % m["name"])
+            w("    for I := 0 to O.%s.Count - 1 do" % m["name"])
+            w("      if O.%s[I].IsPresent and W.Allowed(ARow + %d, '%s', False) then" % (m["name"], slot, label))
+            if m["schema"] == "#group":
+                w("        %s(W, O.%s[I], W.ChildRow(ARow + %d));" % (write_proc(target), m["name"], slot))
+            else:
+                w("        %s(W, O.%s[I], '%s', W.ChildRow(ARow + %d));" % (
+                    write_proc(target), m["name"], m["schema"], slot))
+        elif m["kind"] == "children":
+            w("  if O.HasChildren then")
+            w("    for I := 0 to O.Children.Count - 1 do")
+            w("    begin")
+            w("      N := O.Children[I];")
+            w("      if not N.IsPresent then")
+            w("        Continue;")
+            first = True
+            for k in m["children"]:
+                slot = slot_of[("child", id(k))]
+                kw = "if" if first else "else if"
+                first = False
+                if k["simple"]:
+                    w("      %s (N is TLandrixGaebXmlValueNode) and (N.ElementName = '%s') then" % (kw, k["schema"]))
+                    w("        W.ValueText(ARow + %d, '%s', TLandrixGaebXmlValueNode(N).Value)" % (slot, k["schema"]))
+                else:
+                    w("      %s (N is %s) and (N.ElementName = '%s') then" % (kw, k["cls"], k["schema"]))
+                    w("      begin")
+                    w("        if W.Allowed(ARow + %d, '%s', False) then" % (slot, k["schema"]))
+                    w("          %s(W, %s(N), '%s', W.ChildRow(ARow + %d));" % (
+                        write_proc(model.emit[k["type"]]), k["cls"], k["schema"], slot))
+                    w("      end")
+            w("      else")
+            w("        W.BadChild(N.ElementName);")
+            w("    end;")
+    if not is_group:
+        w("  W.EndElement;")
+    w("end;")
+    w("")
+
+
+def gen_writer(model, prof):
+    out = []
+    w = out.append
+    w(HEADER)
+    w("""{ GAEB DA XML writer: writes the syntax model (LandrixGaebXmlModel) for a
+  target (version, edition, phase) with the streaming writer of LandrixXml.
+  Elements are written in schema order and only if present; what the target
+  does not allow is reported (LandrixGaebXmlWriteBase). Namespace, Version,
+  VersDate and DP come from the target only. Mandatory elements, choices
+  and value facets are checked by LandrixGaebCheck, not here. Nothing is
+  written to the destination when the mode aborts.
+
+  DE: GAEB-DA-XML-Schreiber: schreibt das Syntaxmodell
+  (LandrixGaebXmlModel) fuer ein Ziel (Version, Ausgabe, Phase) mit dem
+  Streaming-Writer von LandrixXml. Elemente werden in Schemareihenfolge und
+  nur wenn vorhanden geschrieben; was das Ziel nicht erlaubt, wird gemeldet
+  (LandrixGaebXmlWriteBase). Namespace, Version, VersDate und DP kommen
+  allein aus dem Ziel. Pflichtelemente, Choices und Wertfacetten prueft
+  LandrixGaebCheck, nicht dieser Schreiber. Bricht der Modus ab, wird am
+  Ziel nichts geschrieben. }
+
+{ API: internal. May change in any release before 1.0.
+  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+
+unit LandrixGaebXmlWriter;
+
+{$I LandrixGaeb.inc}
+
+interface
+
+uses
+  SysUtils,
+  Classes,
+  LandrixXmlBase,
+  LandrixXmlWriter,
+  LandrixGaebTypes,
+  LandrixGaebDiagnostics,
+  LandrixGaebXmlBase,
+  LandrixGaebXmlModel,
+  LandrixGaebXmlProfiles,
+  LandrixGaebXmlWriteBase;
+
+{ The document as UTF-8 for ATarget. Raises ELandrixGaebError if the target
+  is not supported for writing or if the mode aborts (see
+  TLandrixGaebXmlWriteMode), ELandrixXmlError if a value holds characters
+  XML cannot carry. ADiagnostics may be nil.
+  DE: Das Dokument als UTF-8 fuer ATarget. Loest ELandrixGaebError aus, wenn
+  das Ziel nicht geschrieben werden kann oder der Modus abbricht (siehe
+  TLandrixGaebXmlWriteMode), ELandrixXmlError, wenn ein Wert Zeichen
+  enthaelt, die XML nicht tragen kann. ADiagnostics darf nil sein. }
+function LandrixGaebXmlWriteUtf8(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics): TLandrixXmlUtf8;
+
+{ Writes the document to a stream (at its position).
+  DE: Schreibt das Dokument in einen Stream (an seiner Position). }
+procedure LandrixGaebXmlWriteStream(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  AStream: TStream; const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics);
+
+{ Writes the document to a file; the file is only created when writing
+  succeeds.
+  DE: Schreibt das Dokument in eine Datei; die Datei wird nur angelegt,
+  wenn das Schreiben gelingt. }
+procedure LandrixGaebXmlWriteFile(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  const AFileName: string; const AOptions: TLandrixGaebXmlWriteOptions;
+  ADiagnostics: TLandrixGaebDiagnostics);
+
+implementation
+""")
+    infos = [model.emit[n] for n in sorted(model.emit, key=lambda k: model.emit[k]["name"].lower())]
+    for info in infos:
+        if info["kind"] == "group":
+            w("procedure %s(W: TLandrixGaebXmlWriteContext; O: %s; ARow: Integer); forward;" % (
+                write_proc(info), info["name"]))
+        else:
+            w("procedure %s(W: TLandrixGaebXmlWriteContext; O: %s; const AName: TLandrixXmlUtf8;" % (
+                write_proc(info), info["name"]))
+            w("  ARow: Integer); forward;")
+    w("")
+    for info in infos:
+        gen_write_proc(model, prof, info, w)
+    root = model.emit["tgGAEB"]
+    w("""function LandrixGaebXmlWriteUtf8(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics): TLandrixXmlUtf8;
+var
+  Row: Integer;
+  Writer: TLandrixXmlWriter;
+  Context: TLandrixGaebXmlWriteContext;
+  Failed: Boolean;
+begin
+  Row := LandrixGaebXmlTargetRow(ATarget);
+  if (Row < 0) or not LandrixGaebTargetIsSupported(ATarget, True) then
+    raise ELandrixGaebError.Create('GAEB DA XML ' +
+      LandrixXmlUtf8ToString(LandrixGaebVersionToText(ATarget.Version)) + ' ' +
+      LandrixXmlUtf8ToString(LandrixGaebEditionToText(ATarget.Edition)) + ' DA' +
+      LandrixXmlUtf8ToString(LandrixGaebPhaseToDP(ATarget.Phase)) +
+      ' is not supported for writing');
+  Writer := TLandrixXmlWriter.Create;
+  try
+    Writer.WriteBom := AOptions.WriteBom;
+    Writer.Indent := AOptions.Indent;
+    if AOptions.CrLf then
+      Writer.LineBreak := xlbCRLF
+    else
+      Writer.LineBreak := xlbLF;
+    Context := TLandrixGaebXmlWriteContext.Create(Writer, AOptions, ATarget, ADiagnostics);
+    try
+      %s(Context, ADocument, 'GAEB', Row);
+      Writer.EndDocument;
+      case AOptions.Mode of
+        gwmStrict:
+          Failed := (Context.Errors > 0) or (Context.Warnings > 0);
+        gwmNormal:
+          Failed := Context.Errors > 0;
+      else
+        Failed := False;
+      end;
+      if Failed then
+        raise ELandrixGaebError.Create('document not written: ' + IntToStr(Context.Errors) +
+          ' error(s), ' + IntToStr(Context.Warnings) + ' warning(s) (see diagnostics)');
+    finally
+      Context.Free;
+    end;
+    Result := Writer.AsUtf8;
+  finally
+    Writer.Free;
+  end;
+end;
+
+procedure LandrixGaebXmlWriteStream(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  AStream: TStream; const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics);
+var
+  S: TLandrixXmlUtf8;
+begin
+  S := LandrixGaebXmlWriteUtf8(ADocument, ATarget, AOptions, ADiagnostics);
+  if S <> '' then
+    AStream.WriteBuffer(S[1], Length(S));
+end;
+
+procedure LandrixGaebXmlWriteFile(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  const AFileName: string; const AOptions: TLandrixGaebXmlWriteOptions;
+  ADiagnostics: TLandrixGaebDiagnostics);
+var
+  S: TLandrixXmlUtf8;
+  Stream: TFileStream;
+begin
+  S := LandrixGaebXmlWriteUtf8(ADocument, ATarget, AOptions, ADiagnostics);
+  Stream := TFileStream.Create(AFileName, fmCreate);
+  try
+    if S <> '' then
+      Stream.WriteBuffer(S[1], Length(S));
+  finally
+    Stream.Free;
+  end;
+end;
+
+end.""" % write_proc(root))
+    return "\r\n".join("\n".join(out).split("\n")) + "\r\n"
+
+
 def main(argv):
     args = argv[1:]
     if len(args) > 1 or any(a not in ("--check", "--update-names") for a in args):
@@ -1207,8 +1713,11 @@ def main(argv):
         text = json.dumps(names.data, indent=1, ensure_ascii=True, sort_keys=True) + "\n"
         io.open(NAMES, "w", encoding="utf-8", newline="\n").write(text)
         print("gen-gaeb-model: names.json updated")
+    prof = Profiles(model)
+    prof.build()
     units = [(MODEL_UNIT, gen_model(model)), (CODES_UNIT, gen_codes(model)),
-             (READER_UNIT, gen_reader(model))]
+             (READER_UNIT, gen_reader(model)), (PROFILES_UNIT, gen_profiles(model, prof)),
+             (WRITER_UNIT, gen_writer(model, prof))]
     for path, text in units:
         if any(ord(ch) > 127 for ch in text):
             fail("%s: non-ASCII output" % path)

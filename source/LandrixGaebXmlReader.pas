@@ -192,6 +192,8 @@ begin
             if C.Order(Last, 0, True, (O.Name1 <> '')) then
             begin
               O.Name1 := C.ElementText;
+              if O.Name1 = '' then
+                O.MarkEmpty('Name1');
             end;
           end
           else if C.NameIs('Name2') then
@@ -199,6 +201,8 @@ begin
             if C.Order(Last, 1, True, (O.Name2 <> '')) then
             begin
               O.Name2 := C.ElementText;
+              if O.Name2 = '' then
+                O.MarkEmpty('Name2');
             end;
           end
           else if C.NameIs('Name3') then
@@ -206,6 +210,8 @@ begin
             if C.Order(Last, 2, True, (O.Name3 <> '')) then
             begin
               O.Name3 := C.ElementText;
+              if O.Name3 = '' then
+                O.MarkEmpty('Name3');
             end;
           end
           else if C.NameIs('Name4') then
@@ -213,6 +219,8 @@ begin
             if C.Order(Last, 3, True, (O.Name4 <> '')) then
             begin
               O.Name4 := C.ElementText;
+              if O.Name4 = '' then
+                O.MarkEmpty('Name4');
             end;
           end
           else if C.NameIs('Street') then
@@ -220,6 +228,8 @@ begin
             if C.Order(Last, 4, True, (O.Street <> '')) then
             begin
               O.Street := C.ElementText;
+              if O.Street = '' then
+                O.MarkEmpty('Street');
             end;
           end
           else if C.NameIs('PCode') then
@@ -227,6 +237,8 @@ begin
             if C.Order(Last, 5, True, (O.PCode <> '')) then
             begin
               O.PCode := C.ElementText;
+              if O.PCode = '' then
+                O.MarkEmpty('PCode');
             end;
           end
           else if C.NameIs('City') then
@@ -234,6 +246,8 @@ begin
             if C.Order(Last, 6, True, (O.City <> '')) then
             begin
               O.City := C.ElementText;
+              if O.City = '' then
+                O.MarkEmpty('City');
             end;
           end
           else if C.NameIs('Country') then
@@ -241,6 +255,8 @@ begin
             if C.Order(Last, 7, True, (O.Country <> '')) then
             begin
               O.Country := C.ElementText;
+              if O.Country = '' then
+                O.MarkEmpty('Country');
             end;
           end
           else if C.NameIs('ILN') then
@@ -248,6 +264,8 @@ begin
             if C.Order(Last, 8, True, (O.ILN <> '')) then
             begin
               O.ILN := C.ElementText;
+              if O.ILN = '' then
+                O.MarkEmpty('ILN');
             end;
           end
           else if C.NameIs('CtlgAssign') then
@@ -262,6 +280,8 @@ begin
             if C.Order(Last, 10, True, (O.Contact <> '')) then
             begin
               O.Contact := C.ElementText;
+              if O.Contact = '' then
+                O.MarkEmpty('Contact');
             end;
           end
           else if C.NameIs('Phone') then
@@ -269,6 +289,8 @@ begin
             if C.Order(Last, 11, True, (O.Phone <> '')) then
             begin
               O.Phone := C.ElementText;
+              if O.Phone = '' then
+                O.MarkEmpty('Phone');
             end;
           end
           else if C.NameIs('Fax') then
@@ -276,6 +298,8 @@ begin
             if C.Order(Last, 12, True, (O.Fax <> '')) then
             begin
               O.Fax := C.ElementText;
+              if O.Fax = '' then
+                O.MarkEmpty('Fax');
             end;
           end
           else if C.NameIs('Email') then
@@ -283,6 +307,8 @@ begin
             if C.Order(Last, 13, True, (O.Email <> '')) then
             begin
               O.Email := C.ElementText;
+              if O.Email = '' then
+                O.MarkEmpty('Email');
             end;
           end
           else if C.NameIs('VATID') then
@@ -290,6 +316,8 @@ begin
             if C.Order(Last, 14, True, (O.VATID <> '')) then
             begin
               O.VATID := C.ElementText;
+              if O.VATID = '' then
+                O.MarkEmpty('VATID');
             end;
           end
           else if C.NameIs('Bank') then
@@ -366,6 +394,8 @@ begin
             if C.Order(Last, 0, True, (O.Brand <> '')) then
             begin
               O.Brand := C.ElementText;
+              if O.Brand = '' then
+                O.MarkEmpty('Brand');
             end;
           end
           else if C.NameIs('ArtNo') then
@@ -373,6 +403,8 @@ begin
             if C.Order(Last, 1, True, (O.ArtNo <> '')) then
             begin
               O.ArtNo := C.ElementText;
+              if O.ArtNo = '' then
+                O.MarkEmpty('ArtNo');
             end;
           end
           else if C.NameIs('Qty') then
@@ -387,6 +419,8 @@ begin
             if C.Order(Last, 3, True, (O.QU <> '')) then
             begin
               O.QU := C.ElementText;
+              if O.QU = '' then
+                O.MarkEmpty('QU');
             end;
           end
           else if C.NameIs('ArtOutline') then
@@ -436,6 +470,8 @@ begin
             if C.Order(Last, 0, True, (O.DP <> '')) then
             begin
               O.DP := C.ElementText;
+              if O.DP = '' then
+                O.MarkEmpty('DP');
             end;
           end
           else if C.NameIs('AwardInfo') then
@@ -548,6 +584,8 @@ begin
             if C.Order(Last, 0, True, (O.BoQID <> '')) then
             begin
               O.BoQID := C.ElementText;
+              if O.BoQID = '' then
+                O.MarkEmpty('BoQID');
             end;
           end
           else if C.NameIs('Cat') then
@@ -555,6 +593,8 @@ begin
             if C.Order(Last, 1, True, (O.Cat <> '')) then
             begin
               O.Cat := C.ElementText;
+              if O.Cat = '' then
+                O.MarkEmpty('Cat');
             end;
           end
           else if C.NameIs('SpecialType') then
@@ -562,6 +602,8 @@ begin
             if C.Order(Last, 2, True, (O.SpecialType <> '')) then
             begin
               O.SpecialType := C.ElementText;
+              if O.SpecialType = '' then
+                O.MarkEmpty('SpecialType');
             end;
           end
           else if C.NameIs('Cur') then
@@ -569,6 +611,8 @@ begin
             if C.Order(Last, 3, True, (O.Cur <> '')) then
             begin
               O.Cur := C.ElementText;
+              if O.Cur = '' then
+                O.MarkEmpty('Cur');
             end;
           end
           else if C.NameIs('CurLbl') then
@@ -576,6 +620,8 @@ begin
             if C.Order(Last, 4, True, (O.CurLbl <> '')) then
             begin
               O.CurLbl := C.ElementText;
+              if O.CurLbl = '' then
+                O.MarkEmpty('CurLbl');
             end;
           end
           else if C.NameIs('BidDate') then
@@ -583,6 +629,8 @@ begin
             if C.Order(Last, 5, True, (O.BidDate <> '')) then
             begin
               O.BidDate := C.ElementText;
+              if O.BidDate = '' then
+                O.MarkEmpty('BidDate');
             end;
           end
           else if C.NameIs('OpenDate') then
@@ -590,6 +638,8 @@ begin
             if C.Order(Last, 6, True, (O.OpenDate <> '')) then
             begin
               O.OpenDate := C.ElementText;
+              if O.OpenDate = '' then
+                O.MarkEmpty('OpenDate');
             end;
           end
           else if C.NameIs('OpenTime') then
@@ -597,6 +647,8 @@ begin
             if C.Order(Last, 7, True, (O.OpenTime <> '')) then
             begin
               O.OpenTime := C.ElementText;
+              if O.OpenTime = '' then
+                O.MarkEmpty('OpenTime');
             end;
           end
           else if C.NameIs('EvalEnd') then
@@ -604,6 +656,8 @@ begin
             if C.Order(Last, 8, True, (O.EvalEnd <> '')) then
             begin
               O.EvalEnd := C.ElementText;
+              if O.EvalEnd = '' then
+                O.MarkEmpty('EvalEnd');
             end;
           end
           else if C.NameIs('SubmLoc') then
@@ -611,6 +665,8 @@ begin
             if C.Order(Last, 9, True, (O.SubmLoc <> '')) then
             begin
               O.SubmLoc := C.ElementText;
+              if O.SubmLoc = '' then
+                O.MarkEmpty('SubmLoc');
             end;
           end
           else if C.NameIs('CnstStart') then
@@ -618,6 +674,8 @@ begin
             if C.Order(Last, 10, True, (O.CnstStart <> '')) then
             begin
               O.CnstStart := C.ElementText;
+              if O.CnstStart = '' then
+                O.MarkEmpty('CnstStart');
             end;
           end
           else if C.NameIs('CnstEnd') then
@@ -625,6 +683,8 @@ begin
             if C.Order(Last, 11, True, (O.CnstEnd <> '')) then
             begin
               O.CnstEnd := C.ElementText;
+              if O.CnstEnd = '' then
+                O.MarkEmpty('CnstEnd');
             end;
           end
           else if C.NameIs('ContrNo') then
@@ -632,6 +692,8 @@ begin
             if C.Order(Last, 12, True, (O.ContrNo <> '')) then
             begin
               O.ContrNo := C.ElementText;
+              if O.ContrNo = '' then
+                O.MarkEmpty('ContrNo');
             end;
           end
           else if C.NameIs('ContrDate') then
@@ -639,6 +701,8 @@ begin
             if C.Order(Last, 13, True, (O.ContrDate <> '')) then
             begin
               O.ContrDate := C.ElementText;
+              if O.ContrDate = '' then
+                O.MarkEmpty('ContrDate');
             end;
           end
           else if C.NameIs('AcceptType') then
@@ -646,6 +710,8 @@ begin
             if C.Order(Last, 14, True, (O.AcceptType <> '')) then
             begin
               O.AcceptType := C.ElementText;
+              if O.AcceptType = '' then
+                O.MarkEmpty('AcceptType');
             end;
           end
           else if C.NameIs('AcceptDate') then
@@ -653,6 +719,8 @@ begin
             if C.Order(Last, 15, True, (O.AcceptDate <> '')) then
             begin
               O.AcceptDate := C.ElementText;
+              if O.AcceptDate = '' then
+                O.MarkEmpty('AcceptDate');
             end;
           end
           else if C.NameIs('WarrDur') then
@@ -660,6 +728,8 @@ begin
             if C.Order(Last, 16, True, (O.WarrDur <> '')) then
             begin
               O.WarrDur := C.ElementText;
+              if O.WarrDur = '' then
+                O.MarkEmpty('WarrDur');
             end;
           end
           else if C.NameIs('WarrUnit') then
@@ -667,6 +737,8 @@ begin
             if C.Order(Last, 17, True, (O.WarrUnit <> '')) then
             begin
               O.WarrUnit := C.ElementText;
+              if O.WarrUnit = '' then
+                O.MarkEmpty('WarrUnit');
             end;
           end
           else if C.NameIs('WarrEnd') then
@@ -674,6 +746,8 @@ begin
             if C.Order(Last, 18, True, (O.WarrEnd <> '')) then
             begin
               O.WarrEnd := C.ElementText;
+              if O.WarrEnd = '' then
+                O.MarkEmpty('WarrEnd');
             end;
           end
           else if C.NameIs('PerformPcnt') then
@@ -754,6 +828,8 @@ begin
             if C.Order(Last, 0, True, (O.LblBank <> '')) then
             begin
               O.LblBank := C.ElementText;
+              if O.LblBank = '' then
+                O.MarkEmpty('LblBank');
             end;
           end
           else if C.NameIs('BRNo') then
@@ -761,6 +837,8 @@ begin
             if C.Order(Last, 1, True, (O.BRNo <> '')) then
             begin
               O.BRNo := C.ElementText;
+              if O.BRNo = '' then
+                O.MarkEmpty('BRNo');
             end;
           end
           else if C.NameIs('AcctNo') then
@@ -768,6 +846,8 @@ begin
             if C.Order(Last, 2, True, (O.AcctNo <> '')) then
             begin
               O.AcctNo := C.ElementText;
+              if O.AcctNo = '' then
+                O.MarkEmpty('AcctNo');
             end;
           end
           else if C.NameIs('BIC') then
@@ -775,6 +855,8 @@ begin
             if C.Order(Last, 3, True, (O.BIC <> '')) then
             begin
               O.BIC := C.ElementText;
+              if O.BIC = '' then
+                O.MarkEmpty('BIC');
             end;
           end
           else if C.NameIs('IBAN') then
@@ -782,6 +864,8 @@ begin
             if C.Order(Last, 4, True, (O.IBAN <> '')) then
             begin
               O.IBAN := C.ElementText;
+              if O.IBAN = '' then
+                O.MarkEmpty('IBAN');
             end;
           end
           else
@@ -802,7 +886,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'ID') then
-        O.ID := C.AttributeText(I)
+      begin
+        O.ID := C.AttributeText(I);
+        if O.ID = '' then
+          O.MarkEmpty('@ID');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -860,6 +948,8 @@ begin
             if C.Order(Last, 0, True, (O.TypeElement <> '')) then
             begin
               O.TypeElement := C.ElementText;
+              if O.TypeElement = '' then
+                O.MarkEmpty('Type');
             end;
           end
           else if C.NameIs('LblBoQBkdn') then
@@ -867,6 +957,8 @@ begin
             if C.Order(Last, 1, True, (O.LblBoQBkdn <> '')) then
             begin
               O.LblBoQBkdn := C.ElementText;
+              if O.LblBoQBkdn = '' then
+                O.MarkEmpty('LblBoQBkdn');
             end;
           end
           else if C.NameIs('Length') then
@@ -874,6 +966,8 @@ begin
             if C.Order(Last, 2, True, (O.LengthElement <> '')) then
             begin
               O.LengthElement := C.ElementText;
+              if O.LengthElement = '' then
+                O.MarkEmpty('Length');
             end;
           end
           else if C.NameIs('Num') then
@@ -881,6 +975,8 @@ begin
             if C.Order(Last, 3, True, (O.Num <> '')) then
             begin
               O.Num := C.ElementText;
+              if O.Num = '' then
+                O.MarkEmpty('Num');
             end;
           end
           else if C.NameIs('Alignment') then
@@ -888,6 +984,8 @@ begin
             if C.Order(Last, 4, True, (O.Alignment <> '')) then
             begin
               O.Alignment := C.ElementText;
+              if O.Alignment = '' then
+                O.MarkEmpty('Alignment');
             end;
           end
           else
@@ -960,9 +1058,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'ID') then
-        O.ID := C.AttributeText(I)
+      begin
+        O.ID := C.AttributeText(I);
+        if O.ID = '' then
+          O.MarkEmpty('@ID');
+      end
       else if C.AttributeIs(I, 'RNoPart') then
-        O.RNoPart := C.AttributeText(I)
+      begin
+        O.RNoPart := C.AttributeText(I);
+        if O.RNoPart = '' then
+          O.MarkEmpty('@RNoPart');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -989,6 +1095,8 @@ begin
             if C.Order(Last, 2, True, (O.CONo <> '')) then
             begin
               O.CONo := C.ElementText;
+              if O.CONo = '' then
+                O.MarkEmpty('CONo');
             end;
           end
           else if C.NameIs('COStatus') then
@@ -996,6 +1104,8 @@ begin
             if C.Order(Last, 3, True, (O.COStatus <> '')) then
             begin
               O.COStatus := C.ElementText;
+              if O.COStatus = '' then
+                O.MarkEmpty('COStatus');
             end;
           end
           else if C.NameIs('ALNBGroupNo') then
@@ -1003,6 +1113,8 @@ begin
             if C.Order(Last, 4, True, (O.ALNBGroupNo <> '')) then
             begin
               O.ALNBGroupNo := C.ElementText;
+              if O.ALNBGroupNo = '' then
+                O.MarkEmpty('ALNBGroupNo');
             end;
           end
           else if C.NameIs('ALNBSerNo') then
@@ -1010,6 +1122,8 @@ begin
             if C.Order(Last, 5, True, (O.ALNBSerNo <> '')) then
             begin
               O.ALNBSerNo := C.ElementText;
+              if O.ALNBSerNo = '' then
+                O.MarkEmpty('ALNBSerNo');
             end;
           end
           else if C.NameIs('NotApplBoQ') then
@@ -1017,6 +1131,8 @@ begin
             if C.Order(Last, 6, True, (O.NotApplBoQ <> '')) then
             begin
               O.NotApplBoQ := C.ElementText;
+              if O.NotApplBoQ = '' then
+                O.MarkEmpty('NotApplBoQ');
             end;
           end
           else if C.NameIs('CtlgAssign') then
@@ -1069,6 +1185,8 @@ begin
             if C.Order(Last, 0, True, (O.Name <> '')) then
             begin
               O.Name := C.ElementText;
+              if O.Name = '' then
+                O.MarkEmpty('Name');
             end;
           end
           else if C.NameIs('LblBoQ') then
@@ -1076,6 +1194,8 @@ begin
             if C.Order(Last, 1, True, (O.LblBoQ <> '')) then
             begin
               O.LblBoQ := C.ElementText;
+              if O.LblBoQ = '' then
+                O.MarkEmpty('LblBoQ');
             end;
           end
           else if C.NameIs('CPVCode') then
@@ -1090,6 +1210,8 @@ begin
             if C.Order(Last, 3, True, (O.CONo <> '')) then
             begin
               O.CONo := C.ElementText;
+              if O.CONo = '' then
+                O.MarkEmpty('CONo');
             end;
           end
           else if C.NameIs('COStatus') then
@@ -1097,6 +1219,8 @@ begin
             if C.Order(Last, 4, True, (O.COStatus <> '')) then
             begin
               O.COStatus := C.ElementText;
+              if O.COStatus = '' then
+                O.MarkEmpty('COStatus');
             end;
           end
           else if C.NameIs('Date') then
@@ -1104,6 +1228,8 @@ begin
             if C.Order(Last, 5, True, (O.Date <> '')) then
             begin
               O.Date := C.ElementText;
+              if O.Date = '' then
+                O.MarkEmpty('Date');
             end;
           end
           else if C.NameIs('OutlCompl') then
@@ -1111,6 +1237,8 @@ begin
             if C.Order(Last, 6, True, (O.OutlCompl <> '')) then
             begin
               O.OutlCompl := C.ElementText;
+              if O.OutlCompl = '' then
+                O.MarkEmpty('OutlCompl');
             end;
           end
           else if C.NameIs('BoQBkdn') then
@@ -1125,6 +1253,8 @@ begin
             if C.Order(Last, 8, True, (O.NoUPComps <> '')) then
             begin
               O.NoUPComps := C.ElementText;
+              if O.NoUPComps = '' then
+                O.MarkEmpty('NoUPComps');
             end;
           end
           else if C.NameIs('LblUPComp1') then
@@ -1174,6 +1304,8 @@ begin
             if C.Order(Last, 15, True, (O.LblTime <> '')) then
             begin
               O.LblTime := C.ElementText;
+              if O.LblTime = '' then
+                O.MarkEmpty('LblTime');
             end;
           end
           else if C.NameIs('CtlgAssign') then
@@ -1222,7 +1354,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -1294,6 +1430,8 @@ begin
             if C.Order(Last, 1, True, (O.CashDiscDate <> '')) then
             begin
               O.CashDiscDate := C.ElementText;
+              if O.CashDiscDate = '' then
+                O.MarkEmpty('CashDiscDate');
             end;
           end
           else if C.NameIs('DiscountPcnt') then
@@ -1321,9 +1459,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'TypeOfDays') then
-        O.TypeOfDays := C.AttributeText(I)
+      begin
+        O.TypeOfDays := C.AttributeText(I);
+        if O.TypeOfDays = '' then
+          O.MarkEmpty('@TypeOfDays');
+      end
       else if C.AttributeIs(I, 'Days') then
-        O.Days := C.AttributeText(I)
+      begin
+        O.Days := C.AttributeText(I);
+        if O.Days = '' then
+          O.MarkEmpty('@Days');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   while C.Next(D) do
@@ -1365,6 +1511,8 @@ begin
             if C.Order(Last, 1, True, (O.CnstSiteIDNo <> '')) then
             begin
               O.CnstSiteIDNo := C.ElementText;
+              if O.CnstSiteIDNo = '' then
+                O.MarkEmpty('CnstSiteIDNo');
             end;
           end
           else if C.NameIs('CnstSiteName') then
@@ -1372,6 +1520,8 @@ begin
             if C.Order(Last, 2, True, (O.CnstSiteName <> '')) then
             begin
               O.CnstSiteName := C.ElementText;
+              if O.CnstSiteName = '' then
+                O.MarkEmpty('CnstSiteName');
             end;
           end
           else if C.NameIs('AddText') then
@@ -1410,6 +1560,8 @@ begin
             if C.Order(Last, 0, True, (O.CONo <> '')) then
             begin
               O.CONo := C.ElementText;
+              if O.CONo = '' then
+                O.MarkEmpty('CONo');
             end;
           end
           else if C.NameIs('COPhase') then
@@ -1417,6 +1569,8 @@ begin
             if C.Order(Last, 1, True, (O.COPhase <> '')) then
             begin
               O.COPhase := C.ElementText;
+              if O.COPhase = '' then
+                O.MarkEmpty('COPhase');
             end;
           end
           else if C.NameIs('COStatus') then
@@ -1424,6 +1578,8 @@ begin
             if C.Order(Last, 2, True, (O.COStatus <> '')) then
             begin
               O.COStatus := C.ElementText;
+              if O.COStatus = '' then
+                O.MarkEmpty('COStatus');
             end;
           end
           else if C.NameIs('COInit') then
@@ -1431,6 +1587,8 @@ begin
             if C.Order(Last, 3, True, (O.COInit <> '')) then
             begin
               O.COInit := C.ElementText;
+              if O.COInit = '' then
+                O.MarkEmpty('COInit');
             end;
           end
           else if C.NameIs('COReas') then
@@ -1445,6 +1603,8 @@ begin
             if C.Order(Last, 5, True, (O.RefBoQCOInfo <> '')) then
             begin
               O.RefBoQCOInfo := C.ElementText;
+              if O.RefBoQCOInfo = '' then
+                O.MarkEmpty('RefBoQCOInfo');
             end;
           end
           else if C.NameIs('CODate') then
@@ -1452,6 +1612,8 @@ begin
             if C.Order(Last, 6, True, (O.CODate <> '')) then
             begin
               O.CODate := C.ElementText;
+              if O.CODate = '' then
+                O.MarkEmpty('CODate');
             end;
           end
           else
@@ -1496,7 +1658,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'Value') then
-        O.Value := C.AttributeText(I)
+      begin
+        O.Value := C.AttributeText(I);
+        if O.Value = '' then
+          O.MarkEmpty('@Value');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   while C.Next(D) do
@@ -1531,6 +1697,8 @@ begin
             if C.Order(Last, 0, True, (O.ComplTSA <> '')) then
             begin
               O.ComplTSA := C.ElementText;
+              if O.ComplTSA = '' then
+                O.MarkEmpty('ComplTSA');
             end;
           end
           else if C.NameIs('ComplTSB') then
@@ -1538,6 +1706,8 @@ begin
             if C.Order(Last, 1, True, (O.ComplTSB <> '')) then
             begin
               O.ComplTSB := C.ElementText;
+              if O.ComplTSB = '' then
+                O.MarkEmpty('ComplTSB');
             end;
           end
           else if C.NameIs('DetailTxt') then
@@ -1590,6 +1760,8 @@ begin
             if C.Order(Last, 1, True, (O.Number <> '')) then
             begin
               O.Number := C.ElementText;
+              if O.Number = '' then
+                O.MarkEmpty('Number');
             end;
           end
           else
@@ -1621,6 +1793,8 @@ begin
             if C.Order(Last, 0, True, (O.CPVNo <> '')) then
             begin
               O.CPVNo := C.ElementText;
+              if O.CPVNo = '' then
+                O.MarkEmpty('CPVNo');
             end;
           end
           else if C.NameIs('CPVText') then
@@ -1628,6 +1802,8 @@ begin
             if C.Order(Last, 1, True, (O.CPVText <> '')) then
             begin
               O.CPVText := C.ElementText;
+              if O.CPVText = '' then
+                O.MarkEmpty('CPVText');
             end;
           end
           else
@@ -1659,6 +1835,8 @@ begin
             if C.Order(Last, 0, True, (O.CtlgID <> '')) then
             begin
               O.CtlgID := C.ElementText;
+              if O.CtlgID = '' then
+                O.MarkEmpty('CtlgID');
             end;
           end
           else if C.NameIs('CtlgType') then
@@ -1666,6 +1844,8 @@ begin
             if C.Order(Last, 1, True, (O.CtlgType <> '')) then
             begin
               O.CtlgType := C.ElementText;
+              if O.CtlgType = '' then
+                O.MarkEmpty('CtlgType');
             end;
           end
           else if C.NameIs('CtlgName') then
@@ -1673,6 +1853,8 @@ begin
             if C.Order(Last, 2, True, (O.CtlgName <> '')) then
             begin
               O.CtlgName := C.ElementText;
+              if O.CtlgName = '' then
+                O.MarkEmpty('CtlgName');
             end;
           end
           else if C.NameIs('CtlgAssignType') then
@@ -1680,6 +1862,8 @@ begin
             if C.Order(Last, 3, True, (O.CtlgAssignType <> '')) then
             begin
               O.CtlgAssignType := C.ElementText;
+              if O.CtlgAssignType = '' then
+                O.MarkEmpty('CtlgAssignType');
             end;
           end
           else
@@ -1711,6 +1895,8 @@ begin
             if C.Order(Last, 0, True, (O.CtlgID <> '')) then
             begin
               O.CtlgID := C.ElementText;
+              if O.CtlgID = '' then
+                O.MarkEmpty('CtlgID');
             end;
           end
           else if C.NameIs('CtlgCode') then
@@ -1718,6 +1904,8 @@ begin
             if C.Order(Last, 1, True, (O.CtlgCode <> '')) then
             begin
               O.CtlgCode := C.ElementText;
+              if O.CtlgCode = '' then
+                O.MarkEmpty('CtlgCode');
             end;
           end
           else if C.NameIs('Quantity') then
@@ -1745,7 +1933,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'Type') then
-        O.TypeAttr := C.AttributeText(I)
+      begin
+        O.TypeAttr := C.AttributeText(I);
+        if O.TypeAttr = '' then
+          O.MarkEmpty('@Type');
+      end
       else C.UnknownAttribute(I);
   C.ContentDecimal(O.Value);
 end;
@@ -1776,6 +1968,8 @@ begin
             if C.Order(Last, 1, True, (O.DPNo <> '')) then
             begin
               O.DPNo := C.ElementText;
+              if O.DPNo = '' then
+                O.MarkEmpty('DPNo');
             end;
           end
           else if C.NameIs('AwardNo') then
@@ -1783,6 +1977,8 @@ begin
             if C.Order(Last, 2, True, (O.AwardNo <> '')) then
             begin
               O.AwardNo := C.ElementText;
+              if O.AwardNo = '' then
+                O.MarkEmpty('AwardNo');
             end;
           end
           else if C.NameIs('AcctsPayNo') then
@@ -1790,6 +1986,8 @@ begin
             if C.Order(Last, 3, True, (O.AcctsPayNo <> '')) then
             begin
               O.AcctsPayNo := C.ElementText;
+              if O.AcctsPayNo = '' then
+                O.MarkEmpty('AcctsPayNo');
             end;
           end
           else if C.NameIs('CntryType') then
@@ -1797,6 +1995,8 @@ begin
             if C.Order(Last, 4, True, (O.CntryType <> '')) then
             begin
               O.CntryType := C.ElementText;
+              if O.CntryType = '' then
+                O.MarkEmpty('CntryType');
             end;
           end
           else if C.NameIs('CntryName') then
@@ -1804,6 +2004,8 @@ begin
             if C.Order(Last, 5, True, (O.CntryName <> '')) then
             begin
               O.CntryName := C.ElementText;
+              if O.CntryName = '' then
+                O.MarkEmpty('CntryName');
             end;
           end
           else if C.NameIs('SectorType') then
@@ -1811,6 +2013,8 @@ begin
             if C.Order(Last, 6, True, (O.SectorType <> '')) then
             begin
               O.SectorType := C.ElementText;
+              if O.SectorType = '' then
+                O.MarkEmpty('SectorType');
             end;
           end
           else if C.NameIs('PrefBidType') then
@@ -1818,6 +2022,8 @@ begin
             if C.Order(Last, 7, True, (O.PrefBidType <> '')) then
             begin
               O.PrefBidType := C.ElementText;
+              if O.PrefBidType = '' then
+                O.MarkEmpty('PrefBidType');
             end;
           end
           else if C.NameIs('SCType') then
@@ -1825,6 +2031,8 @@ begin
             if C.Order(Last, 8, True, (O.SCType <> '')) then
             begin
               O.SCType := C.ElementText;
+              if O.SCType = '' then
+                O.MarkEmpty('SCType');
             end;
           end
           else if C.NameIs('InsAs') then
@@ -1859,7 +2067,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'ID') then
-        O.ID := C.AttributeText(I)
+      begin
+        O.ID := C.AttributeText(I);
+        if O.ID = '' then
+          O.MarkEmpty('@ID');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -1886,6 +2098,8 @@ begin
             if C.Order(Last, 2, True, (O.WICNo <> '')) then
             begin
               O.WICNo := C.ElementText;
+              if O.WICNo = '' then
+                O.MarkEmpty('WICNo');
             end;
           end
           else if C.NameIs('CompleteText') then
@@ -1920,9 +2134,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -1962,9 +2184,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -2011,9 +2241,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else if C.AttributeIs(I, 'textWidth') then
-        O.TextWidth := C.AttributeText(I)
+      begin
+        O.TextWidth := C.AttributeText(I);
+        if O.TextWidth = '' then
+          O.MarkEmpty('@textWidth');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -2102,9 +2340,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else if C.AttributeIs(I, 'textWidth') then
-        O.TextWidth := C.AttributeText(I)
+      begin
+        O.TextWidth := C.AttributeText(I);
+        if O.TextWidth = '' then
+          O.MarkEmpty('@textWidth');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -2263,6 +2509,8 @@ begin
             if C.Order(Last, 0, True, (O.Version <> '')) then
             begin
               O.Version := C.ElementText;
+              if O.Version = '' then
+                O.MarkEmpty('Version');
             end;
           end
           else if C.NameIs('VersDate') then
@@ -2270,6 +2518,8 @@ begin
             if C.Order(Last, 1, True, (O.VersDate <> '')) then
             begin
               O.VersDate := C.ElementText;
+              if O.VersDate = '' then
+                O.MarkEmpty('VersDate');
             end;
           end
           else if C.NameIs('Date') then
@@ -2277,6 +2527,8 @@ begin
             if C.Order(Last, 2, True, (O.Date <> '')) then
             begin
               O.Date := C.ElementText;
+              if O.Date = '' then
+                O.MarkEmpty('Date');
             end;
           end
           else if C.NameIs('Time') then
@@ -2284,6 +2536,8 @@ begin
             if C.Order(Last, 3, True, (O.Time <> '')) then
             begin
               O.Time := C.ElementText;
+              if O.Time = '' then
+                O.MarkEmpty('Time');
             end;
           end
           else if C.NameIs('ProgSystem') then
@@ -2291,6 +2545,8 @@ begin
             if C.Order(Last, 4, True, (O.ProgSystem <> '')) then
             begin
               O.ProgSystem := C.ElementText;
+              if O.ProgSystem = '' then
+                O.MarkEmpty('ProgSystem');
             end;
           end
           else if C.NameIs('ProgName') then
@@ -2298,6 +2554,8 @@ begin
             if C.Order(Last, 5, True, (O.ProgName <> '')) then
             begin
               O.ProgName := C.ElementText;
+              if O.ProgName = '' then
+                O.MarkEmpty('ProgName');
             end;
           end
           else if C.NameIs('Certific') then
@@ -2305,6 +2563,8 @@ begin
             if C.Order(Last, 6, True, (O.Certific <> '')) then
             begin
               O.Certific := C.ElementText;
+              if O.Certific = '' then
+                O.MarkEmpty('Certific');
             end;
           end
           else
@@ -2325,21 +2585,53 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'align') then
-        O.Align := C.AttributeText(I)
+      begin
+        O.Align := C.AttributeText(I);
+        if O.Align = '' then
+          O.MarkEmpty('@align');
+      end
       else if C.AttributeIs(I, 'border') then
-        O.Border := C.AttributeText(I)
+      begin
+        O.Border := C.AttributeText(I);
+        if O.Border = '' then
+          O.MarkEmpty('@border');
+      end
       else if C.AttributeIs(I, 'hspace') then
-        O.Hspace := C.AttributeText(I)
+      begin
+        O.Hspace := C.AttributeText(I);
+        if O.Hspace = '' then
+          O.MarkEmpty('@hspace');
+      end
       else if C.AttributeIs(I, 'vspace') then
-        O.Vspace := C.AttributeText(I)
+      begin
+        O.Vspace := C.AttributeText(I);
+        if O.Vspace = '' then
+          O.MarkEmpty('@vspace');
+      end
       else if C.AttributeIs(I, 'width') then
-        O.Width := C.AttributeText(I)
+      begin
+        O.Width := C.AttributeText(I);
+        if O.Width = '' then
+          O.MarkEmpty('@width');
+      end
       else if C.AttributeIs(I, 'Type') then
-        O.TypeAttr := C.AttributeText(I)
+      begin
+        O.TypeAttr := C.AttributeText(I);
+        if O.TypeAttr = '' then
+          O.MarkEmpty('@Type');
+      end
       else if C.AttributeIs(I, 'Name') then
-        O.Name := C.AttributeText(I)
+      begin
+        O.Name := C.AttributeText(I);
+        if O.Name = '' then
+          O.MarkEmpty('@Name');
+      end
       else if C.AttributeIs(I, 'Encoding') then
-        O.Encoding := C.AttributeText(I)
+      begin
+        O.Encoding := C.AttributeText(I);
+        if O.Encoding = '' then
+          O.MarkEmpty('@Encoding');
+      end
       else C.UnknownAttribute(I);
   O.Base64 := C.ContentTextUtf8;
 end;
@@ -2363,6 +2655,8 @@ begin
             if C.Order(Last, 0, True, (O.InsAsName <> '')) then
             begin
               O.InsAsName := C.ElementText;
+              if O.InsAsName = '' then
+                O.MarkEmpty('InsAsName');
             end;
           end
           else if C.NameIs('InsAsDate') then
@@ -2370,6 +2664,8 @@ begin
             if C.Order(Last, 1, True, (O.InsAsDate <> '')) then
             begin
               O.InsAsDate := C.ElementText;
+              if O.InsAsDate = '' then
+                O.MarkEmpty('InsAsDate');
             end;
           end
           else if C.NameIs('InsAsNo') then
@@ -2377,6 +2673,8 @@ begin
             if C.Order(Last, 2, True, (O.InsAsNo <> '')) then
             begin
               O.InsAsNo := C.ElementText;
+              if O.InsAsNo = '' then
+                O.MarkEmpty('InsAsNo');
             end;
           end
           else
@@ -2397,11 +2695,23 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'ID') then
-        O.ID := C.AttributeText(I)
+      begin
+        O.ID := C.AttributeText(I);
+        if O.ID = '' then
+          O.MarkEmpty('@ID');
+      end
       else if C.AttributeIs(I, 'RNoPart') then
-        O.RNoPart := C.AttributeText(I)
+      begin
+        O.RNoPart := C.AttributeText(I);
+        if O.RNoPart = '' then
+          O.MarkEmpty('@RNoPart');
+      end
       else if C.AttributeIs(I, 'RNoIndex') then
-        O.RNoIndex := C.AttributeText(I)
+      begin
+        O.RNoIndex := C.AttributeText(I);
+        if O.RNoIndex = '' then
+          O.MarkEmpty('@RNoIndex');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -2414,6 +2724,8 @@ begin
             if C.Order(Last, 0, True, (O.ALNGroupNo <> '')) then
             begin
               O.ALNGroupNo := C.ElementText;
+              if O.ALNGroupNo = '' then
+                O.MarkEmpty('ALNGroupNo');
             end;
           end
           else if C.NameIs('ALNSerNo') then
@@ -2421,6 +2733,8 @@ begin
             if C.Order(Last, 1, True, (O.ALNSerNo <> '')) then
             begin
               O.ALNSerNo := C.ElementText;
+              if O.ALNSerNo = '' then
+                O.MarkEmpty('ALNSerNo');
             end;
           end
           else if C.NameIs('Provis') then
@@ -2428,6 +2742,8 @@ begin
             if C.Order(Last, 2, True, (O.Provis <> '')) then
             begin
               O.Provis := C.ElementText;
+              if O.Provis = '' then
+                O.MarkEmpty('Provis');
             end;
           end
           else if C.NameIs('LumpSumItem') then
@@ -2435,6 +2751,8 @@ begin
             if C.Order(Last, 3, True, (O.LumpSumItem <> '')) then
             begin
               O.LumpSumItem := C.ElementText;
+              if O.LumpSumItem = '' then
+                O.MarkEmpty('LumpSumItem');
             end;
           end
           else if C.NameIs('HourIt') then
@@ -2442,6 +2760,8 @@ begin
             if C.Order(Last, 4, True, (O.HourIt <> '')) then
             begin
               O.HourIt := C.ElementText;
+              if O.HourIt = '' then
+                O.MarkEmpty('HourIt');
             end;
           end
           else if C.NameIs('KeyIt') then
@@ -2449,6 +2769,8 @@ begin
             if C.Order(Last, 5, True, (O.KeyIt <> '')) then
             begin
               O.KeyIt := C.ElementText;
+              if O.KeyIt = '' then
+                O.MarkEmpty('KeyIt');
             end;
           end
           else if C.NameIs('UPBkdn') then
@@ -2456,6 +2778,8 @@ begin
             if C.Order(Last, 6, True, (O.UPBkdn <> '')) then
             begin
               O.UPBkdn := C.ElementText;
+              if O.UPBkdn = '' then
+                O.MarkEmpty('UPBkdn');
             end;
           end
           else if C.NameIs('MarkupIt') then
@@ -2463,6 +2787,8 @@ begin
             if C.Order(Last, 7, True, (O.MarkupIt <> '')) then
             begin
               O.MarkupIt := C.ElementText;
+              if O.MarkupIt = '' then
+                O.MarkEmpty('MarkupIt');
             end;
           end
           else if C.NameIs('CONo') then
@@ -2470,6 +2796,8 @@ begin
             if C.Order(Last, 8, True, (O.CONo <> '')) then
             begin
               O.CONo := C.ElementText;
+              if O.CONo = '' then
+                O.MarkEmpty('CONo');
             end;
           end
           else if C.NameIs('COStatus') then
@@ -2477,6 +2805,8 @@ begin
             if C.Order(Last, 9, True, (O.COStatus <> '')) then
             begin
               O.COStatus := C.ElementText;
+              if O.COStatus = '' then
+                O.MarkEmpty('COStatus');
             end;
           end
           else if C.NameIs('RefDescr') then
@@ -2484,6 +2814,8 @@ begin
             if C.Order(Last, 10, True, (O.RefDescr <> '')) then
             begin
               O.RefDescr := C.ElementText;
+              if O.RefDescr = '' then
+                O.MarkEmpty('RefDescr');
             end;
           end
           else if C.NameIs('RefRNo') then
@@ -2505,6 +2837,8 @@ begin
             if C.Order(Last, 13, True, (O.HoldOutType <> '')) then
             begin
               O.HoldOutType := C.ElementText;
+              if O.HoldOutType = '' then
+                O.MarkEmpty('HoldOutType');
             end;
           end
           else if C.NameIs('UseDur') then
@@ -2519,6 +2853,8 @@ begin
             if C.Order(Last, 15, True, (O.UseDurLblTime <> '')) then
             begin
               O.UseDurLblTime := C.ElementText;
+              if O.UseDurLblTime = '' then
+                O.MarkEmpty('UseDurLblTime');
             end;
           end
           else if C.NameIs('RefBaseItem') then
@@ -2533,6 +2869,8 @@ begin
             if C.Order(Last, 17, True, (O.QtyTBD <> '')) then
             begin
               O.QtyTBD := C.ElementText;
+              if O.QtyTBD = '' then
+                O.MarkEmpty('QtyTBD');
             end;
           end
           else if C.NameIs('NotOffered') then
@@ -2540,6 +2878,8 @@ begin
             if C.Order(Last, 18, True, (O.NotOffered <> '')) then
             begin
               O.NotOffered := C.ElementText;
+              if O.NotOffered = '' then
+                O.MarkEmpty('NotOffered');
             end;
           end
           else if C.NameIs('Qty') then
@@ -2561,6 +2901,8 @@ begin
             if C.Order(Last, 21, True, (O.QU <> '')) then
             begin
               O.QU := C.ElementText;
+              if O.QU = '' then
+                O.MarkEmpty('QU');
             end;
           end
           else if C.NameIs('CtlgAssign') then
@@ -2659,6 +3001,8 @@ begin
             if C.Order(Last, 35, True, (O.SumDescr <> '')) then
             begin
               O.SumDescr := C.ElementText;
+              if O.SumDescr = '' then
+                O.MarkEmpty('SumDescr');
             end;
           end
           else if C.NameIs('BidComm') then
@@ -2759,7 +3103,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'Type') then
-        O.TypeAttr := C.AttributeText(I)
+      begin
+        O.TypeAttr := C.AttributeText(I);
+        if O.TypeAttr = '' then
+          O.MarkEmpty('@Type');
+      end
       else C.UnknownAttribute(I);
   O.Value := C.ContentText;
 end;
@@ -2772,9 +3120,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -2842,9 +3198,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -2919,7 +3283,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'ID') then
-        O.ID := C.AttributeText(I)
+      begin
+        O.ID := C.AttributeText(I);
+        if O.ID = '' then
+          O.MarkEmpty('@ID');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -2932,6 +3300,8 @@ begin
             if C.Order(Last, 0, True, (O.LotGrNo <> '')) then
             begin
               O.LotGrNo := C.ElementText;
+              if O.LotGrNo = '' then
+                O.MarkEmpty('LotGrNo');
             end;
           end
           else if C.NameIs('RefLotNo') then
@@ -2984,6 +3354,8 @@ begin
             if C.Order(Last, 0, True, (O.MaintType <> '')) then
             begin
               O.MaintType := C.ElementText;
+              if O.MaintType = '' then
+                O.MarkEmpty('MaintType');
             end;
           end
           else if C.NameIs('ProcessType') then
@@ -2991,6 +3363,8 @@ begin
             if C.Order(Last, 1, True, (O.ProcessType <> '')) then
             begin
               O.ProcessType := C.ElementText;
+              if O.ProcessType = '' then
+                O.MarkEmpty('ProcessType');
             end;
           end
           else if C.NameIs('ContrTransDate') then
@@ -2998,6 +3372,8 @@ begin
             if C.Order(Last, 2, True, (O.ContrTransDate <> '')) then
             begin
               O.ContrTransDate := C.ElementText;
+              if O.ContrTransDate = '' then
+                O.MarkEmpty('ContrTransDate');
             end;
           end
           else if C.NameIs('ContrTransTime') then
@@ -3005,6 +3381,8 @@ begin
             if C.Order(Last, 3, True, (O.ContrTransTime <> '')) then
             begin
               O.ContrTransTime := C.ElementText;
+              if O.ContrTransTime = '' then
+                O.MarkEmpty('ContrTransTime');
             end;
           end
           else if C.NameIs('ContrLaw') then
@@ -3012,6 +3390,8 @@ begin
             if C.Order(Last, 4, True, (O.ContrLaw <> '')) then
             begin
               O.ContrLaw := C.ElementText;
+              if O.ContrLaw = '' then
+                O.MarkEmpty('ContrLaw');
             end;
           end
           else if C.NameIs('Deadline') then
@@ -3019,6 +3399,8 @@ begin
             if C.Order(Last, 5, True, (O.Deadline <> '')) then
             begin
               O.Deadline := C.ElementText;
+              if O.Deadline = '' then
+                O.MarkEmpty('Deadline');
             end;
           end
           else
@@ -3039,11 +3421,23 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'ID') then
-        O.ID := C.AttributeText(I)
+      begin
+        O.ID := C.AttributeText(I);
+        if O.ID = '' then
+          O.MarkEmpty('@ID');
+      end
       else if C.AttributeIs(I, 'RNoPart') then
-        O.RNoPart := C.AttributeText(I)
+      begin
+        O.RNoPart := C.AttributeText(I);
+        if O.RNoPart = '' then
+          O.MarkEmpty('@RNoPart');
+      end
       else if C.AttributeIs(I, 'RNoIndex') then
-        O.RNoIndex := C.AttributeText(I)
+      begin
+        O.RNoIndex := C.AttributeText(I);
+        if O.RNoIndex = '' then
+          O.MarkEmpty('@RNoIndex');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -3056,6 +3450,8 @@ begin
             if C.Order(Last, 0, True, (O.ALNGroupNo <> '')) then
             begin
               O.ALNGroupNo := C.ElementText;
+              if O.ALNGroupNo = '' then
+                O.MarkEmpty('ALNGroupNo');
             end;
           end
           else if C.NameIs('ALNSerNo') then
@@ -3063,6 +3459,8 @@ begin
             if C.Order(Last, 1, True, (O.ALNSerNo <> '')) then
             begin
               O.ALNSerNo := C.ElementText;
+              if O.ALNSerNo = '' then
+                O.MarkEmpty('ALNSerNo');
             end;
           end
           else if C.NameIs('Provis') then
@@ -3070,6 +3468,8 @@ begin
             if C.Order(Last, 2, True, (O.Provis <> '')) then
             begin
               O.Provis := C.ElementText;
+              if O.Provis = '' then
+                O.MarkEmpty('Provis');
             end;
           end
           else if C.NameIs('HourIt') then
@@ -3077,6 +3477,8 @@ begin
             if C.Order(Last, 3, True, (O.HourIt <> '')) then
             begin
               O.HourIt := C.ElementText;
+              if O.HourIt = '' then
+                O.MarkEmpty('HourIt');
             end;
           end
           else if C.NameIs('KeyIt') then
@@ -3084,6 +3486,8 @@ begin
             if C.Order(Last, 4, True, (O.KeyIt <> '')) then
             begin
               O.KeyIt := C.ElementText;
+              if O.KeyIt = '' then
+                O.MarkEmpty('KeyIt');
             end;
           end
           else if C.NameIs('CONo') then
@@ -3091,6 +3495,8 @@ begin
             if C.Order(Last, 5, True, (O.CONo <> '')) then
             begin
               O.CONo := C.ElementText;
+              if O.CONo = '' then
+                O.MarkEmpty('CONo');
             end;
           end
           else if C.NameIs('COStatus') then
@@ -3098,6 +3504,8 @@ begin
             if C.Order(Last, 6, True, (O.COStatus <> '')) then
             begin
               O.COStatus := C.ElementText;
+              if O.COStatus = '' then
+                O.MarkEmpty('COStatus');
             end;
           end
           else if C.NameIs('RefDescr') then
@@ -3105,6 +3513,8 @@ begin
             if C.Order(Last, 7, True, (O.RefDescr <> '')) then
             begin
               O.RefDescr := C.ElementText;
+              if O.RefDescr = '' then
+                O.MarkEmpty('RefDescr');
             end;
           end
           else if C.NameIs('RefRNo') then
@@ -3126,6 +3536,8 @@ begin
             if C.Order(Last, 10, True, (O.MarkupType <> '')) then
             begin
               O.MarkupType := C.ElementText;
+              if O.MarkupType = '' then
+                O.MarkEmpty('MarkupType');
             end;
           end
           else if C.NameIs('MarkupSubQty') then
@@ -3244,6 +3656,8 @@ begin
             if C.Order(Last, 0, True, (O.BidUpDown <> '')) then
             begin
               O.BidUpDown := C.ElementText;
+              if O.BidUpDown = '' then
+                O.MarkEmpty('BidUpDown');
             end;
           end
           else if C.NameIs('MastAgrLbl') then
@@ -3258,6 +3672,8 @@ begin
             if C.Order(Last, 2, True, (O.MastAgrNo <> '')) then
             begin
               O.MastAgrNo := C.ElementText;
+              if O.MastAgrNo = '' then
+                O.MarkEmpty('MastAgrNo');
             end;
           end
           else if C.NameIs('Descrip') then
@@ -3272,6 +3688,8 @@ begin
             if C.Order(Last, 4, True, (O.MastAgrBeg <> '')) then
             begin
               O.MastAgrBeg := C.ElementText;
+              if O.MastAgrBeg = '' then
+                O.MarkEmpty('MastAgrBeg');
             end;
           end
           else if C.NameIs('MastAgrDur') then
@@ -3279,6 +3697,8 @@ begin
             if C.Order(Last, 5, True, (O.MastAgrDur <> '')) then
             begin
               O.MastAgrDur := C.ElementText;
+              if O.MastAgrDur = '' then
+                O.MarkEmpty('MastAgrDur');
             end;
           end
           else if C.NameIs('MastAgrEnd') then
@@ -3286,6 +3706,8 @@ begin
             if C.Order(Last, 6, True, (O.MastAgrEnd <> '')) then
             begin
               O.MastAgrEnd := C.ElementText;
+              if O.MastAgrEnd = '' then
+                O.MarkEmpty('MastAgrEnd');
             end;
           end
           else if C.NameIs('MastAgrDate') then
@@ -3293,6 +3715,8 @@ begin
             if C.Order(Last, 7, True, (O.MastAgrDate <> '')) then
             begin
               O.MastAgrDate := C.ElementText;
+              if O.MastAgrDate = '' then
+                O.MarkEmpty('MastAgrDate');
             end;
           end
           else if C.NameIs('MastAgrVers') then
@@ -3300,6 +3724,8 @@ begin
             if C.Order(Last, 8, True, (O.MastAgrVers <> '')) then
             begin
               O.MastAgrVers := C.ElementText;
+              if O.MastAgrVers = '' then
+                O.MarkEmpty('MastAgrVers');
             end;
           end
           else if C.NameIs('TotContrVal') then
@@ -3369,9 +3795,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else if C.AttributeIs(I, 'textWidth') then
-        O.TextWidth := C.AttributeText(I)
+      begin
+        O.TextWidth := C.AttributeText(I);
+        if O.TextWidth = '' then
+          O.MarkEmpty('@textWidth');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -3443,6 +3877,8 @@ begin
             if C.Order(Last, 1, True, (O.NotifSiteIDNo <> '')) then
             begin
               O.NotifSiteIDNo := C.ElementText;
+              if O.NotifSiteIDNo = '' then
+                O.MarkEmpty('NotifSiteIDNo');
             end;
           end
           else if C.NameIs('NotifSiteName') then
@@ -3450,6 +3886,8 @@ begin
             if C.Order(Last, 2, True, (O.NotifSiteName <> '')) then
             begin
               O.NotifSiteName := C.ElementText;
+              if O.NotifSiteName = '' then
+                O.MarkEmpty('NotifSiteName');
             end;
           end
           else if C.NameIs('AddText') then
@@ -3477,11 +3915,23 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else if C.AttributeIs(I, 'start') then
-        O.Start := C.AttributeText(I)
+      begin
+        O.Start := C.AttributeText(I);
+        if O.Start = '' then
+          O.MarkEmpty('@start');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -3514,11 +3964,23 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else if C.AttributeIs(I, 'start') then
-        O.Start := C.AttributeText(I)
+      begin
+        O.Start := C.AttributeText(I);
+        if O.Start = '' then
+          O.MarkEmpty('@start');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -3562,6 +4024,8 @@ begin
             if C.Order(Last, 0, True, (O.OutlTSA <> '')) then
             begin
               O.OutlTSA := C.ElementText;
+              if O.OutlTSA = '' then
+                O.MarkEmpty('OutlTSA');
             end;
           end
           else if C.NameIs('OutlTxt') then
@@ -3589,7 +4053,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -3654,6 +4122,8 @@ begin
             if C.Order(Last, 1, True, (O.DPNo <> '')) then
             begin
               O.DPNo := C.ElementText;
+              if O.DPNo = '' then
+                O.MarkEmpty('DPNo');
             end;
           end
           else if C.NameIs('AwardNo') then
@@ -3661,6 +4131,8 @@ begin
             if C.Order(Last, 2, True, (O.AwardNo <> '')) then
             begin
               O.AwardNo := C.ElementText;
+              if O.AwardNo = '' then
+                O.MarkEmpty('AwardNo');
             end;
           end
           else if C.NameIs('AcctRecNo') then
@@ -3668,6 +4140,8 @@ begin
             if C.Order(Last, 3, True, (O.AcctRecNo <> '')) then
             begin
               O.AcctRecNo := C.ElementText;
+              if O.AcctRecNo = '' then
+                O.MarkEmpty('AcctRecNo');
             end;
           end
           else if C.NameIs('CntryType') then
@@ -3675,6 +4149,8 @@ begin
             if C.Order(Last, 4, True, (O.CntryType <> '')) then
             begin
               O.CntryType := C.ElementText;
+              if O.CntryType = '' then
+                O.MarkEmpty('CntryType');
             end;
           end
           else if C.NameIs('CntryName') then
@@ -3682,6 +4158,8 @@ begin
             if C.Order(Last, 5, True, (O.CntryName <> '')) then
             begin
               O.CntryName := C.ElementText;
+              if O.CntryName = '' then
+                O.MarkEmpty('CntryName');
             end;
           end
           else if C.NameIs('AddText') then
@@ -3709,9 +4187,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -3758,7 +4244,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'ID') then
-        O.ID := C.AttributeText(I)
+      begin
+        O.ID := C.AttributeText(I);
+        if O.ID = '' then
+          O.MarkEmpty('@ID');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -3771,6 +4261,8 @@ begin
             if C.Order(Last, 0, True, (O.PerfNo <> '')) then
             begin
               O.PerfNo := C.ElementText;
+              if O.PerfNo = '' then
+                O.MarkEmpty('PerfNo');
             end;
           end
           else if C.NameIs('PerfLbl') then
@@ -3778,6 +4270,8 @@ begin
             if C.Order(Last, 1, True, (O.PerfLbl <> '')) then
             begin
               O.PerfLbl := C.ElementText;
+              if O.PerfLbl = '' then
+                O.MarkEmpty('PerfLbl');
             end;
           end
           else if C.NameIs('Description') then
@@ -3792,6 +4286,8 @@ begin
             if C.Order(Last, 3, True, (O.CONo <> '')) then
             begin
               O.CONo := C.ElementText;
+              if O.CONo = '' then
+                O.MarkEmpty('CONo');
             end;
           end
           else if C.NameIs('CtlgAssign') then
@@ -3819,7 +4315,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'ID') then
-        O.ID := C.AttributeText(I)
+      begin
+        O.ID := C.AttributeText(I);
+        if O.ID = '' then
+          O.MarkEmpty('@ID');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -3846,6 +4346,8 @@ begin
             if C.Order(Last, 2, True, (O.WICNo <> '')) then
             begin
               O.WICNo := C.ElementText;
+              if O.WICNo = '' then
+                O.MarkEmpty('WICNo');
             end;
           end
           else if C.NameIs('CompleteText') then
@@ -3887,9 +4389,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -3940,6 +4450,8 @@ begin
             if C.Order(Last, 0, True, (O.NamePrj <> '')) then
             begin
               O.NamePrj := C.ElementText;
+              if O.NamePrj = '' then
+                O.MarkEmpty('NamePrj');
             end;
           end
           else if C.NameIs('PrjID') then
@@ -3947,6 +4459,8 @@ begin
             if C.Order(Last, 1, True, (O.PrjID <> '')) then
             begin
               O.PrjID := C.ElementText;
+              if O.PrjID = '' then
+                O.MarkEmpty('PrjID');
             end;
           end
           else if C.NameIs('LblPrj') then
@@ -3954,6 +4468,8 @@ begin
             if C.Order(Last, 2, True, (O.LblPrj <> '')) then
             begin
               O.LblPrj := C.ElementText;
+              if O.LblPrj = '' then
+                O.MarkEmpty('LblPrj');
             end;
           end
           else if C.NameIs('Descrip') then
@@ -3968,6 +4484,8 @@ begin
             if C.Order(Last, 4, True, (O.Cur <> '')) then
             begin
               O.Cur := C.ElementText;
+              if O.Cur = '' then
+                O.MarkEmpty('Cur');
             end;
           end
           else if C.NameIs('CurLbl') then
@@ -3975,6 +4493,8 @@ begin
             if C.Order(Last, 5, True, (O.CurLbl <> '')) then
             begin
               O.CurLbl := C.ElementText;
+              if O.CurLbl = '' then
+                O.MarkEmpty('CurLbl');
             end;
           end
           else if C.NameIs('BidCommPerm') then
@@ -3982,6 +4502,8 @@ begin
             if C.Order(Last, 6, True, (O.BidCommPerm <> '')) then
             begin
               O.BidCommPerm := C.ElementText;
+              if O.BidCommPerm = '' then
+                O.MarkEmpty('BidCommPerm');
             end;
           end
           else if C.NameIs('AlterBidPerm') then
@@ -3989,6 +4511,8 @@ begin
             if C.Order(Last, 7, True, (O.AlterBidPerm <> '')) then
             begin
               O.AlterBidPerm := C.ElementText;
+              if O.AlterBidPerm = '' then
+                O.MarkEmpty('AlterBidPerm');
             end;
           end
           else if C.NameIs('AddText') then
@@ -4003,6 +4527,8 @@ begin
             if C.Order(Last, 9, True, (O.UPFracDig <> '')) then
             begin
               O.UPFracDig := C.ElementText;
+              if O.UPFracDig = '' then
+                O.MarkEmpty('UPFracDig');
             end;
           end
           else if C.NameIs('CtlgAssign') then
@@ -4075,9 +4601,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -4169,7 +4703,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'Row') then
-        O.Row := C.AttributeText(I)
+      begin
+        O.Row := C.AttributeText(I);
+        if O.Row = '' then
+          O.MarkEmpty('@Row');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   while C.Next(D) do
@@ -4231,7 +4769,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'ID') then
-        O.ID := C.AttributeText(I)
+      begin
+        O.ID := C.AttributeText(I);
+        if O.ID = '' then
+          O.MarkEmpty('@ID');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -4244,6 +4786,8 @@ begin
             if C.Order(Last, 0, True, (O.MethodDescription <> '')) then
             begin
               O.MethodDescription := C.ElementText;
+              if O.MethodDescription = '' then
+                O.MarkEmpty('MethodDescription');
             end;
           end
           else if C.NameIs('OrdDescr') then
@@ -4251,6 +4795,8 @@ begin
             if C.Order(Last, 1, True, (O.OrdDescr <> '')) then
             begin
               O.OrdDescr := C.ElementText;
+              if O.OrdDescr = '' then
+                O.MarkEmpty('OrdDescr');
             end;
           end
           else if C.NameIs('ProjDescr') then
@@ -4258,6 +4804,8 @@ begin
             if C.Order(Last, 2, True, (O.ProjDescr <> '')) then
             begin
               O.ProjDescr := C.ElementText;
+              if O.ProjDescr = '' then
+                O.MarkEmpty('ProjDescr');
             end;
           end
           else if C.NameIs('ServiceProvisionStartDate') then
@@ -4265,6 +4813,8 @@ begin
             if C.Order(Last, 3, True, (O.ServiceProvisionStartDate <> '')) then
             begin
               O.ServiceProvisionStartDate := C.ElementText;
+              if O.ServiceProvisionStartDate = '' then
+                O.MarkEmpty('ServiceProvisionStartDate');
             end;
           end
           else if C.NameIs('ServiceProvisionEndDate') then
@@ -4272,6 +4822,8 @@ begin
             if C.Order(Last, 4, True, (O.ServiceProvisionEndDate <> '')) then
             begin
               O.ServiceProvisionEndDate := C.ElementText;
+              if O.ServiceProvisionEndDate = '' then
+                O.MarkEmpty('ServiceProvisionEndDate');
             end;
           end
           else if C.NameIs('Creator') then
@@ -4358,7 +4910,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'IDRef') then
-        O.IDRef := C.AttributeText(I)
+      begin
+        O.IDRef := C.AttributeText(I);
+        if O.IDRef = '' then
+          O.MarkEmpty('@IDRef');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   while C.Next(D) do
@@ -4382,7 +4938,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'IDRef') then
-        O.IDRef := C.AttributeText(I)
+      begin
+        O.IDRef := C.AttributeText(I);
+        if O.IDRef = '' then
+          O.MarkEmpty('@IDRef');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   while C.Next(D) do
@@ -4406,7 +4966,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'IDRef') then
-        O.IDRef := C.AttributeText(I)
+      begin
+        O.IDRef := C.AttributeText(I);
+        if O.IDRef = '' then
+          O.MarkEmpty('@IDRef');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   while C.Next(D) do
@@ -4430,7 +4994,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'IDRef') then
-        O.IDRef := C.AttributeText(I)
+      begin
+        O.IDRef := C.AttributeText(I);
+        if O.IDRef = '' then
+          O.MarkEmpty('@IDRef');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   while C.Next(D) do
@@ -4454,7 +5022,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'ID') then
-        O.ID := C.AttributeText(I)
+      begin
+        O.ID := C.AttributeText(I);
+        if O.ID = '' then
+          O.MarkEmpty('@ID');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -4474,6 +5046,8 @@ begin
             if C.Order(Last, 1, True, (O.CONo <> '')) then
             begin
               O.CONo := C.ElementText;
+              if O.CONo = '' then
+                O.MarkEmpty('CONo');
             end;
           end
           else if C.NameIs('CtlgAssign') then
@@ -4519,6 +5093,8 @@ begin
             if C.Order(Last, 1, True, (O.RequestIDNo <> '')) then
             begin
               O.RequestIDNo := C.ElementText;
+              if O.RequestIDNo = '' then
+                O.MarkEmpty('RequestIDNo');
             end;
           end
           else if C.NameIs('RequestName') then
@@ -4526,6 +5102,8 @@ begin
             if C.Order(Last, 2, True, (O.RequestName <> '')) then
             begin
               O.RequestName := C.ElementText;
+              if O.RequestName = '' then
+                O.MarkEmpty('RequestName');
             end;
           end
           else if C.NameIs('AddText') then
@@ -4553,9 +5131,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else C.UnknownAttribute(I);
   O.Value := C.ContentText;
 end;
@@ -4617,6 +5203,8 @@ begin
             if C.Order(Last, 0, True, (O.CtlgName <> '')) then
             begin
               O.CtlgName := C.ElementText;
+              if O.CtlgName = '' then
+                O.MarkEmpty('CtlgName');
             end;
           end
           else if C.NameIs('VersDate') then
@@ -4624,6 +5212,8 @@ begin
             if C.Order(Last, 1, True, (O.VersDate <> '')) then
             begin
               O.VersDate := C.ElementText;
+              if O.VersDate = '' then
+                O.MarkEmpty('VersDate');
             end;
           end
           else if C.NameIs('WCtg') then
@@ -4631,6 +5221,8 @@ begin
             if C.Order(Last, 2, True, (O.WCtg <> '')) then
             begin
               O.WCtg := C.ElementText;
+              if O.WCtg = '' then
+                O.MarkEmpty('WCtg');
             end;
           end
           else if C.NameIs('Group') then
@@ -4638,6 +5230,8 @@ begin
             if C.Order(Last, 3, True, (O.Group <> '')) then
             begin
               O.Group := C.ElementText;
+              if O.Group = '' then
+                O.MarkEmpty('Group');
             end;
           end
           else if C.NameIs('CostGrp') then
@@ -4645,6 +5239,8 @@ begin
             if C.Order(Last, 4, True, (O.CostGrp <> '')) then
             begin
               O.CostGrp := C.ElementText;
+              if O.CostGrp = '' then
+                O.MarkEmpty('CostGrp');
             end;
           end
           else
@@ -4676,6 +5272,8 @@ begin
             if C.Order(Last, 0, True, (O.ArtChrIdent <> '')) then
             begin
               O.ArtChrIdent := C.ElementText;
+              if O.ArtChrIdent = '' then
+                O.MarkEmpty('ArtChrIdent');
             end;
           end
           else if C.NameIs('ArtChIdx') then
@@ -4683,6 +5281,8 @@ begin
             if C.Order(Last, 1, True, (O.ArtChIdx <> '')) then
             begin
               O.ArtChIdx := C.ElementText;
+              if O.ArtChIdx = '' then
+                O.MarkEmpty('ArtChIdx');
             end;
           end
           else if C.NameIs('ChVIdent') then
@@ -4690,6 +5290,8 @@ begin
             if C.Order(Last, 2, True, (O.ChVIdent <> '')) then
             begin
               O.ChVIdent := C.ElementText;
+              if O.ChVIdent = '' then
+                O.MarkEmpty('ChVIdent');
             end;
           end
           else if C.NameIs('OutlTextPart') then
@@ -4697,6 +5299,8 @@ begin
             if C.Order(Last, 3, True, (O.OutlTextPart <> '')) then
             begin
               O.OutlTextPart := C.ElementText;
+              if O.OutlTextPart = '' then
+                O.MarkEmpty('OutlTextPart');
             end;
           end
           else
@@ -4717,7 +5321,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'Type') then
-        O.TypeAttr := C.AttributeText(I)
+      begin
+        O.TypeAttr := C.AttributeText(I);
+        if O.TypeAttr = '' then
+          O.MarkEmpty('@Type');
+      end
       else C.UnknownAttribute(I);
   O.Value := C.ContentText;
 end;
@@ -4730,7 +5338,11 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'type') then
-        O.TypeAttr := C.AttributeText(I)
+      begin
+        O.TypeAttr := C.AttributeText(I);
+        if O.TypeAttr = '' then
+          O.MarkEmpty('@type');
+      end
       else C.UnknownAttribute(I);
   O.Value := C.ContentText;
 end;
@@ -4754,6 +5366,8 @@ begin
             if C.Order(Last, 0, True, (O.SubDNo <> '')) then
             begin
               O.SubDNo := C.ElementText;
+              if O.SubDNo = '' then
+                O.MarkEmpty('SubDNo');
             end;
           end
           else if C.NameIs('Description') then
@@ -4768,6 +5382,8 @@ begin
             if C.Order(Last, 2, True, (O.QtySpec <> '')) then
             begin
               O.QtySpec := C.ElementText;
+              if O.QtySpec = '' then
+                O.MarkEmpty('QtySpec');
             end;
           end
           else if C.NameIs('QtyTBD') then
@@ -4775,6 +5391,8 @@ begin
             if C.Order(Last, 3, True, (O.QtyTBD <> '')) then
             begin
               O.QtyTBD := C.ElementText;
+              if O.QtyTBD = '' then
+                O.MarkEmpty('QtyTBD');
             end;
           end
           else if C.NameIs('Qty') then
@@ -4789,6 +5407,8 @@ begin
             if C.Order(Last, 5, True, (O.QU <> '')) then
             begin
               O.QU := C.ElementText;
+              if O.QU = '' then
+                O.MarkEmpty('QU');
             end;
           end
           else if C.NameIs('UPSpec') then
@@ -4796,6 +5416,8 @@ begin
             if C.Order(Last, 6, True, (O.UPSpec <> '')) then
             begin
               O.UPSpec := C.ElementText;
+              if O.UPSpec = '' then
+                O.MarkEmpty('UPSpec');
             end;
           end
           else if C.NameIs('UPBkdn') then
@@ -4803,6 +5425,8 @@ begin
             if C.Order(Last, 7, True, (O.UPBkdn <> '')) then
             begin
               O.UPBkdn := C.ElementText;
+              if O.UPBkdn = '' then
+                O.MarkEmpty('UPBkdn');
             end;
           end
           else if C.NameIs('UP') then
@@ -4879,23 +5503,59 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else if C.AttributeIs(I, 'align') then
-        O.Align := C.AttributeText(I)
+      begin
+        O.Align := C.AttributeText(I);
+        if O.Align = '' then
+          O.MarkEmpty('@align');
+      end
       else if C.AttributeIs(I, 'border') then
-        O.Border := C.AttributeText(I)
+      begin
+        O.Border := C.AttributeText(I);
+        if O.Border = '' then
+          O.MarkEmpty('@border');
+      end
       else if C.AttributeIs(I, 'cellpadding') then
-        O.Cellpadding := C.AttributeText(I)
+      begin
+        O.Cellpadding := C.AttributeText(I);
+        if O.Cellpadding = '' then
+          O.MarkEmpty('@cellpadding');
+      end
       else if C.AttributeIs(I, 'frame') then
-        O.Frame := C.AttributeText(I)
+      begin
+        O.Frame := C.AttributeText(I);
+        if O.Frame = '' then
+          O.MarkEmpty('@frame');
+      end
       else if C.AttributeIs(I, 'height') then
-        O.Height := C.AttributeText(I)
+      begin
+        O.Height := C.AttributeText(I);
+        if O.Height = '' then
+          O.MarkEmpty('@height');
+      end
       else if C.AttributeIs(I, 'width') then
-        O.Width := C.AttributeText(I)
+      begin
+        O.Width := C.AttributeText(I);
+        if O.Width = '' then
+          O.MarkEmpty('@width');
+      end
       else if C.AttributeIs(I, 'org') then
-        O.Org := C.AttributeText(I)
+      begin
+        O.Org := C.AttributeText(I);
+        if O.Org = '' then
+          O.MarkEmpty('@org');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -4928,23 +5588,59 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else if C.AttributeIs(I, 'align') then
-        O.Align := C.AttributeText(I)
+      begin
+        O.Align := C.AttributeText(I);
+        if O.Align = '' then
+          O.MarkEmpty('@align');
+      end
       else if C.AttributeIs(I, 'border') then
-        O.Border := C.AttributeText(I)
+      begin
+        O.Border := C.AttributeText(I);
+        if O.Border = '' then
+          O.MarkEmpty('@border');
+      end
       else if C.AttributeIs(I, 'cellpadding') then
-        O.Cellpadding := C.AttributeText(I)
+      begin
+        O.Cellpadding := C.AttributeText(I);
+        if O.Cellpadding = '' then
+          O.MarkEmpty('@cellpadding');
+      end
       else if C.AttributeIs(I, 'frame') then
-        O.Frame := C.AttributeText(I)
+      begin
+        O.Frame := C.AttributeText(I);
+        if O.Frame = '' then
+          O.MarkEmpty('@frame');
+      end
       else if C.AttributeIs(I, 'height') then
-        O.Height := C.AttributeText(I)
+      begin
+        O.Height := C.AttributeText(I);
+        if O.Height = '' then
+          O.MarkEmpty('@height');
+      end
       else if C.AttributeIs(I, 'width') then
-        O.Width := C.AttributeText(I)
+      begin
+        O.Width := C.AttributeText(I);
+        if O.Width = '' then
+          O.MarkEmpty('@width');
+      end
       else if C.AttributeIs(I, 'org') then
-        O.Org := C.AttributeText(I)
+      begin
+        O.Org := C.AttributeText(I);
+        if O.Org = '' then
+          O.MarkEmpty('@org');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -4977,17 +5673,41 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else if C.AttributeIs(I, 'align') then
-        O.Align := C.AttributeText(I)
+      begin
+        O.Align := C.AttributeText(I);
+        if O.Align = '' then
+          O.MarkEmpty('@align');
+      end
       else if C.AttributeIs(I, 'colspan') then
-        O.Colspan := C.AttributeText(I)
+      begin
+        O.Colspan := C.AttributeText(I);
+        if O.Colspan = '' then
+          O.MarkEmpty('@colspan');
+      end
       else if C.AttributeIs(I, 'rowspan') then
-        O.Rowspan := C.AttributeText(I)
+      begin
+        O.Rowspan := C.AttributeText(I);
+        if O.Rowspan = '' then
+          O.MarkEmpty('@rowspan');
+      end
       else if C.AttributeIs(I, 'valign') then
-        O.Valign := C.AttributeText(I)
+      begin
+        O.Valign := C.AttributeText(I);
+        if O.Valign = '' then
+          O.MarkEmpty('@valign');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -5062,17 +5782,41 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else if C.AttributeIs(I, 'align') then
-        O.Align := C.AttributeText(I)
+      begin
+        O.Align := C.AttributeText(I);
+        if O.Align = '' then
+          O.MarkEmpty('@align');
+      end
       else if C.AttributeIs(I, 'colspan') then
-        O.Colspan := C.AttributeText(I)
+      begin
+        O.Colspan := C.AttributeText(I);
+        if O.Colspan = '' then
+          O.MarkEmpty('@colspan');
+      end
       else if C.AttributeIs(I, 'rowspan') then
-        O.Rowspan := C.AttributeText(I)
+      begin
+        O.Rowspan := C.AttributeText(I);
+        if O.Rowspan = '' then
+          O.MarkEmpty('@rowspan');
+      end
       else if C.AttributeIs(I, 'valign') then
-        O.Valign := C.AttributeText(I)
+      begin
+        O.Valign := C.AttributeText(I);
+        if O.Valign = '' then
+          O.MarkEmpty('@valign');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -5154,15 +5898,35 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'ID') then
-        O.ID := C.AttributeText(I)
+      begin
+        O.ID := C.AttributeText(I);
+        if O.ID = '' then
+          O.MarkEmpty('@ID');
+      end
       else if C.AttributeIs(I, 'MarkLbl') then
-        O.MarkLbl := C.AttributeText(I)
+      begin
+        O.MarkLbl := C.AttributeText(I);
+        if O.MarkLbl = '' then
+          O.MarkEmpty('@MarkLbl');
+      end
       else if C.AttributeIs(I, 'Kind') then
-        O.Kind := C.AttributeText(I)
+      begin
+        O.Kind := C.AttributeText(I);
+        if O.Kind = '' then
+          O.MarkEmpty('@Kind');
+      end
       else if C.AttributeIs(I, 'Empty') then
-        O.Empty := C.AttributeText(I)
+      begin
+        O.Empty := C.AttributeText(I);
+        if O.Empty = '' then
+          O.MarkEmpty('@Empty');
+      end
       else if C.AttributeIs(I, 'ArtChrIdent') then
-        O.ArtChrIdent := C.AttributeText(I)
+      begin
+        O.ArtChrIdent := C.AttributeText(I);
+        if O.ArtChrIdent = '' then
+          O.MarkEmpty('@ArtChrIdent');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -5230,13 +5994,29 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else if C.AttributeIs(I, 'align') then
-        O.Align := C.AttributeText(I)
+      begin
+        O.Align := C.AttributeText(I);
+        if O.Align = '' then
+          O.MarkEmpty('@align');
+      end
       else if C.AttributeIs(I, 'valign') then
-        O.Valign := C.AttributeText(I)
+      begin
+        O.Valign := C.AttributeText(I);
+        if O.Valign = '' then
+          O.MarkEmpty('@valign');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -5478,13 +6258,29 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else if C.AttributeIs(I, 'align') then
-        O.Align := C.AttributeText(I)
+      begin
+        O.Align := C.AttributeText(I);
+        if O.Align = '' then
+          O.MarkEmpty('@align');
+      end
       else if C.AttributeIs(I, 'valign') then
-        O.Valign := C.AttributeText(I)
+      begin
+        O.Valign := C.AttributeText(I);
+        if O.Valign = '' then
+          O.MarkEmpty('@valign');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -5524,13 +6320,29 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else if C.AttributeIs(I, 'align') then
-        O.Align := C.AttributeText(I)
+      begin
+        O.Align := C.AttributeText(I);
+        if O.Align = '' then
+          O.MarkEmpty('@align');
+      end
       else if C.AttributeIs(I, 'valign') then
-        O.Valign := C.AttributeText(I)
+      begin
+        O.Valign := C.AttributeText(I);
+        if O.Valign = '' then
+          O.MarkEmpty('@valign');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -5570,9 +6382,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -5605,9 +6425,17 @@ begin
   for I := 0 to C.Reader.AttributeCount - 1 do
     if C.IsPlainAttribute(I) then
       if C.AttributeIs(I, 'class') then
-        O.ClassAttr := C.AttributeText(I)
+      begin
+        O.ClassAttr := C.AttributeText(I);
+        if O.ClassAttr = '' then
+          O.MarkEmpty('@class');
+      end
       else if C.AttributeIs(I, 'style') then
-        O.StyleAttr := C.AttributeText(I)
+      begin
+        O.StyleAttr := C.AttributeText(I);
+        if O.StyleAttr = '' then
+          O.MarkEmpty('@style');
+      end
       else C.UnknownAttribute(I);
   D := C.Reader.Depth;
   Last := -1;
@@ -5695,6 +6523,8 @@ begin
             if C.Order(Last, 0, True, (O.LblRefWage <> '')) then
             begin
               O.LblRefWage := C.ElementText;
+              if O.LblRefWage = '' then
+                O.MarkEmpty('LblRefWage');
             end;
           end
           else if C.NameIs('RedPriceComp') then

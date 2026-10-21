@@ -469,7 +469,8 @@ class Merger(object):
 
     def widen_ok(self, types, narrow, wide):
         """Every child of the narrow type exists in the wide type of some
-        context with a compatible type and at least the same cardinality;
+        context with a compatible type and at least the same cardinality, in
+        the same order (the writer uses the order of the wide class);
         attributes alike."""
         if narrow.startswith("xs:") or kind_of(types[narrow]) != "complex":
             return False
@@ -492,6 +493,9 @@ class Merger(object):
                 if not self.compatible(types, nt, wtypes, wt) or (wmax != -1 and (nmax == -1 or nmax > wmax)):
                     ok = False
                     break
+            if ok:
+                positions = [ws.fields.index(n) for n in ns.fields]
+                ok = positions == sorted(positions)
             if ok and all(n in wattrs and self.compatible(types, t, wtypes, wattrs[n]) for n, t in nattrs.items()):
                 return True
         return False

@@ -22,6 +22,12 @@
   property never adds an element to the output; writers and checks use the
   generated HasX functions, which never create objects.
 
+  Empty values: a simple value '' means "absent". An element or attribute
+  that exists but is empty (<Name1/>, Name="") is kept as an empty mark on
+  the object that owns it (MarkEmpty): the reader sets the marks, the writer
+  writes marked empty values back, so empty mandatory elements survive a
+  round trip without placeholders.
+
   DE: Basisklassen des generierten GAEB-DA-XML-Syntaxmodells
   (LandrixGaebXmlModel): der Knoten, von dem jede Elementklasse erbt, Wert-
   und Textknoten fuer geordnete Kinderlisten und die besitzende Knotenliste.
@@ -31,7 +37,14 @@
   des Modells legen Unterobjekte beim ersten Zugriff an, ohne sie als
   vorhanden zu markieren; das Lesen einer Eigenschaft fuegt der Ausgabe
   also nie ein Element hinzu. Schreiber und Pruefungen benutzen die
-  generierten HasX-Funktionen, die nie Objekte anlegen. }
+  generierten HasX-Funktionen, die nie Objekte anlegen.
+
+  Leere Werte: Ein einfacher Wert '' bedeutet "nicht vorhanden". Ein
+  Element oder Attribut, das vorhanden, aber leer ist (<Name1/>, Name=""),
+  wird als Leer-Markierung am besitzenden Objekt gehalten (MarkEmpty): Der
+  Leser setzt die Markierungen, der Schreiber schreibt markierte leere Werte
+  zurueck, so dass leere Pflichtelemente einen Roundtrip ohne Platzhalter
+  ueberstehen. }
 
 { API: internal. May change in any release before 1.0.
   DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
@@ -53,6 +66,8 @@ type
   { Base class of every element of the syntax model.
     DE: Basisklasse jedes Elements des Syntaxmodells. }
   TLandrixGaebXmlNode = class(TObject)
+  private
+    FEmptyMarks: TStringList;
   public
     { Local name of the element. Set by the reader and by the AddX helpers
       of ordered child lists; there it tells which element a node is (the
@@ -68,9 +83,24 @@ type
       DE: True, wenn das Element gelesen wurde oder auch leer geschrieben
       werden soll. }
     Present: Boolean;
-    { True if the element has no content and no attribute value.
-      DE: True, wenn das Element weder Inhalt noch Attributwert hat. }
+    destructor Destroy; override;
+    { True if the element has no content, no attribute value and no empty
+      mark.
+      DE: True, wenn das Element weder Inhalt noch Attributwert noch
+      Leer-Markierung hat. }
     function IsEmpty: Boolean; virtual;
+    { Marks the simple child element AName (or the attribute '@' + name) of
+      this element as present but empty; it is written as <AName/> while
+      its value is ''.
+      DE: Markiert das einfache Kindelement AName (oder das Attribut '@' +
+      Name) dieses Elements als vorhanden, aber leer; es wird als <AName/>
+      geschrieben, solange sein Wert '' ist. }
+    procedure MarkEmpty(const AName: TLandrixXmlUtf8);
+    { True if AName carries an empty mark. DE: True, wenn AName eine
+      Leer-Markierung traegt. }
+    function IsMarkedEmpty(const AName: TLandrixXmlUtf8): Boolean;
+    { Removes all empty marks. DE: Entfernt alle Leer-Markierungen. }
+    procedure ClearEmptyMarks;
     { Present or not IsEmpty: the element is written.
       DE: Present oder nicht IsEmpty: das Element wird geschrieben. }
     function IsPresent: Boolean;
@@ -119,9 +149,10 @@ type
       DE: Haengt einen Knoten an (die Liste uebernimmt ihn) und liefert
       ihn. }
     function AddNode(ANode: TLandrixGaebXmlNode): TLandrixGaebXmlNode;
-    { Appends a value node with the element name and value and returns it.
-      DE: Haengt einen Wertknoten mit Elementname und Wert an und liefert
-      ihn. }
+    { Appends a present value node with the element name and value (also
+      when the value is empty, for example br) and returns it.
+      DE: Haengt einen vorhandenen Wertknoten mit Elementname und Wert an
+      (auch bei leerem Wert, zum Beispiel br) und liefert ihn. }
     function AddValue(const AElementName: TLandrixXmlUtf8;
       const AValue: TLandrixGaebString): TLandrixGaebXmlValueNode;
     { True if no item is present (see TLandrixGaebXmlNode.IsPresent).
@@ -134,9 +165,44 @@ implementation
 
 { TLandrixGaebXmlNode }
 
+destructor TLandrixGaebXmlNode.Destroy;
+begin
+  FEmptyMarks.Free;
+  inherited Destroy;
+end;
+
 function TLandrixGaebXmlNode.IsEmpty: Boolean;
 begin
-  Result := True;
+  Result := (FEmptyMarks = nil) or (FEmptyMarks.Count = 0);
+end;
+
+{ Exact (ordinal) search; TStringList.IndexOf compares locale-dependent. }
+function FindMark(AList: TStringList; const AName: string): Integer;
+begin
+  Result := AList.Count - 1;
+  while (Result >= 0) and (AList[Result] <> AName) do
+    Dec(Result);
+end;
+
+procedure TLandrixGaebXmlNode.MarkEmpty(const AName: TLandrixXmlUtf8);
+var
+  S: string;
+begin
+  S := LandrixXmlUtf8ToString(AName);
+  if FEmptyMarks = nil then
+    FEmptyMarks := TStringList.Create;
+  if FindMark(FEmptyMarks, S) < 0 then
+    FEmptyMarks.Add(S);
+end;
+
+function TLandrixGaebXmlNode.IsMarkedEmpty(const AName: TLandrixXmlUtf8): Boolean;
+begin
+  Result := (FEmptyMarks <> nil) and (FindMark(FEmptyMarks, LandrixXmlUtf8ToString(AName)) >= 0);
+end;
+
+procedure TLandrixGaebXmlNode.ClearEmptyMarks;
+begin
+  FreeAndNil(FEmptyMarks);
 end;
 
 function TLandrixGaebXmlNode.IsPresent: Boolean;
@@ -147,6 +213,7 @@ end;
 procedure TLandrixGaebXmlNode.Clear;
 begin
   Present := False;
+  ClearEmptyMarks;
 end;
 
 { TLandrixGaebXmlValueNode }
@@ -194,6 +261,7 @@ begin
   Result := TLandrixGaebXmlValueNode.Create;
   Result.ElementName := AElementName;
   Result.Value := AValue;
+  Result.Present := True;
   inherited Add(Result);
 end;
 

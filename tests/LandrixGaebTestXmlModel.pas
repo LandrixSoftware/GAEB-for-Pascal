@@ -119,16 +119,16 @@ begin
   end;
 end;
 
-procedure TestEmptyValueNodeIsNotPresent;
+procedure TestAddedValueNodeIsPresent;
 var
   P: TLandrixGaebXmlP;
 begin
   P := TLandrixGaebXmlP.Create;
   try
     P.AddBr('');
-    Check(not P.HasChildren, 'an empty br that was not read is not present');
-    P.Children[0].Present := True;
-    Check(P.HasChildren, 'a present empty br counts');
+    Check(P.HasChildren, 'an added empty br is present (it is written)');
+    P.Children[0].Present := False;
+    Check(not P.HasChildren, 'unless its presence is withdrawn');
   finally
     P.Free;
   end;
@@ -170,7 +170,7 @@ begin
   RegisterTest('XmlModel.PresentKeepsEmptyElements', TestPresentKeepsEmptyElements);
   RegisterTest('XmlModel.DecimalFields', TestDecimalFields);
   RegisterTest('XmlModel.OrderedChildren', TestOrderedChildren);
-  RegisterTest('XmlModel.EmptyValueNodeIsNotPresent', TestEmptyValueNodeIsNotPresent);
+  RegisterTest('XmlModel.AddedValueNodeIsPresent', TestAddedValueNodeIsPresent);
   RegisterTest('XmlModel.Groups', TestGroups);
   RegisterTest('XmlModel.Codes', TestCodes);
 end;

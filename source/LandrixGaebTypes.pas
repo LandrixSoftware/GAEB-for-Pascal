@@ -173,6 +173,13 @@ type
       DE: Der Wert mit genau Skala Nachkommastellen und '.' als Trenner,
       z. B. '12.500', '-0.05', '7'; '' wenn nicht gesetzt. }
     function Text: TLandrixXmlUtf8;
+    { The value with exactly AScale fraction digits (zeros added or trailing
+      zeros removed). False if the value is not set or has significant
+      digits beyond AScale (never rounds).
+      DE: Der Wert mit genau AScale Nachkommastellen (Nullen ergaenzt oder
+      nachlaufende Nullen entfernt). False, wenn der Wert nicht gesetzt ist
+      oder werttragende Stellen jenseits von AScale hat (rundet nie). }
+    function TryTextWithScale(AScale: Integer; out AText: TLandrixXmlUtf8): Boolean;
     { The value as arbitrary-precision decimal for exact calculations;
       ELandrixGaebError when not set.
       DE: Der Wert als beliebig genaue Dezimalzahl fuer exakte Rechnungen;
@@ -459,6 +466,47 @@ begin
   if Negative then
     Digits := '-' + Digits;
   Result := LandrixXmlStringToUtf8(Digits);
+end;
+
+function TLandrixGaebDecimal.TryTextWithScale(AScale: Integer;
+  out AText: TLandrixXmlUtf8): Boolean;
+var
+  S, IntPart, Frac: string;
+  Dot, I: Integer;
+begin
+  Result := False;
+  AText := '';
+  if not FHasValue or (AScale < 0) then
+    Exit;
+  S := LandrixXmlUtf8ToString(Text);
+  Dot := Pos('.', S);
+  if Dot > 0 then
+  begin
+    IntPart := Copy(S, 1, Dot - 1);
+    Frac := Copy(S, Dot + 1, MaxInt);
+  end
+  else
+  begin
+    IntPart := S;
+    Frac := '';
+  end;
+  if Length(Frac) > AScale then
+  begin
+    for I := AScale + 1 to Length(Frac) do
+      if Frac[I] <> '0' then
+        Exit;
+    Frac := Copy(Frac, 1, AScale);
+  end;
+  while Length(Frac) < AScale do
+    Frac := Frac + '0';
+  if Frac <> '' then
+    S := IntPart + '.' + Frac
+  else
+    S := IntPart;
+  if S = '-0' then
+    S := '0';
+  AText := LandrixXmlStringToUtf8(S);
+  Result := True;
 end;
 
 function TLandrixGaebDecimal.AsXmlDecimal: TLandrixXmlDecimal;
