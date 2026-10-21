@@ -29,7 +29,9 @@ uses
   LandrixGaebTestFramework,
   LandrixGaebTestSelf,
   LandrixGaebTestTypes,
-  LandrixGaebTestDetect;
+  LandrixGaebTestDetect,
+  LandrixGaebTestXmlModel,
+  LandrixGaebTestXmlReader;
 
 function FilterParam: string;
 var
@@ -45,5 +47,7 @@ begin
   LandrixGaebTestSelf.Register;
   LandrixGaebTestTypes.Register;
   LandrixGaebTestDetect.Register;
+  LandrixGaebTestXmlModel.Register;
+  LandrixGaebTestXmlReader.Register;
   ExitCode := RunAllTests(FilterParam);
 end.
