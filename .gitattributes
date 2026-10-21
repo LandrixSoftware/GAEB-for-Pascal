@@ -16,3 +16,4 @@
 
 # Test data must stay byte-exact (encodings, BOMs, line endings).
 tests/data/** -text
+*.sha256 text eol=lf

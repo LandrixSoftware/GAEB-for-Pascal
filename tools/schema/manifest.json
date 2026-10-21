@@ -1,0 +1,110 @@
+{
+ "comment": "Input of extract-gaeb-xsd.py. The schemas are not part of the repository (no licence for redistribution); they are read from the local Specification/ folder and verified with these checksums. Each context is one version, schema edition and exchange phase; publish = false marks generator test cases whose output is not published (3.4 beta).",
+ "root": "Specification",
+ "contexts": [
+  {
+   "id": "3.2-2013-10-83",
+   "version": "3.2",
+   "edition": "2013-10",
+   "phase": "83",
+   "publish": true,
+   "folder": "XML-3.2/Schema",
+   "main": "GAEB_DA_XML_83_3.2_2013-10.xsd",
+   "files": {
+    "GAEB_DA_XML_83_3.2_2013-10.xsd": "51bcd0cc37c7851dbb89520d8a6663b9fcaa9982575476410432e346132c8f6e",
+    "GAEB_DA_XML_Lib_3.2_2013-10.xsd": "f8d736e96f3f2e1ba6e97aa0492dedad1c2064fafc502a7f70466b34b67d1f77"
+   }
+  },
+  {
+   "id": "3.2-2013-10-84",
+   "version": "3.2",
+   "edition": "2013-10",
+   "phase": "84",
+   "publish": true,
+   "folder": "XML-3.2/Schema",
+   "main": "GAEB_DA_XML_84_3.2_2013-10.xsd",
+   "files": {
+    "GAEB_DA_XML_84_3.2_2013-10.xsd": "c57677b3b8be38371dabc9a83781049be483f0bd99eb9b771851ea9a6959ea5e",
+    "GAEB_DA_XML_Lib_3.2_2013-10.xsd": "f8d736e96f3f2e1ba6e97aa0492dedad1c2064fafc502a7f70466b34b67d1f77"
+   }
+  },
+  {
+   "id": "3.3-2019-11-83",
+   "version": "3.3",
+   "edition": "2019-11",
+   "phase": "83",
+   "publish": true,
+   "folder": "XML-3.3/Schema",
+   "main": "GAEB_DA_XML_83_3.3_2019-11.xsd",
+   "files": {
+    "GAEB_DA_XML_83_3.3_2019-11.xsd": "5565512d7a14ab8d6b6662409741024282b823c0b101564116be3480df3fb0fa",
+    "GAEB_DA_XML_Lib_3.3_2019-11.xsd": "733d1765d220259c371b1ca3ae449ce6227596d845fe1eb28d7f0feafec0ff1e"
+   }
+  },
+  {
+   "id": "3.3-2019-11-84",
+   "version": "3.3",
+   "edition": "2019-11",
+   "phase": "84",
+   "publish": true,
+   "folder": "XML-3.3/Schema",
+   "main": "GAEB_DA_XML_84_3.3_2019-11.xsd",
+   "files": {
+    "GAEB_DA_XML_84_3.3_2019-11.xsd": "6b4fff2b828dfc2eadc9e43a56caea443865758b5de940f5a9594765528bf09d",
+    "GAEB_DA_XML_Lib_3.3_2019-11.xsd": "733d1765d220259c371b1ca3ae449ce6227596d845fe1eb28d7f0feafec0ff1e"
+   }
+  },
+  {
+   "id": "3.3-2021-05-83",
+   "version": "3.3",
+   "edition": "2021-05",
+   "phase": "83",
+   "publish": true,
+   "folder": "XML-3.3/Schema",
+   "main": "GAEB_DA_XML_83_3.3_2021-05.xsd",
+   "files": {
+    "GAEB_DA_XML_83_3.3_2021-05.xsd": "a963ca5b6a93ee0f7a83d3138272a4116635e30e7b288c6ba8761ed444cabaa8",
+    "GAEB_DA_XML_Lib_3.3_2021-05.xsd": "a00cad3a5bfaf079de936393c0827c2387d4b9407c113359cca4b493903388ec"
+   }
+  },
+  {
+   "id": "3.3-2021-05-84",
+   "version": "3.3",
+   "edition": "2021-05",
+   "phase": "84",
+   "publish": true,
+   "folder": "XML-3.3/Schema",
+   "main": "GAEB_DA_XML_84_3.3_2021-05.xsd",
+   "files": {
+    "GAEB_DA_XML_84_3.3_2021-05.xsd": "67282b688db3bb12a4ded22c7b677e30ce105f9d1f80d02d084be67156e1cc42",
+    "GAEB_DA_XML_Lib_3.3_2021-05.xsd": "a00cad3a5bfaf079de936393c0827c2387d4b9407c113359cca4b493903388ec"
+   }
+  },
+  {
+   "id": "3.4-2026-03-83",
+   "version": "3.4",
+   "edition": "2026-03",
+   "phase": "83",
+   "publish": false,
+   "folder": "XML-3.4-2026-03-beta/Schema",
+   "main": "GAEB_DA_XML_83_3.4_2026-03.xsd",
+   "files": {
+    "GAEB_DA_XML_83_3.4_2026-03.xsd": "d9841e6952202d06c1dfb187b59b4f58b456a7b6271b9130dd77a2dfd443552c",
+    "GAEB_DA_XML_Lib_3.4_2026-03.xsd": "f7065795c155f81b7be7062cf7715d9f24afb453d989b1985d7cd24612040bec"
+   }
+  },
+  {
+   "id": "3.4-2026-03-84",
+   "version": "3.4",
+   "edition": "2026-03",
+   "phase": "84",
+   "publish": false,
+   "folder": "XML-3.4-2026-03-beta/Schema",
+   "main": "GAEB_DA_XML_84_3.4_2026-03.xsd",
+   "files": {
+    "GAEB_DA_XML_84_3.4_2026-03.xsd": "c2f9ea47d5527e628bf34ab5ce55d1ec307827d8bc17ff5c1e6bc30245df868e",
+    "GAEB_DA_XML_Lib_3.4_2026-03.xsd": "f7065795c155f81b7be7062cf7715d9f24afb453d989b1985d7cd24612040bec"
+   }
+  }
+ ]
+}

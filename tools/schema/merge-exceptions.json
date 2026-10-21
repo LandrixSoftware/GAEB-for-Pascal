@@ -1,0 +1,10 @@
+{
+ "comment": "Decisions of merge-gaeb.py for types whose definitions differ between schema contexts. widen: the listed child elements use the wider type in every context; merge-gaeb.py checks that each narrower type fits into it. Other decisions are not supported.",
+ "types": {
+  "tgPerfDescr": {
+   "decision": "widen",
+   "elements": {"Description": "tgPerfDescription"},
+   "reason": "3.2 uses tgDescription; from 3.3 on tgPerfDescription, which is tgDescription plus CtlgAssign."
+  }
+ }
+}

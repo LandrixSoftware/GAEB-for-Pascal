@@ -106,3 +106,6 @@ __pycache__/
 # Lokaler Planungsstand
 PLAN.md
 LEGACY-FINDINGS.md
+
+# Zwischenstaende der Schemawerkzeuge (abgeleitet aus Specification/, nicht committen)
+tools/schema/out/
