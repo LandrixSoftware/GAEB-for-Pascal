@@ -34,11 +34,14 @@ All library code must compile unchanged with **Delphi 6 through Delphi 13** and 
 
 * Units: only `SysUtils`, `Classes`, `Contnrs`, `Types` (Delphi only, where required), LandrixXml units and own units. Unqualified unit names; unit names contain no dot.
 * Not allowed: generics, anonymous methods, `for ... in`, `Exit(Value)`, `strict private/protected`, records with methods, class and record helpers, operator overloading, `inline`, `class var`, nested types, inline `var` declarations, `{$REGION}`.
+* Old-style `object` types are allowed only as value types without a VMT (no constructors, destructors, virtual, dynamic, abstract or override methods), as used by the decimal value types: zeroed memory must mean "not set". Such a type must not be exactly 8 bytes in size: Delphi 13 Win64 passes 8-byte objects wrongly as value or `const` parameters (records are not affected).
 * Not allowed: `TStringBuilder`, `TEncoding`, `TFormatSettings`, `PosEx`, `CharInSet`, `RawByteString`, `NativeInt`, `NativeUInt`, `TBytes`, `UInt64`, `UTF8ToString`.
 * Not allowed: MSXML, `Xml.*`, `fcl-xml` or any other XML library.
 * `{$IF}` is always closed with `{$IFEND}`; `CompilerVersion` comparisons use float constants (`20.0`).
 * No dependency on the current locale. Quantities, prices and dates are converted with locale-independent helpers; amounts are never calculated or rounded via floating point.
 * Source files contain only ASCII characters; use `#$xx` constants for other characters.
+
+`tools/check-forbidden.py` checks these rules. Every unit in `source/` states its API level in a comment directly before its `unit` line (`{ API: internal. ...}` until the 1.0 freeze).
 
 Where differences between Delphi and Free Pascal are required, use conditional compilation in the central include file and keep the common implementation shared.
 
