@@ -1,5 +1,5 @@
 {
-  GAEB-for-pascal
+  GAEB-for-Pascal
 
   Copyright (C) 2026 Landrix Software GmbH & Co. KG
 

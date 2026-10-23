@@ -1,6 +1,6 @@
-# Contributing to GAEB-for-pascal
+# Contributing to GAEB-for-Pascal
 
-Thank you for your interest in contributing to **GAEB-for-pascal**.
+Thank you for your interest in contributing to **GAEB-for-Pascal**.
 
 Bug reports, test cases, documentation improvements and pull requests are welcome.
 Please read the following guidelines before submitting code.
@@ -9,7 +9,7 @@ By submitting a pull request or other contribution, you agree to the contributio
 
 ## Project scope
 
-GAEB-for-pascal is a Pascal library for reading, writing and processing construction
+GAEB-for-Pascal is a Pascal library for reading, writing and processing construction
 data exchange files according to the GAEB standard (Gemeinsamer Ausschuss Elektronik
 im Bauwesen), in particular GAEB DA XML.
 
@@ -53,7 +53,7 @@ Every new source file starts with this header:
 
 ```pascal
 {
-  GAEB-for-pascal
+  GAEB-for-Pascal
 
   Copyright (C) 2026 Landrix Software GmbH & Co. KG
 
@@ -89,7 +89,7 @@ Do not commit GAEB specification documents, schemas or other copyrighted standar
 
 ## Licensing of the project
 
-GAEB-for-pascal is dual-licensed.
+GAEB-for-Pascal is dual-licensed.
 
 Users may use the project under either:
 
@@ -102,7 +102,7 @@ The commercial license allows the library to be used as part of proprietary appl
 
 To preserve this dual-licensing model, contributions must be available for use under both licensing options.
 
-By intentionally submitting a contribution for inclusion in GAEB-for-pascal, you agree to the following terms:
+By intentionally submitting a contribution for inclusion in GAEB-for-Pascal, you agree to the following terms:
 
 You retain the copyright in your contribution.
 
@@ -118,13 +118,13 @@ You grant **Landrix Software GmbH & Co. KG** a perpetual, worldwide, non-exclusi
 * sublicense, and
 * otherwise incorporate
 
-your contribution, in source or binary form, as part of GAEB-for-pascal and related versions of the project.
+your contribution, in source or binary form, as part of GAEB-for-Pascal and related versions of the project.
 
 This license includes the explicit right to distribute and sublicense your contribution:
 
 * under the GNU General Public License version 3 or any later version;
 * under the Landrix Software Commercial License; and
-* as part of commercial or proprietary distributions of GAEB-for-pascal offered by Landrix Software.
+* as part of commercial or proprietary distributions of GAEB-for-Pascal offered by Landrix Software.
 
 This grant does **not** transfer ownership of your copyright to Landrix Software.
 

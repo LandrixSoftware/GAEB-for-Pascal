@@ -371,7 +371,7 @@ class Model(object):
 # ---- Pascal output ----
 
 HEADER = """{
-  GAEB-for-pascal
+  GAEB-for-Pascal
 
   Copyright (C) 2026 Landrix Software GmbH & Co. KG
 

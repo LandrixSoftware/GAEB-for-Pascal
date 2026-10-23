@@ -8,9 +8,9 @@ Stand: 21. Oktober 2026
 
 ### Eine Schwachstelle melden
 
-Bitte melden Sie mögliche Sicherheitslücken in GAEB-for-pascal an
+Bitte melden Sie mögliche Sicherheitslücken in GAEB-for-Pascal an
 **[info@landrix.de](mailto:info@landrix.de)**, mit dem Betreff
-`[Security] GAEB-for-pascal: kurze Beschreibung`.
+`[Security] GAEB-for-Pascal: kurze Beschreibung`.
 Bitte eröffnen Sie für noch nicht behobene Schwachstellen zunächst kein öffentliches Issue
 und veröffentlichen Sie keine ausnutzbaren Beispieldateien.
 
@@ -48,9 +48,9 @@ As of 21 October 2026
 
 ### Reporting a vulnerability
 
-Please report potential security vulnerabilities in GAEB-for-pascal to
+Please report potential security vulnerabilities in GAEB-for-Pascal to
 **[info@landrix.de](mailto:info@landrix.de)**, using the subject
-`[Security] GAEB-for-pascal: short description`.
+`[Security] GAEB-for-Pascal: short description`.
 Please do not initially open a public issue for an unresolved vulnerability or publish
 files that demonstrate how to exploit it.
 

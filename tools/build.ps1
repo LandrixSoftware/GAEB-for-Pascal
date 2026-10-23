@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Builds and runs the GAEB-for-pascal test runner with one or more local toolchains.
+  Builds and runs the GAEB-for-Pascal test runner with one or more local toolchains.
 
 .DESCRIPTION
   Every toolchain writes to build/<toolchain>/ so compiled units never mix.
