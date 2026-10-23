@@ -95,6 +95,13 @@ type
     { CR LF instead of LF as line break. DE: CR LF statt LF als
       Zeilenumbruch. }
     CrLf: Boolean;
+    { Check the output against the content models of the target
+      (LandrixGaebXmlCheck, stage 2); its findings are errors (in mode
+      gwmBestEffort reported without abort).
+      DE: Die Ausgabe gegen die Inhaltsmodelle des Ziels pruefen
+      (LandrixGaebXmlCheck, Stufe 2); ihre Befunde sind Fehler (im Modus
+      gwmBestEffort gemeldet ohne Abbruch). }
+    Check: Boolean;
   end;
 
   { State of one write. Used by the generated writer only.
@@ -208,6 +215,7 @@ begin
   Result.WriteBom := False;
   Result.Indent := True;
   Result.CrLf := True;
+  Result.Check := True;
 end;
 
 { TLandrixGaebXmlWriteContext }

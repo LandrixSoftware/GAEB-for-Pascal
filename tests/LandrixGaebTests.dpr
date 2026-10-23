@@ -32,7 +32,8 @@ uses
   LandrixGaebTestDetect,
   LandrixGaebTestXmlModel,
   LandrixGaebTestXmlReader,
-  LandrixGaebTestXmlWriter;
+  LandrixGaebTestXmlWriter,
+  LandrixGaebTestXmlCheck;
 
 function FilterParam: string;
 var
@@ -51,5 +52,6 @@ begin
   LandrixGaebTestXmlModel.Register;
   LandrixGaebTestXmlReader.Register;
   LandrixGaebTestXmlWriter.Register;
+  LandrixGaebTestXmlCheck.Register;
   ExitCode := RunAllTests(FilterParam);
 end.

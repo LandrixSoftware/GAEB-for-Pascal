@@ -69,6 +69,14 @@ begin
   Result := LandrixGaebXmlReadBuffer(Pointer(S), Length(S), nil, Det);
 end;
 
+{ Default options without the check, for documents that are incomplete on
+  purpose. }
+function Unchecked: TLandrixGaebXmlWriteOptions;
+begin
+  Result := LandrixGaebXmlDefaultWriteOptions;
+  Result.Check := False;
+end;
+
 function Contains(const S, Part: TLandrixXmlUtf8): Boolean;
 begin
   Result := Pos(Part, S) > 0;
@@ -130,7 +138,7 @@ begin
     G.GAEBInfo.ProgSystem := 'Test';
     G.Award.BoQ.ID := 'B1';
     S := LandrixGaebXmlWriteUtf8(G, LandrixGaebTarget(gv32, ge2013_10, gp84),
-      LandrixGaebXmlDefaultWriteOptions, Diags);
+      Unchecked, Diags);
     Check(Contains(S, 'DA84/3.2'), 'namespace of the target');
     Check(Contains(S, '<Version>3.2</Version>'), 'Version from the target');
     Check(Contains(S, '<VersDate>2013-10</VersDate>'), 'VersDate from the target');
@@ -167,6 +175,8 @@ begin
     CheckEquals(1, Diags.CountOf('GAEB-WRT-002'), 'reported');
     Options := LandrixGaebXmlDefaultWriteOptions;
     Options.PreserveScale := True;
+    { four fraction digits are invalid in the target: without the check }
+    Options.Check := False;
     S := LandrixGaebXmlWriteUtf8(G, LandrixGaebTarget(gv33, ge2021_05, gp83), Options, nil);
     Check(Contains(S, '<Qty>1.2345</Qty>'), 'PreserveScale writes the value as it is');
   finally
@@ -187,7 +197,11 @@ begin
   G := Read(Doc33(Body));
   try
     { AwardInfo/CtlgAssign exists in 3.3, not in 3.2 }
-    G.Award.AwardInfo.CtlgAssign.Add.CtlgID := 'K1';
+    with G.Award.AwardInfo.CtlgAssign.Add do
+    begin
+      CtlgID := 'K1';
+      CtlgCode := 'C1';
+    end;
     Options := LandrixGaebXmlDefaultWriteOptions;
     Raised := False;
     try
@@ -234,12 +248,12 @@ begin
     Check(G.Award.OWN.Address.Name1 = '', 'empty value reads as ''''');
     Check(G.Award.OWN.Address.IsMarkedEmpty('Name1'), 'but carries an empty mark');
     S := LandrixGaebXmlWriteUtf8(G, LandrixGaebTarget(gv33, ge2021_05, gp83),
-      LandrixGaebXmlDefaultWriteOptions, nil);
+      Unchecked, nil);
     Check(Contains(S, '<Name1/>') and Contains(S, '<Street/>') and Contains(S, '<City/>'),
       'empty mandatory elements written back');
     G.Award.OWN.Address.Name1 := 'Owner';
     S := LandrixGaebXmlWriteUtf8(G, LandrixGaebTarget(gv33, ge2021_05, gp83),
-      LandrixGaebXmlDefaultWriteOptions, nil);
+      Unchecked, nil);
     Check(Contains(S, '<Name1>Owner</Name1>'), 'a value wins over the mark');
     G.Award.OWN.Address.Clear;
     Check(not G.Award.OWN.Address.IsMarkedEmpty('Street'), 'Clear removes the marks');
@@ -250,7 +264,7 @@ begin
   try
     G.Award.OWN.Address.City := 'X';
     S := LandrixGaebXmlWriteUtf8(G, LandrixGaebTarget(gv33, ge2021_05, gp83),
-      LandrixGaebXmlDefaultWriteOptions, nil);
+      Unchecked, nil);
     Check(not Contains(S, '<Name1'), 'no placeholders for values never set');
   finally
     G.Free;

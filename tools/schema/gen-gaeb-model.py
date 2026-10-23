@@ -12,6 +12,9 @@
                                    members, child rows, fraction digits
   source/LandrixGaebXmlWriter.pas  writer on the streaming writer of
                                    LandrixXml (context in LandrixGaebXmlWriteBase)
+  source/LandrixGaebXmlGrammar.pas types, attributes, simple types and one
+                                   DFA per content model of every published
+                                   context, for the check (stage 2)
 
 Only published contexts (3.2, 3.3) make it into the units; members that exist
 only in the 3.4 beta are left out (plan, decisions of 21.10.2026).
@@ -1586,6 +1589,19 @@ uses
 function LandrixGaebXmlWriteUtf8(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
   const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics): TLandrixXmlUtf8;
 
+{ Writes like LandrixGaebXmlWriteUtf8, but never aborts for the mode:
+  problems are only reported and counted (AErrors, AWarnings; with
+  AOptions.Check including the errors of the check of the output). Raises
+  only for targets that cannot be written and values XML cannot carry.
+  DE: Schreibt wie LandrixGaebXmlWriteUtf8, bricht aber nie wegen des
+  Modus ab: Probleme werden nur gemeldet und gezaehlt (AErrors, AWarnings;
+  mit AOptions.Check einschliesslich der Fehler der Pruefung der Ausgabe).
+  Loest nur fuer Ziele aus, die nicht geschrieben werden koennen, und fuer
+  Werte, die XML nicht tragen kann. }
+function LandrixGaebXmlWriteCollect(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics;
+  out AErrors, AWarnings: Integer): TLandrixXmlUtf8;
+
 { Writes the document to a stream (at its position).
   DE: Schreibt das Dokument in einen Stream (an seiner Position). }
 procedure LandrixGaebXmlWriteStream(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
@@ -1600,6 +1616,9 @@ procedure LandrixGaebXmlWriteFile(ADocument: TLandrixGaebXmlGAEB; const ATarget:
   ADiagnostics: TLandrixGaebDiagnostics);
 
 implementation
+
+uses
+  LandrixGaebXmlCheck;
 """)
     infos = [model.emit[n] for n in sorted(model.emit, key=lambda k: model.emit[k]["name"].lower())]
     for info in infos:
@@ -1614,13 +1633,13 @@ implementation
     for info in infos:
         gen_write_proc(model, prof, info, w)
     root = model.emit["tgGAEB"]
-    w("""function LandrixGaebXmlWriteUtf8(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
-  const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics): TLandrixXmlUtf8;
+    w("""function LandrixGaebXmlWriteCollect(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics;
+  out AErrors, AWarnings: Integer): TLandrixXmlUtf8;
 var
   Row: Integer;
   Writer: TLandrixXmlWriter;
   Context: TLandrixGaebXmlWriteContext;
-  Failed: Boolean;
 begin
   Row := LandrixGaebXmlTargetRow(ATarget);
   if (Row < 0) or not LandrixGaebTargetIsSupported(ATarget, True) then
@@ -1641,23 +1660,39 @@ begin
     try
       %s(Context, ADocument, 'GAEB', Row);
       Writer.EndDocument;
-      case AOptions.Mode of
-        gwmStrict:
-          Failed := (Context.Errors > 0) or (Context.Warnings > 0);
-        gwmNormal:
-          Failed := Context.Errors > 0;
-      else
-        Failed := False;
-      end;
-      if Failed then
-        raise ELandrixGaebError.Create('document not written: ' + IntToStr(Context.Errors) +
-          ' error(s), ' + IntToStr(Context.Warnings) + ' warning(s) (see diagnostics)');
+      AErrors := Context.Errors;
+      AWarnings := Context.Warnings;
     finally
       Context.Free;
     end;
     Result := Writer.AsUtf8;
   finally
     Writer.Free;
+  end;
+  if AOptions.Check then
+    Inc(AErrors, LandrixGaebXmlCheckTarget(Pointer(Result), Length(Result), ATarget, ADiagnostics));
+end;
+
+function LandrixGaebXmlWriteUtf8(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics): TLandrixXmlUtf8;
+var
+  Errors, Warnings: Integer;
+  Failed: Boolean;
+begin
+  Result := LandrixGaebXmlWriteCollect(ADocument, ATarget, AOptions, ADiagnostics, Errors, Warnings);
+  case AOptions.Mode of
+    gwmStrict:
+      Failed := (Errors > 0) or (Warnings > 0);
+    gwmNormal:
+      Failed := Errors > 0;
+  else
+    Failed := False;
+  end;
+  if Failed then
+  begin
+    Result := '';
+    raise ELandrixGaebError.Create('document not written: ' + IntToStr(Errors) +
+      ' error(s), ' + IntToStr(Warnings) + ' warning(s) (see diagnostics)');
   end;
 end;
 
@@ -1692,6 +1727,480 @@ end.""" % write_proc(root))
     return "\r\n".join("\n".join(out).split("\n")) + "\r\n"
 
 
+GRAMMAR_UNIT = os.path.join(ROOT, "source", "LandrixGaebXmlGrammar.pas")
+
+FACETS = {"length": "xsfLength", "minLength": "xsfMinLength", "maxLength": "xsfMaxLength",
+          "maxInclusive": "xsfMaxInclusive", "maxExclusive": "xsfMaxExclusive",
+          "minInclusive": "xsfMinInclusive", "minExclusive": "xsfMinExclusive",
+          "totalDigits": "xsfTotalDigits", "fractionDigits": "xsfFractionDigits",
+          "whiteSpace": "xsfWhiteSpace"}
+
+
+class Grammar(object):
+    """Tables for the content model check (stage 2) of the published
+    contexts: types, attributes, simple types with facets and one DFA per
+    content model. Types that are equal in several contexts (also through
+    the types they use) share their rows."""
+
+    def __init__(self, contexts):
+        self.contexts = contexts      # [(ctx, data)]
+        self.names = set()
+        self.texts = []
+        self.text_index = {}
+        self.simples = []             # dict rows
+        self.facets = []              # (facet, text)
+        self.members = []
+        self.types = []               # dict rows
+        self.attrs = []               # (name, simple, required)
+        self.states = []              # (first, count, final)
+        self.trans = []               # (name, next, type)
+        self.roots = []               # (ctx, type row)
+        self.simple_of = {}           # class -> simple row
+        self.type_of = {}             # class -> type row
+
+    # ---- equal types across contexts ----
+
+    def node_def(self, node):
+        ci, name = node
+        if ci is None:
+            return ("x", name), []
+        t = self.contexts[ci][1]["types"][name]
+        ref = lambda n: (None, n) if n.startswith("xs:") else (ci, n)
+        if t["kind"] == "simple":
+            return ("s", t["base"], sorted(t["facets"].items()), t.get("enumeration"),
+                    t.get("patterns")), [ref(t["base"])]
+        if t["kind"] == "union":
+            return ("u",), [ref(m) for m in t["members"]]
+        refs = []
+        if "simple" in t:
+            refs.append(ref(t["simple"]))
+        attrs = []
+        for a in t["attributes"]:
+            attrs.append((a["name"], a["use"]))
+            refs.append(ref(a["type"]))
+
+        def shape(p):
+            if p is None:
+                return None
+            if p["k"] == "element":
+                refs.append(ref(p["type"]))
+                return ("e", p["name"], p["min"], p["max"])
+            return (p["k"], p["min"], p["max"], [shape(i) for i in p["items"]])
+        return ("c", t.get("mixed", False), "simple" in t, attrs, shape(t.get("particle"))), refs
+
+    def partition(self):
+        nodes = set()
+        for ci, (ctx, data) in enumerate(self.contexts):
+            for name in data["types"]:
+                nodes.add((ci, name))
+        defs = {}
+        todo = list(nodes)
+        while todo:
+            n = todo.pop()
+            if n in defs:
+                continue
+            defs[n] = self.node_def(n)
+            todo.extend(r for r in defs[n][1] if r not in defs)
+        key = dict((n, json.dumps(d[0], sort_keys=True)) for n, d in defs.items())
+        count = len(set(key.values()))
+        while True:
+            ids = dict((k, i) for i, k in enumerate(sorted(set(key.values()))))
+            cls = dict((n, ids[key[n]]) for n in defs)
+            key = dict((n, json.dumps([cls[n], [cls[r] for r in defs[n][1]]])) for n in defs)
+            new_count = len(set(key.values()))
+            if new_count == count:
+                break
+            count = new_count
+        self.cls = cls
+        self.defs = defs
+
+    # ---- rows ----
+
+    def text(self, s):
+        if any(ord(ch) > 127 for ch in s):
+            fail("non-ASCII schema text %r" % s)
+        if s not in self.text_index:
+            self.text_index[s] = len(self.texts)
+            self.texts.append(s)
+        return self.text_index[s]
+
+    def simple_row(self, node):
+        c = self.cls[node]
+        if c in self.simple_of:
+            return self.simple_of[c]
+        ci, name = node
+        if ci is None:
+            row = len(self.simples)
+            self.simples.append({"base": -1, "builtin": self.text(name[3:]), "union": False,
+                                 "first": 0, "count": 0, "comment": name})
+            self.simple_of[c] = row
+            return row
+        t = self.contexts[ci][1]["types"][name]
+        if t["kind"] == "complex":
+            fail("%s is complex, a simple type was expected" % name)
+        if t["kind"] == "union":
+            members = [self.simple_row(r) for r in self.defs[node][1]]
+            row = len(self.simples)
+            self.simples.append({"base": -1, "builtin": -1, "union": True,
+                                 "first": len(self.members), "count": len(members), "comment": name})
+            self.members.extend(members)
+            self.simple_of[c] = row
+            return row
+        if not t["base"].startswith("xs:"):
+            fail("%s: simple base %s is not built in" % (name, t["base"]))
+        base = self.simple_row((None, t["base"]))
+        steps = t.get("patterns") or [[]]
+        for i, step in enumerate(steps):
+            facets = []
+            if i == 0:
+                for k, v in sorted(t["facets"].items()):
+                    if k not in FACETS:
+                        fail("%s: facet %s not supported" % (name, k))
+                    facets.append((FACETS[k], self.text(v)))
+                for v in t.get("enumeration") or []:
+                    facets.append(("xsfEnumeration", self.text(v)))
+            for pat in step:
+                facets.append(("xsfPattern", self.text(pat)))
+            row = len(self.simples)
+            self.simples.append({"base": base, "builtin": -1, "union": False,
+                                 "first": len(self.facets), "count": len(facets),
+                                 "comment": name if i == len(steps) - 1 else "%s (pattern %d)" % (name, i + 1)})
+            self.facets.extend(facets)
+            base = row
+        self.simple_of[c] = base
+        return base
+
+    def type_row(self, node):
+        c = self.cls[node]
+        if c in self.type_of:
+            return self.type_of[c]
+        ci, name = node
+        row = len(self.types)
+        self.types.append(None)
+        self.type_of[c] = row
+        t = None if ci is None else self.contexts[ci][1]["types"][name]
+        if t is None or t["kind"] != "complex":
+            self.types[row] = {"simple": self.simple_row(node), "mixed": False, "first": 0,
+                               "count": 0, "start": -1, "comment": name}
+            return row
+        refs = list(self.defs[node][1])
+        simple = self.simple_row(refs.pop(0)) if "simple" in t else -1
+        attrs = []
+        for a in t["attributes"]:
+            self.names.add(a["name"])
+            attrs.append((a["name"], self.simple_row(refs.pop(0)), a["use"] == "required"))
+        start = -1
+        if t.get("particle") is not None:
+            start = self.dfa(t["particle"], refs, name)
+        self.types[row] = {"simple": simple, "mixed": bool(t.get("mixed")), "first": len(self.attrs),
+                           "count": len(attrs), "start": start, "comment": name}
+        self.attrs.extend(attrs)
+        return row
+
+    # ---- content models: Thompson NFA, then subset construction ----
+
+    def dfa(self, particle, refs, tname):
+        eps = []
+        edges = []
+
+        def state():
+            eps.append([])
+            edges.append([])
+            return len(eps) - 1
+
+        decls = []
+
+        def collect(p):
+            if p["k"] == "element":
+                decls.append((p["name"], refs.pop(0)))
+            else:
+                for i in p["items"]:
+                    collect(i)
+        collect(particle)
+        labels = {}
+        for name, ref in decls:
+            self.names.add(name)
+            if labels.setdefault(name, ref) != ref and self.cls[labels[name]] != self.cls[ref]:
+                fail("%s: element %s with two different types" % (tname, name))
+
+        def once(p):
+            s, e = state(), state()
+            if p["k"] == "element":
+                edges[s].append((p["name"], e))
+            elif p["k"] == "sequence":
+                cur = s
+                for i in p["items"]:
+                    a, b = frag(i)
+                    eps[cur].append(a)
+                    cur = b
+                eps[cur].append(e)
+            else:
+                for i in p["items"]:
+                    a, b = frag(i)
+                    eps[s].append(a)
+                    eps[b].append(e)
+            return s, e
+
+        def frag(p):
+            s = state()
+            cur = s
+            for _ in range(p["min"]):
+                a, b = once(p)
+                eps[cur].append(a)
+                cur = b
+            if p["max"] == -1:
+                loop = state()
+                eps[cur].append(loop)
+                a, b = once(p)
+                eps[loop].append(a)
+                eps[b].append(loop)
+                cur = loop
+            else:
+                end = state()
+                for _ in range(p["max"] - p["min"]):
+                    a, b = once(p)
+                    eps[cur].append(a)
+                    eps[cur].append(end)
+                    cur = b
+                eps[cur].append(end)
+                cur = end
+            return s, cur
+
+        start, final = frag(particle)
+
+        def closure(states):
+            seen = set(states)
+            todo = list(states)
+            while todo:
+                for n in eps[todo.pop()]:
+                    if n not in seen:
+                        seen.add(n)
+                        todo.append(n)
+            return frozenset(seen)
+
+        first = closure([start])
+        index = {first: 0}
+        order = [first]
+        rows = []
+        i = 0
+        while i < len(order):
+            cur = order[i]
+            moves = {}
+            for s in cur:
+                for name, n in edges[s]:
+                    moves.setdefault(name, set()).add(n)
+            out = []
+            for name in sorted(moves):
+                nxt = closure(moves[name])
+                if nxt not in index:
+                    index[nxt] = len(order)
+                    order.append(nxt)
+                out.append((name, index[nxt]))
+            rows.append((out, final in cur))
+            i += 1
+        base = len(self.states)
+        # rows are appended before the child types (they recurse and add states)
+        pending = []
+        for out, accept in rows:
+            self.states.append([len(self.trans), len(out), accept])
+            for name, nxt in out:
+                self.trans.append([name, base + nxt, None])
+                pending.append((len(self.trans) - 1, labels[name]))
+        for t, ref in pending:
+            self.trans[t][2] = self.type_row(ref)
+        if len(rows) > 200:
+            fail("%s: content model with %d states" % (tname, len(rows)))
+        return base
+
+    def build(self):
+        self.partition()
+        for ci, (ctx, data) in enumerate(self.contexts):
+            self.names.add(data["root"]["name"])
+            self.roots.append((ctx, data["root"]["name"], self.type_row((ci, data["root"]["type"]))))
+        if len(set(r[1] for r in self.roots)) != 1:
+            fail("contexts with different root names")
+        self.names = sorted(self.names)
+        self.name_index = dict((n, i) for i, n in enumerate(self.names))
+
+
+def pascal_bool(b):
+    return "True" if b else "False"
+
+
+def gen_grammar(g):
+    out = []
+    w = out.append
+    w(HEADER)
+    w("""{ Grammar of the published GAEB DA XML targets for the content model check
+  (stage 2, LandrixGaebXmlCheck), generated from the context descriptions of
+  the schemas: one type row per element type, its attributes, its simple
+  type with facets and a deterministic automaton (DFA) for its element
+  content. Rows that are equal in several targets are shared.
+
+  DE: Grammatik der veroeffentlichten GAEB-DA-XML-Ziele fuer die Pruefung
+  der Inhaltsmodelle (Stufe 2, LandrixGaebXmlCheck), generiert aus den
+  Kontextbeschreibungen der Schemas: eine Typzeile je Elementtyp, seine
+  Attribute, sein einfacher Typ mit Facetten und ein deterministischer
+  Automat (DFA) fuer seinen Elementinhalt. Zeilen, die in mehreren Zielen
+  gleich sind, werden geteilt. }
+
+{ API: internal. May change in any release before 1.0.
+  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+
+unit LandrixGaebXmlGrammar;
+
+{$I LandrixGaeb.inc}
+
+interface
+
+uses
+  LandrixXmlBase,
+  LandrixXmlXsdTypes,
+  LandrixGaebTypes;
+
+type
+  { A simple type: a built-in type (Builtin), a restriction of Base with
+    the facets First..First+Count-1, or a union of the members
+    First..First+Count-1.
+    DE: Ein einfacher Typ: ein eingebauter Typ (Builtin), eine
+    Einschraenkung von Base mit den Facetten First..First+Count-1 oder eine
+    Vereinigung der Glieder First..First+Count-1. }
+  TLandrixGaebXmlGrammarSimple = record
+    { Simple row restricted by this type, -1 otherwise.
+      DE: Einfache Zeile, die dieser Typ einschraenkt, sonst -1. }
+    Base: Integer;
+    { Text with the local name of a built-in XSD type, -1 otherwise.
+      DE: Text mit dem lokalen Namen eines eingebauten XSD-Typs, sonst -1. }
+    Builtin: Integer;
+    { True for a union. DE: True fuer eine Vereinigung. }
+    Union: Boolean;
+    First: Integer;
+    Count: Integer;
+  end;
+
+  { A facet with its value text. DE: Eine Facette mit ihrem Werttext. }
+  TLandrixGaebXmlGrammarFacet = record
+    Facet: TLandrixXmlXsdFacet;
+    Value: Integer;
+  end;
+
+  { An element type. Simple: simple row of the text content (simple type or
+    simple content), -1 for element content; Mixed: text between children
+    allowed; attributes First..First+Count-1; Start: start state of the
+    content model, -1 if the type has no element content.
+    DE: Ein Elementtyp. Simple: einfache Zeile des Textinhalts (einfacher
+    Typ oder einfacher Inhalt), -1 bei Elementinhalt; Mixed: Text zwischen
+    Kindern erlaubt; Attribute First..First+Count-1; Start: Startzustand
+    des Inhaltsmodells, -1, wenn der Typ keinen Elementinhalt hat. }
+  TLandrixGaebXmlGrammarType = record
+    Simple: Integer;
+    Mixed: Boolean;
+    First: Integer;
+    Count: Integer;
+    Start: Integer;
+  end;
+
+  { An attribute: name, simple row, required.
+    DE: Ein Attribut: Name, einfache Zeile, Pflicht. }
+  TLandrixGaebXmlGrammarAttr = record
+    Name: Integer;
+    Simple: Integer;
+    Required: Boolean;
+  end;
+
+  { A state of a content model: transitions First..First+Count-1; Final:
+    the content may end here.
+    DE: Ein Zustand eines Inhaltsmodells: Uebergaenge First..First+Count-1;
+    Final: der Inhalt darf hier enden. }
+  TLandrixGaebXmlGrammarState = record
+    First: Integer;
+    Count: Integer;
+    Final: Boolean;
+  end;
+
+  { A transition: child element name, next state, type row of the child.
+    DE: Ein Uebergang: Name des Kindelements, naechster Zustand, Typzeile
+    des Kinds. }
+  TLandrixGaebXmlGrammarTrans = record
+    Name: Integer;
+    Next: Integer;
+    ElementType: Integer;
+  end;
+""")
+    def table(name, typ, rows, fmt, comment=None):
+        if not rows:
+            fail("empty table %s" % name)
+        w("  %s: array[0..%d] of %s = (" % (name, len(rows) - 1, typ))
+        for i, r in enumerate(rows):
+            sep = "," if i < len(rows) - 1 else ");"
+            c = comment(i, r) if comment else str(i)
+            w("    %s%s { %s }" % (fmt(r), sep, c))
+        w("")
+
+    w("const")
+    w("  { Local name of the root element. DE: Lokaler Name des Wurzelelements. }")
+    w("  LandrixGaebXmlGrammarRootName = '%s';" % g.roots[0][1])
+    w("")
+    w("  { Element and attribute names, sorted by bytes (binary search).")
+    w("    DE: Element- und Attributnamen, nach Bytes sortiert (binaere Suche). }")
+    w("  LandrixGaebXmlGrammarNames: array[0..%d] of TLandrixXmlUtf8 = (" % (len(g.names) - 1))
+    for i, n in enumerate(g.names):
+        w("    '%s'%s { %d }" % (n, "," if i < len(g.names) - 1 else ");", i))
+    w("")
+    w("  { Facet values and names of built-in types. DE: Facettenwerte und Namen")
+    w("    eingebauter Typen. }")
+    w("  LandrixGaebXmlGrammarTexts: array[0..%d] of TLandrixXmlUtf8 = (" % (len(g.texts) - 1))
+    for i, s in enumerate(g.texts):
+        w("    '%s'%s { %d }" % (s.replace("'", "''"), "," if i < len(g.texts) - 1 else ");", i))
+    w("")
+    w("  { Simple types. DE: Einfache Typen. }")
+    table("LandrixGaebXmlGrammarSimples", "TLandrixGaebXmlGrammarSimple", g.simples,
+          lambda r: "(Base: %d; Builtin: %d; Union: %s; First: %d; Count: %d)" % (
+              r["base"], r["builtin"], pascal_bool(r["union"]), r["first"], r["count"]),
+          lambda i, r: "%d %s" % (i, r["comment"]))
+    w("  { Facets of the simple types. DE: Facetten der einfachen Typen. }")
+    table("LandrixGaebXmlGrammarFacets", "TLandrixGaebXmlGrammarFacet", g.facets,
+          lambda r: "(Facet: %s; Value: %d)" % r)
+    w("  { Members of unions. DE: Glieder von Vereinigungen. }")
+    w("  LandrixGaebXmlGrammarMembers: array[0..%d] of Integer = (%s);" % (
+        len(g.members) - 1, ", ".join(str(m) for m in g.members)))
+    w("")
+    w("  { Element types. DE: Elementtypen. }")
+    table("LandrixGaebXmlGrammarTypes", "TLandrixGaebXmlGrammarType", g.types,
+          lambda r: "(Simple: %d; Mixed: %s; First: %d; Count: %d; Start: %d)" % (
+              r["simple"], pascal_bool(r["mixed"]), r["first"], r["count"], r["start"]),
+          lambda i, r: "%d %s" % (i, r["comment"]))
+    w("  { Attributes. DE: Attribute. }")
+    table("LandrixGaebXmlGrammarAttrs", "TLandrixGaebXmlGrammarAttr", g.attrs,
+          lambda r: "(Name: %d; Simple: %d; Required: %s)" % (g.name_index[r[0]], r[1], pascal_bool(r[2])),
+          lambda i, r: "%d %s" % (i, r[0]))
+    w("  { States of the content models. DE: Zustaende der Inhaltsmodelle. }")
+    table("LandrixGaebXmlGrammarStates", "TLandrixGaebXmlGrammarState", g.states,
+          lambda r: "(First: %d; Count: %d; Final: %s)" % (r[0], r[1], pascal_bool(r[2])))
+    w("  { Transitions. DE: Uebergaenge. }")
+    table("LandrixGaebXmlGrammarTransitions", "TLandrixGaebXmlGrammarTrans", g.trans,
+          lambda r: "(Name: %d; Next: %d; ElementType: %d)" % (g.name_index[r[0]], r[1], r[2]),
+          lambda i, r: "%d %s" % (i, r[0]))
+    w("""{ Type row of the root element for a target; -1 if the grammar has none.
+  DE: Typzeile des Wurzelelements fuer ein Ziel; -1, wenn die Grammatik
+  keine hat. }
+function LandrixGaebXmlGrammarRoot(const ATarget: TLandrixGaebTarget): Integer;
+
+implementation
+
+function LandrixGaebXmlGrammarRoot(const ATarget: TLandrixGaebTarget): Integer;
+begin
+  Result := -1;""")
+    for ctx, _, row in g.roots:
+        w("  if (ATarget.Version = gv%s) and (ATarget.Edition = ge%s) and (ATarget.Phase = gp%s) then" % (
+            ctx["version"].replace(".", ""), ctx["edition"].replace("-", "_"), ctx["phase"].replace(".", "_")))
+        w("    Result := %d;" % row)
+    w("end;")
+    w("")
+    w("end.")
+    return "\r\n".join("\n".join(out).split("\n")) + "\r\n"
+
+
 def main(argv):
     args = argv[1:]
     if len(args) > 1 or any(a not in ("--check", "--update-names") for a in args):
@@ -1718,6 +2227,9 @@ def main(argv):
     units = [(MODEL_UNIT, gen_model(model)), (CODES_UNIT, gen_codes(model)),
              (READER_UNIT, gen_reader(model)), (PROFILES_UNIT, gen_profiles(model, prof)),
              (WRITER_UNIT, gen_writer(model, prof))]
+    grammar = Grammar(prof.contexts)
+    grammar.build()
+    units.append((GRAMMAR_UNIT, gen_grammar(grammar)))
     for path, text in units:
         if any(ord(ch) > 127 for ch in text):
             fail("%s: non-ASCII output" % path)

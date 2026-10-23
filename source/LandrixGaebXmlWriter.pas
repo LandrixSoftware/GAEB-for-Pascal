@@ -68,6 +68,19 @@ uses
 function LandrixGaebXmlWriteUtf8(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
   const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics): TLandrixXmlUtf8;
 
+{ Writes like LandrixGaebXmlWriteUtf8, but never aborts for the mode:
+  problems are only reported and counted (AErrors, AWarnings; with
+  AOptions.Check including the errors of the check of the output). Raises
+  only for targets that cannot be written and values XML cannot carry.
+  DE: Schreibt wie LandrixGaebXmlWriteUtf8, bricht aber nie wegen des
+  Modus ab: Probleme werden nur gemeldet und gezaehlt (AErrors, AWarnings;
+  mit AOptions.Check einschliesslich der Fehler der Pruefung der Ausgabe).
+  Loest nur fuer Ziele aus, die nicht geschrieben werden koennen, und fuer
+  Werte, die XML nicht tragen kann. }
+function LandrixGaebXmlWriteCollect(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics;
+  out AErrors, AWarnings: Integer): TLandrixXmlUtf8;
+
 { Writes the document to a stream (at its position).
   DE: Schreibt das Dokument in einen Stream (an seiner Position). }
 procedure LandrixGaebXmlWriteStream(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
@@ -82,6 +95,9 @@ procedure LandrixGaebXmlWriteFile(ADocument: TLandrixGaebXmlGAEB; const ATarget:
   ADiagnostics: TLandrixGaebDiagnostics);
 
 implementation
+
+uses
+  LandrixGaebXmlCheck;
 
 procedure WriteAddress(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlAddress; const AName: TLandrixXmlUtf8;
   ARow: Integer); forward;
@@ -3315,13 +3331,13 @@ begin
     W.ValueDecimal(ARow + 4, 'WgChangeRate', O.WgChangeRate);
 end;
 
-function LandrixGaebXmlWriteUtf8(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
-  const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics): TLandrixXmlUtf8;
+function LandrixGaebXmlWriteCollect(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics;
+  out AErrors, AWarnings: Integer): TLandrixXmlUtf8;
 var
   Row: Integer;
   Writer: TLandrixXmlWriter;
   Context: TLandrixGaebXmlWriteContext;
-  Failed: Boolean;
 begin
   Row := LandrixGaebXmlTargetRow(ATarget);
   if (Row < 0) or not LandrixGaebTargetIsSupported(ATarget, True) then
@@ -3342,23 +3358,39 @@ begin
     try
       WriteGAEB(Context, ADocument, 'GAEB', Row);
       Writer.EndDocument;
-      case AOptions.Mode of
-        gwmStrict:
-          Failed := (Context.Errors > 0) or (Context.Warnings > 0);
-        gwmNormal:
-          Failed := Context.Errors > 0;
-      else
-        Failed := False;
-      end;
-      if Failed then
-        raise ELandrixGaebError.Create('document not written: ' + IntToStr(Context.Errors) +
-          ' error(s), ' + IntToStr(Context.Warnings) + ' warning(s) (see diagnostics)');
+      AErrors := Context.Errors;
+      AWarnings := Context.Warnings;
     finally
       Context.Free;
     end;
     Result := Writer.AsUtf8;
   finally
     Writer.Free;
+  end;
+  if AOptions.Check then
+    Inc(AErrors, LandrixGaebXmlCheckTarget(Pointer(Result), Length(Result), ATarget, ADiagnostics));
+end;
+
+function LandrixGaebXmlWriteUtf8(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics): TLandrixXmlUtf8;
+var
+  Errors, Warnings: Integer;
+  Failed: Boolean;
+begin
+  Result := LandrixGaebXmlWriteCollect(ADocument, ATarget, AOptions, ADiagnostics, Errors, Warnings);
+  case AOptions.Mode of
+    gwmStrict:
+      Failed := (Errors > 0) or (Warnings > 0);
+    gwmNormal:
+      Failed := Errors > 0;
+  else
+    Failed := False;
+  end;
+  if Failed then
+  begin
+    Result := '';
+    raise ELandrixGaebError.Create('document not written: ' + IntToStr(Errors) +
+      ' error(s), ' + IntToStr(Warnings) + ' warning(s) (see diagnostics)');
   end;
 end;
 
