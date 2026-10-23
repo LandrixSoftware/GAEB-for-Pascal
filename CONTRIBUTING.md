@@ -30,7 +30,7 @@ Changes affecting generated GAEB files should, where applicable, be validated ag
 
 ## Compatibility
 
-All library code must compile unchanged with **Delphi 6 through Delphi 13** and **Free Pascal 3.2.2, 3.2.4 and 3.3.1**. XML is handled exclusively by [LandrixXML for Pascal](https://github.com/LandrixSoftware/LandrixXML-for-Pascal) (Git submodule `external/landrix-xml`); the language subset is the same:
+All library code must compile unchanged with **Delphi 6 through Delphi 13** and **Free Pascal 3.2.2, 3.2.4 and 3.3.1**. XML is handled exclusively by [LandrixXML for Pascal](https://github.com/landrix/LandrixXML-for-Pascal) (Git submodule `external/landrix-xml`); the language subset is the same:
 
 * Units: only `SysUtils`, `Classes`, `Contnrs`, `Types` (Delphi only, where required), LandrixXml units and own units. Unqualified unit names; unit names contain no dot.
 * Not allowed: generics, anonymous methods, `for ... in`, `Exit(Value)`, `strict private/protected`, records with methods, class and record helpers, operator overloading, `inline`, `class var`, nested types, inline `var` declarations, `{$REGION}`.

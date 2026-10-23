@@ -7,7 +7,7 @@ Pascal-Bibliothek zum Lesen, Schreiben und Verarbeiten von GAEB-Dateien (GAEB DA
 - Ziel: eine Codebasis für **Delphi 6 bis Delphi 13** und **Free Pascal 3.2.2, 3.2.4 und 3.3.1**
   (Windows, Linux, macOS).
 - Keine Abhängigkeit von MSXML oder anderen XML-Bibliotheken: XML wird über
-  [LandrixXML for Pascal](https://github.com/LandrixSoftware/LandrixXML-for-Pascal)
+  [LandrixXML for Pascal](https://github.com/landrix/LandrixXML-for-Pascal)
   verarbeitet, eingebunden als Git-Submodul (`git clone --recurse-submodules`).
 
 ## Lizenz / License
