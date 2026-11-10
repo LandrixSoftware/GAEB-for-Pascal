@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3">
+  <GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate><Date>2026-10-23</Date><ProgSystem>Test</ProgSystem></GAEBInfo>
+  <PrjInfo><NamePrj>Projekt</NamePrj></PrjInfo>
+  <Award><DP>83</DP><BoQ ID="B1"><BoQInfo><Name>LV</Name><LblBoQ>Test</LblBoQ><OutlCompl>AllTxt</OutlCompl><BoQBkdn><Type>BoQLevel</Type><LblBoQBkdn>Titel</LblBoQBkdn><Length>2</Length><Num>Yes</Num></BoQBkdn><BoQBkdn><Type>Item</Type><Length>4</Length><Num>Yes</Num></BoQBkdn></BoQInfo><BoQBody><BoQCtgy ID="C1" RNoPart="01"><LblTx><p><span>Titel</span></p></LblTx><BoQBody><Itemlist><Item ID="I1" RNoPart="0010"><Qty>10</Qty><QU>m</QU><Description><CompleteText><DetailTxt><Text><p><span>Leistung</span></p></Text></DetailTxt><OutlineText><OutlTxt><TextOutlTxt><p><span>Kurz</span></p></TextOutlTxt></OutlTxt></OutlineText></CompleteText></Description></Item><MarkupItem ID="M1" RNoPart="0020"><MarkupType>ListInSubQty</MarkupType><MarkupSubQty><RefItem IDRef="I1"/></MarkupSubQty><Description><CompleteText><DetailTxt><Text><p><span>Leistung</span></p></Text></DetailTxt><OutlineText><OutlTxt><TextOutlTxt><p><span>Kurz</span></p></TextOutlTxt></OutlTxt></OutlineText></CompleteText></Description></MarkupItem></Itemlist></BoQBody></BoQCtgy></BoQBody></BoQ></Award>
+</GAEB>

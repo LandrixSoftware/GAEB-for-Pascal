@@ -1,0 +1,3 @@
+invalid-1.x83 1 /GAEB[1]/Award[1]/BoQ[1]/BoQBody[1]/BoQCtgy[1]/BoQBody[1]/Itemlist[1]/Item[1]
+invalid-2.x83 1 /GAEB[1]/Award[1]/BoQ[1]/BoQBody[1]/BoQCtgy[1]/BoQBody[1]/BoQCtgy[1]
+invalid-3.x83 1 /GAEB[1]/Award[1]/BoQ[1]/BoQBody[1]/BoQCtgy[1]/BoQBody[1]/Itemlist[1]/Item[1]
