@@ -327,6 +327,11 @@ case("GAEB-BR-TXT-003", "invalid-1.x83",
      std83(item83("I1", "0010", refdescr="Rep", refrno="I2"), item83("I2", "0020", refdescr="Ref")), 1, I1)
 case("GAEB-BR-TXT-004", "valid-1.x83", std83(item83("I1", "0010", complements=(1,), tsb="Yes")))
 case("GAEB-BR-TXT-004", "invalid-1.x83", std83(item83("I1", "0010", complements=(1,))), 1, I1)
+# a complement in the outline text only: ComplTSA/ComplTSB concern the long text
+OUTLINE_COMPL = ('<TextComplement MarkLbl="5" Kind="Bidder"><ComplBody><p><span>Erzeugnis</span></p></ComplBody>'
+                 '</TextComplement>')
+case("GAEB-BR-TXT-004", "valid-2.x83",
+     std83(item83("I1", "0010")).replace("</TextOutlTxt></OutlTxt>", "</TextOutlTxt>" + OUTLINE_COMPL + "</OutlTxt>"))
 
 case("GAEB-BR-PERF-001", "valid-1.x83", x83(perf83("P1", "1") + perf83("P2", "2") +
                                          ctgy83("C1", "01", itemlist(item83("I1", "0010", refperf="P1")))))
@@ -425,6 +430,12 @@ case("GAEB-BR-PAIR-83-84-007", "pair-valid-1", (REQ, bid()))
 case("GAEB-BR-PAIR-83-84-007", "pair-valid-3",
      (std83(item83("I1", "0010", complements=(2147483648,), tsb="Yes")),
       std84(item84("I1", "0010", up="2.50", it="25.00", complements=("02147483648",)), total="25.00")))
+# a description of the request made of an outline text only
+REQ_OUTLINE = std83('<Item ID="I1" RNoPart="0010"><Qty>10</Qty><QU>m</QU><Description><OutlineText><OutlTxt>'
+                    '<TextOutlTxt><p><span>Kurz</span></p></TextOutlTxt>%s</OutlTxt></OutlineText></Description>'
+                    '</Item>' % OUTLINE_COMPL)
+case("GAEB-BR-PAIR-83-84-007", "pair-valid-4",
+     (REQ_OUTLINE, std84(item84("I1", "0010", up="2.50", it="25.00", complements=(5,)), total="25.00")))
 case("GAEB-BR-PAIR-83-84-007", "pair-valid-2",
      (REQ, bid(i1=item84("I1", "0010", up="2.50", it="25.00", complements=("01",)))))
 case("GAEB-BR-PAIR-83-84-007", "pair-invalid-1",

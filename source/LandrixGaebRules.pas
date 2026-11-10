@@ -489,10 +489,6 @@ begin
   Result := S <> '';
 end;
 
-{ Numbers of the text complements in the long text of a description;
-  MarkLbl is an integer, so the numbers are normalised ("01" = "1").
-  DE: Nummern der Textergaenzungen im Langtext einer Beschreibung; MarkLbl
-  ist eine Ganzzahl, die Nummern werden daher normalisiert ("01" = "1"). }
 { Integer in canonical form (sign only if negative, no leading zeros) for
   any length; the text unchanged if it is no integer.
   DE: Ganzzahl in kanonischer Form (Vorzeichen nur bei negativen Zahlen,
@@ -522,17 +518,78 @@ begin
     Result := Sign + T;
 end;
 
-procedure ComplementLabels(ADescription: TLandrixGaebXmlDescription; AList: TStrings);
+{ Numbers of the text complements in a text, at any depth (paragraphs,
+  blocks, lists, tables).
+  DE: Nummern der Textergaenzungen in einem Text in jeder Tiefe (Absaetze,
+  Bloecke, Listen, Tabellen). }
+procedure CollectComplements(ANode: TLandrixGaebXmlNode; AList: TStrings); forward;
+
+procedure CollectChildren(AChildren: TLandrixGaebXmlNodeList; AList: TStrings);
 var
-  Text: TLandrixGaebXmlBoQText;
   I: Integer;
 begin
-  if not ADescription.HasCompleteText or not ADescription.CompleteText.HasDetailTxt then
-    Exit;
-  Text := ADescription.CompleteText.DetailTxt;
-  for I := 0 to Integer(Text.Children.Count) - 1 do
-    if Text.Children[I] is TLandrixGaebXmlTextComplement then
-      AList.Add(GaebToStr(CanonicalInteger(TLandrixGaebXmlTextComplement(Text.Children[I]).MarkLbl)));
+  for I := 0 to Integer(AChildren.Count) - 1 do
+    CollectComplements(AChildren[I], AList);
+end;
+
+procedure CollectComplements(ANode: TLandrixGaebXmlNode; AList: TStrings);
+var
+  I: Integer;
+begin
+  if ANode is TLandrixGaebXmlTextComplement then
+    AList.Add(GaebToStr(CanonicalInteger(TLandrixGaebXmlTextComplement(ANode).MarkLbl)))
+  else if ANode is TLandrixGaebXmlBoQText then
+    CollectChildren(TLandrixGaebXmlBoQText(ANode).Children, AList)
+  else if ANode is TLandrixGaebXmlOutlTxt then
+    CollectChildren(TLandrixGaebXmlOutlTxt(ANode).Children, AList)
+  else if ANode is TLandrixGaebXmlFTextTC then
+    CollectChildren(TLandrixGaebXmlFTextTC(ANode).Children, AList)
+  else if ANode is TLandrixGaebXmlPTC then
+    CollectChildren(TLandrixGaebXmlPTC(ANode).Children, AList)
+  else if ANode is TLandrixGaebXmlDivTC then
+    CollectChildren(TLandrixGaebXmlDivTC(ANode).Children, AList)
+  else if ANode is TLandrixGaebXmlLiTC then
+    CollectChildren(TLandrixGaebXmlLiTC(ANode).Children, AList)
+  else if ANode is TLandrixGaebXmlTrTC then
+    CollectChildren(TLandrixGaebXmlTrTC(ANode).Children, AList)
+  else if ANode is TLandrixGaebXmlTdTC then
+    CollectChildren(TLandrixGaebXmlTdTC(ANode).Children, AList)
+  else if ANode is TLandrixGaebXmlUlTC then
+  begin
+    for I := 0 to Integer(TLandrixGaebXmlUlTC(ANode).Li.Count) - 1 do
+      CollectComplements(TLandrixGaebXmlUlTC(ANode).Li[I], AList);
+  end
+  else if ANode is TLandrixGaebXmlOlTC then
+  begin
+    for I := 0 to Integer(TLandrixGaebXmlOlTC(ANode).Li.Count) - 1 do
+      CollectComplements(TLandrixGaebXmlOlTC(ANode).Li[I], AList);
+  end
+  else if ANode is TLandrixGaebXmlTableTC then
+  begin
+    for I := 0 to Integer(TLandrixGaebXmlTableTC(ANode).Tr.Count) - 1 do
+      CollectComplements(TLandrixGaebXmlTableTC(ANode).Tr[I], AList);
+  end;
+end;
+
+{ Numbers of the text complements of a description in the long text and,
+  with AOutline, also in the outline text (of CompleteText or standing
+  alone); MarkLbl is an integer, so the numbers are normalised ("01" = "1").
+  DE: Nummern der Textergaenzungen einer Beschreibung im Langtext und mit
+  AOutline auch im Kurztext (in CompleteText oder allein); MarkLbl ist eine
+  Ganzzahl, die Nummern werden daher normalisiert ("01" = "1"). }
+procedure ComplementLabels(ADescription: TLandrixGaebXmlDescription; AList: TStrings;
+  AOutline: Boolean);
+begin
+  if ADescription.HasCompleteText then
+  begin
+    if ADescription.CompleteText.HasDetailTxt then
+      CollectComplements(ADescription.CompleteText.DetailTxt, AList);
+    if AOutline and ADescription.CompleteText.HasOutlineText and
+      ADescription.CompleteText.OutlineText.HasOutlTxt then
+      CollectComplements(ADescription.CompleteText.OutlineText.OutlTxt, AList);
+  end;
+  if AOutline and ADescription.HasOutlineText and ADescription.OutlineText.HasOutlTxt then
+    CollectComplements(ADescription.OutlineText.OutlTxt, AList);
 end;
 
 { TKeyIndex }
@@ -1032,7 +1089,8 @@ begin
   begin
     Labels := TStringList.Create;
     try
-      ComplementLabels(AItem.Description, Labels);
+      { ComplTSA/ComplTSB concern the long text only }
+      ComplementLabels(AItem.Description, Labels, False);
       if (Labels.Count > 0) and (AItem.Description.CompleteText.ComplTSA = '') and
         (AItem.Description.CompleteText.ComplTSB = '') then
         Report('GAEB-BR-TXT-004', R.Path, 'text complements without ComplTSA or ComplTSB');
@@ -1559,8 +1617,8 @@ begin
         FirstLabels.Clear;
         SecondLabels.Clear;
         if A.HasDescription then
-          ComplementLabels(A.Description, FirstLabels);
-        ComplementLabels(B.Description, SecondLabels);
+          ComplementLabels(A.Description, FirstLabels, True);
+        ComplementLabels(B.Description, SecondLabels, True);
         for J := 0 to SecondLabels.Count - 1 do
           if FirstLabels.IndexOf(SecondLabels[J]) < 0 then
           begin

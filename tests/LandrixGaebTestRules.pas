@@ -39,6 +39,7 @@ uses
   LandrixGaebXmlReader,
   LandrixGaebXmlCheck,
   LandrixGaebRules,
+  LandrixGaebTestNoValues,
   LandrixGaebTestFramework;
 
 const
@@ -126,6 +127,7 @@ begin
   try
     G := ReadCase(ADir + AName, Target);
     LandrixGaebCheckRules(G, Target, Diags);
+    CheckNoFileValues(ReadFileBytes(ADir + AName), Diags, ARuleId + '/' + AName);
     N := CountRule(Diags, ARuleId, First);
     CheckEquals(AExpected, N, ARuleId + '/' + AName + ': ' + Diags.ToText);
     if AExpected > 0 then
@@ -151,6 +153,8 @@ begin
     A := ReadCase(ADir + AName + PathDelim + 'first.x83', TA);
     B := ReadCase(ADir + AName + PathDelim + 'second.x84', TB);
     LandrixGaebCheckPair(A, TA, B, TB, Diags);
+    CheckNoFileValues(ReadFileBytes(ADir + AName + PathDelim + 'first.x83'), Diags, ARuleId + '/' + AName);
+    CheckNoFileValues(ReadFileBytes(ADir + AName + PathDelim + 'second.x84'), Diags, ARuleId + '/' + AName);
     N := CountRule(Diags, ARuleId, First);
     CheckEquals(AExpected, N, ARuleId + '/' + AName + ': ' + Diags.ToText);
     if AExpected > 0 then
@@ -271,8 +275,9 @@ end;
 { ---- local corpus ---- }
 
 var
-  CorpusChecked: Integer;
+  CorpusChecked, CorpusLeaks: Integer;
   CorpusRules: TStringList;
+  CorpusFirstLeak: string;
 
 procedure CorpusFile(const FileName: string);
 var
@@ -280,6 +285,7 @@ var
   G: TLandrixGaebXmlGAEB;
   Diags: TLandrixGaebDiagnostics;
   I: TLandrixGaebListIndex;
+  First: string;
 begin
   Det := LandrixGaebDetectFile(FileName, nil, 0);
   if (Det.Format <> gfXml) or not Det.Accepted or not (Det.Target.Phase in [gp83, gp84]) or
@@ -293,6 +299,12 @@ begin
     Inc(CorpusChecked);
     for I := 0 to Diags.Count - 1 do
       CorpusRules.Add(Diags[I].RuleId);
+    { case 37 on real files: reader, check and rules; counts only }
+    LandrixGaebXmlReadFile(FileName, Diags, 0, Det).Free;
+    LandrixGaebXmlCheckFile(FileName, Diags, 0, Det);
+    Inc(CorpusLeaks, CountValueLeaks(FileValues(ReadFileBytes(FileName)), Diags, First));
+    if (First <> '') and (CorpusFirstLeak = '') then
+      CorpusFirstLeak := First;
   finally
     G.Free;
     Diags.Free;
@@ -330,6 +342,8 @@ begin
     Exit;
   end;
   CorpusChecked := 0;
+  CorpusLeaks := 0;
+  CorpusFirstLeak := '';
   CorpusRules := TStringList.Create;
   try
     CorpusRules.Sorted := True;
@@ -347,7 +361,9 @@ begin
       Inc(I, N);
     end;
     WriteLn('  Local.Rules: ', CorpusChecked, ' file(s) checked,', Summary);
+    WriteLn('  Local.Rules: ', CorpusLeaks, ' message(s) with a value of their file');
     Check(CorpusChecked > 0, 'local files checked');
+    CheckEquals(0, CorpusLeaks, 'no message contains a value of its file (' + CorpusFirstLeak + ')');
   finally
     CorpusRules.Free;
     CorpusRules := nil;
