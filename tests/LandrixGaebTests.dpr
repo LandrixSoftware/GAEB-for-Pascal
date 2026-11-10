@@ -36,7 +36,8 @@ uses
   LandrixGaebTestXmlCheck,
   LandrixGaebTestRules,
   LandrixGaebTestNoValues,
-  LandrixGaebTestLegacy;
+  LandrixGaebTestLegacy,
+  LandrixGaebTestXsd;
 
 function FilterParam: string;
 var
@@ -58,5 +59,6 @@ begin
   LandrixGaebTestXmlCheck.Register;
   LandrixGaebTestRules.Register;
   LandrixGaebTestLegacy.Register;
+  LandrixGaebTestXsd.Register;
   ExitCode := RunAllTests(FilterParam);
 end.

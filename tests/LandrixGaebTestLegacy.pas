@@ -455,7 +455,8 @@ begin
     Check(Contains(OutA, '<Provis>WithoutTotal</Provis>'), 'eventual item');
     Check(Contains(OutA, '<RefDescr>Rep</RefDescr><RefRNo IDRef="I6"/>'), 'repetition description');
     Check(Contains(OutA, '<RefPerfNo IDRef="P1"/><QtyTBD>Yes</QtyTBD>'), 'execution description, QtyTBD');
-    Check(Contains(OutA, '<QtySplit><Qty>4.000</Qty></QtySplit>'), 'quantity split');
+    Check(Contains(OutA, '<QtySplit><Qty>4.000</Qty><CtlgAssign><CtlgID>C1</CtlgID><CtlgCode>KS1</CtlgCode></CtlgAssign>' +
+      '</QtySplit>'), 'quantity split with catalogue assignment');
     Check(Contains(OutA, '<SubDescr><SubDNo>1</SubDNo>'), 'sub description');
     Check(Contains(OutA, '<MarkupSubQty><RefItem IDRef="I1"/></MarkupSubQty>'), 'markup item ListInSubQty');
     Check(Contains(OutA, '<NotApplBoQ>Yes</NotApplBoQ>'), 'category not applicable');

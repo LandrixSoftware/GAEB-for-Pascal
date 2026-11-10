@@ -162,6 +162,10 @@ case("30-format.x83", rc.std83(item83("I1", "0010", "<Qty>1.000</Qty><QU>St</QU>
 
 # ---- 31 and 35: element list of X83 and X84 ----
 
+def ctlg_assign(code):
+    return "<CtlgAssign><CtlgID>C1</CtlgID><CtlgCode>%s</CtlgCode></CtlgAssign>" % code
+
+
 UPCOMPS3 = ('<NoUPComps>3</NoUPComps><LblUPComp1 Type="Wages">Lohn</LblUPComp1>'
             '<LblUPComp2 Type="Materials">Stoffe</LblUPComp2><LblUPComp3 Type="Plant">Geraete</LblUPComp3>')
 D = desc("<Text><p>%s</p></Text>" % span("Leistung"))
@@ -174,8 +178,9 @@ ITEMS31 = rc.itemlist(
     item83("I6", "0060", "<RefDescr>Ref</RefDescr><Qty>3.000</Qty><QU>m2</QU>" + D),
     item83("I7", "0070", '<RefDescr>Rep</RefDescr><RefRNo IDRef="I6"/><Qty>5.000</Qty><QU>m2</QU>' + D),
     item83("I8", "0080", '<RefPerfNo IDRef="P1"/><QtyTBD>Yes</QtyTBD><QU>m3</QU>' + D),
-    item83("I9", "0090", "<Qty>10.000</Qty><QtySplit><Qty>4.000</Qty></QtySplit><QtySplit><Qty>6.000</Qty>"
-                         "</QtySplit><QU>t</QU><VAT>19.00</VAT>" + D),
+    # 3.2 requires a catalogue assignment in QtySplit, 3.3 does not
+    item83("I9", "0090", "<Qty>10.000</Qty><QtySplit><Qty>4.000</Qty>%s</QtySplit><QtySplit><Qty>6.000</Qty>%s"
+                         "</QtySplit><QU>t</QU><VAT>19.00</VAT>" % (ctlg_assign("KS1"), ctlg_assign("KS2")) + D),
     item83("I10", "0100", "<Qty>1.000</Qty><QU>St</QU>" + D +
            "<SumDescr>Yes</SumDescr><SubDescr><SubDNo>1</SubDNo>%s<Qty>2.000</Qty><QU>St</QU></SubDescr>" % D),
     '<MarkupItem ID="M1" RNoPart="0110"><MarkupType>AllInCat</MarkupType>%s</MarkupItem>' % D,
@@ -187,7 +192,8 @@ X83_31 = rc.x83(PERF + rc.ctgy83("C1", "01", ITEMS31) +
                 '<BoQCtgy ID="C2" RNoPart="02"><LblTx><p><span>Entfaellt</span></p></LblTx>'
                 '<NotApplBoQ>Yes</NotApplBoQ><BoQBody>%s</BoQBody></BoQCtgy>'
                 % rc.itemlist(rc.item83("I11", "0010")),
-                upcomps=UPCOMPS3, upfracdig="3")
+                upcomps=UPCOMPS3 + "<Ctlg><CtlgID>C1</CtlgID><CtlgType>cost unit</CtlgType>"
+                                   "<CtlgName>Kostentraeger</CtlgName></Ctlg>", upfracdig="3")
 X83_31 = X83_31.replace("<Award><DP>83</DP>",
                         "<Award><DP>83</DP><AwardInfo><Cur>EUR</Cur><CurLbl>Euro</CurLbl></AwardInfo>"
                         "<AddText><DetailAddText><p>%s</p></DetailAddText></AddText>" % span("Vorbemerkung"))
