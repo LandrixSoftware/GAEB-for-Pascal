@@ -95,7 +95,12 @@ type
   end;
 
 const
-  { The catalogue. DE: Der Katalog. }
+  { The catalogue. Errors are violations that make a document ambiguous or
+    its amounts wrong; violations of form that real exporters produce are
+    warnings.
+    DE: Der Katalog. Fehler sind Verstoesse, die ein Dokument mehrdeutig
+    oder seine Betraege falsch machen; Formverstoesse, die echte
+    Exportprogramme erzeugen, sind Warnungen. }
   LandrixGaebRuleCatalog: array[0..LandrixGaebRuleCount - 1] of TLandrixGaebRule = (
     (ID: 'GAEB-BR-OZ-001'; Title: 'OZ unique within the bill of quantities';
       Severity: gsError; Phases: [gp83, gp84]; Pair: False;
@@ -125,7 +130,7 @@ const
       Severity: gsError; Phases: [gp83, gp84]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 BoQBkdn 2'),
     (ID: 'GAEB-BR-BKDN-004'; Title: 'Label of a breakdown part only for BoQLevel';
-      Severity: gsError; Phases: [gp83, gp84]; Pair: False;
+      Severity: gsWarning; Phases: [gp83, gp84]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 BoQBkdn 1'),
     (ID: 'GAEB-BR-UP-002'; Title: 'Labels of unit price components match NoUPComps';
       Severity: gsError; Phases: [gp83]; Pair: False;
@@ -158,7 +163,7 @@ const
       Severity: gsError; Phases: [gp83]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.4.4'),
     (ID: 'GAEB-BR-TXT-002'; Title: 'Repetition description keeps the unit of its reference';
-      Severity: gsError; Phases: [gp83]; Pair: False;
+      Severity: gsWarning; Phases: [gp83]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.4.4'),
     (ID: 'GAEB-BR-TXT-003'; Title: 'Reference description precedes its repetitions';
       Severity: gsError; Phases: [gp83]; Pair: False;
