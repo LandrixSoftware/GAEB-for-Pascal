@@ -253,6 +253,44 @@ begin
     CheckDocuments('legacy');
 end;
 
+{ The coverage documents and their writer output (3.3/2019-11 written as
+  2021-05, the same namespace). }
+procedure TestCoverageCases;
+var
+  Files: TStringList;
+  I, T, W: Integer;
+  Source, Output: TLandrixXmlUtf8;
+  G: TLandrixGaebXmlGAEB;
+  Det: TLandrixGaebDetection;
+  Name, XsdError: string;
+begin
+  if not HaveSchemas then
+    Exit;
+  CheckDocuments('coverage');
+  Files := TStringList.Create;
+  try
+    ListFiles(DataDir('coverage'), Files);
+    for I := 0 to Files.Count - 1 do
+    begin
+      Name := ExtractFileName(Files[I]);
+      Source := ReadFileBytes(Files[I]);
+      G := LandrixGaebXmlReadBuffer(Pointer(Source), Integer(Length(Source)), nil, Det);
+      try
+        T := TargetIndex(Det.Target);
+        W := T;
+        if not LandrixGaebTargetIsSupported(Det.Target, True) then
+          W := TargetIndex(LandrixGaebTarget(gv33, ge2021_05, Det.Target.Phase));
+        Output := LandrixGaebXmlWriteUtf8(G, TargetOf(W), LandrixGaebXmlDefaultWriteOptions, nil);
+        Check(XsdValid(Output, W, XsdError), Name + ' written for ' + TargetName(W) + ': XSD ' + XsdError);
+      finally
+        G.Free;
+      end;
+    end;
+  finally
+    Files.Free;
+  end;
+end;
+
 { ---- the writer: output for every target is valid ---- }
 
 procedure TestWriterTargets;
@@ -407,7 +445,7 @@ end;
 procedure TestLocal;
 var
   Files: TStringList;
-  I, T, Checked, Agree, Valid, Written, WrittenValid, Failed: Integer;
+  I, T, Checked, Agree, Valid, Written, WrittenValid, Failed, Converted, ConvertedValid: Integer;
   Source, Output: TLandrixXmlUtf8;
   XsdError, FirstFailure: string;
   XsdOk, CheckOk: Boolean;
@@ -430,6 +468,8 @@ begin
   Written := 0;
   WrittenValid := 0;
   Failed := 0;
+  Converted := 0;
+  ConvertedValid := 0;
   FirstFailure := '';
   Files := TStringList.Create;
   try
@@ -447,6 +487,19 @@ begin
         Inc(Valid);
       if CheckOk = XsdOk then
         Inc(Agree);
+      { a valid 3.2 file converted to 3.3/2021-05 stays valid }
+      if XsdOk and (TargetOf(T).Version = gv32) then
+      begin
+        G := LandrixGaebXmlReadBuffer(Pointer(Source), Integer(Length(Source)), nil, Det);
+        try
+          Output := LandrixGaebXmlWriteUtf8(G, TargetOf(T + 4), LandrixGaebXmlDefaultWriteOptions, nil);
+        finally
+          G.Free;
+        end;
+        Inc(Converted);
+        if XsdValid(Output, T + 4, XsdError) then
+          Inc(ConvertedValid);
+      end;
       if XsdOk and LandrixGaebTargetIsSupported(TargetOf(T), True) then
       begin
         G := LandrixGaebXmlReadBuffer(Pointer(Source), Integer(Length(Source)), nil, Det);
@@ -471,17 +524,20 @@ begin
     Files.Free;
   end;
   WriteLn('  Local.Xsd: ', Checked, ' file(s), ', Valid, ' XSD-valid, check agrees on ', Agree,
-    '; ', Written, ' written, ', WrittenValid, ' of them XSD-valid; ', Failed, ' failed');
+    '; ', Written, ' written, ', WrittenValid, ' of them XSD-valid; ', Converted, ' converted 3.2 -> 3.3, ',
+    ConvertedValid, ' of them XSD-valid; ', Failed, ' failed');
   Check(Checked > 0, 'local files found');
   CheckEquals(0, Failed, 'no exception (first: ' + FirstFailure + ')');
   CheckEquals(Checked, Agree, 'the check agrees with the XSD on every local file');
   CheckEquals(Written, WrittenValid, 'the writer keeps every valid local file valid');
+  CheckEquals(Converted, ConvertedValid, 'every valid 3.2 file is valid after the conversion to 3.3');
 end;
 
 procedure Register;
 begin
   RegisterTest('Xsd.RuleCases', TestRuleCases);
   RegisterTest('Xsd.LegacyCases', TestLegacyCases);
+  RegisterTest('Xsd.CoverageCases', TestCoverageCases);
   RegisterTest('Xsd.WriterTargets', TestWriterTargets);
   RegisterTest('Xsd.Agreement', TestAgreement);
   RegisterTest('Local.Xsd', TestLocal);
