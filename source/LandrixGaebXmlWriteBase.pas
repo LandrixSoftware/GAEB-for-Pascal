@@ -52,7 +52,6 @@ interface
 uses
   SysUtils,
   Classes,
-  Contnrs,
   LandrixXmlBase,
   LandrixXmlWriter,
   LandrixGaebTypes,
@@ -104,6 +103,21 @@ type
     Check: Boolean;
   end;
 
+  { One open element of a write: its name, its index among the siblings of
+    that name (for diagnostic paths) and the names of its children written
+    so far with their counts. Used by TLandrixGaebXmlWriteContext only.
+    DE: Ein offenes Element eines Schreibvorgangs: Name, Index unter den
+    gleichnamigen Geschwistern (fuer Pfade in Meldungen) und die Namen der
+    bisher geschriebenen Kinder mit ihrer Anzahl. Nur von
+    TLandrixGaebXmlWriteContext benutzt. }
+  TLandrixGaebXmlWriteFrame = record
+    Name: TLandrixXmlUtf8;
+    Index: Integer;
+    ChildNames: array of TLandrixXmlUtf8;
+    ChildCounts: array of Integer;
+    ChildCount: Integer;
+  end;
+
   { State of one write. Used by the generated writer only.
     DE: Zustand eines Schreibvorgangs. Nur vom generierten Schreiber
     benutzt. }
@@ -112,10 +126,10 @@ type
     FWriter: TLandrixXmlWriter;
     FOptions: TLandrixGaebXmlWriteOptions;
     FDiagnostics: TLandrixGaebDiagnostics;
-    FPath: TStringList;
-    { per open element: names of its children written so far, for the
-      sibling index in diagnostic paths }
-    FSiblings: TObjectList;
+    { FFrames[0] is the document, FFrames[1..FDepth] the open elements;
+      frames are reused, so writing allocates nothing per element }
+    FFrames: array of TLandrixGaebXmlWriteFrame;
+    FDepth: Integer;
     FErrors: Integer;
     FWarnings: Integer;
     FTargetVersion: TLandrixGaebString;
@@ -228,9 +242,8 @@ begin
   FWriter := AWriter;
   FOptions := AOptions;
   FDiagnostics := ADiagnostics;
-  FPath := TStringList.Create;
-  FSiblings := TObjectList.Create;
-  FSiblings.Add(TStringList.Create);
+  SetLength(FFrames, 32);
+  FDepth := 0;
   FTargetVersion := LandrixXmlUtf8ToWide(LandrixGaebVersionToText(ATarget.Version));
   FTargetVersDate := LandrixXmlUtf8ToWide(LandrixGaebTargetVersDate(ATarget));
   FTargetDP := LandrixXmlUtf8ToWide(LandrixGaebPhaseToDP(ATarget.Phase));
@@ -239,8 +252,6 @@ end;
 
 destructor TLandrixGaebXmlWriteContext.Destroy;
 begin
-  FSiblings.Free;
-  FPath.Free;
   inherited Destroy;
 end;
 
@@ -266,29 +277,42 @@ end;
 function TLandrixGaebXmlWriteContext.Path: TLandrixGaebString;
 var
   I: Integer;
-  S: string;
+  S: TLandrixXmlUtf8;
 begin
   S := '';
-  for I := 0 to FPath.Count - 1 do
-    S := S + '/' + FPath[I];
-  Result := LandrixXmlUtf8ToWide(LandrixXmlStringToUtf8(S));
+  for I := 1 to FDepth do
+    S := S + '/' + FFrames[I].Name + '[' + LandrixXmlStringToUtf8(IntToStr(FFrames[I].Index)) + ']';
+  Result := LandrixXmlUtf8ToWide(S);
 end;
 
 procedure TLandrixGaebXmlWriteContext.Enter(const AName: TLandrixXmlUtf8);
 var
-  Name: string;
-  Written: TStringList;
-  I, N: Integer;
+  I, P: Integer;
 begin
-  Name := LandrixXmlUtf8ToString(AName);
-  Written := FSiblings[Integer(FSiblings.Count) - 1] as TStringList;
-  Written.Add(Name);
-  N := 0;
-  for I := 0 to Written.Count - 1 do
-    if Written[I] = Name then
-      Inc(N);
-  FPath.Add(Name + '[' + IntToStr(N) + ']');
-  FSiblings.Add(TStringList.Create);
+  { count AName among the children of the parent; an element has few
+    distinct child names }
+  P := FDepth;
+  I := 0;
+  while (I < FFrames[P].ChildCount) and (FFrames[P].ChildNames[I] <> AName) do
+    Inc(I);
+  if I = FFrames[P].ChildCount then
+  begin
+    if I = Integer(Length(FFrames[P].ChildNames)) then
+    begin
+      SetLength(FFrames[P].ChildNames, 2 * I + 4);
+      SetLength(FFrames[P].ChildCounts, 2 * I + 4);
+    end;
+    FFrames[P].ChildNames[I] := AName;
+    FFrames[P].ChildCounts[I] := 0;
+    Inc(FFrames[P].ChildCount);
+  end;
+  Inc(FFrames[P].ChildCounts[I]);
+  Inc(FDepth);
+  if FDepth = Integer(Length(FFrames)) then
+    SetLength(FFrames, 2 * FDepth);
+  FFrames[FDepth].Name := AName;
+  FFrames[FDepth].Index := FFrames[P].ChildCounts[I];
+  FFrames[FDepth].ChildCount := 0;
 end;
 
 procedure TLandrixGaebXmlWriteContext.StartRoot(const AName: TLandrixXmlUtf8);
@@ -306,8 +330,7 @@ end;
 procedure TLandrixGaebXmlWriteContext.EndElement;
 begin
   FWriter.EndElement;
-  FPath.Delete(FPath.Count - 1);
-  FSiblings.Delete(Integer(FSiblings.Count) - 1);
+  Dec(FDepth);
 end;
 
 function TLandrixGaebXmlWriteContext.Allowed(ASlot: Integer; const AName: TLandrixXmlUtf8;

@@ -297,10 +297,12 @@ var
   H: Cardinal;
   I, Mask: Integer;
 begin
-  { rotate and xor: no overflow in checked builds }
-  H := 0;
+  { FNV-1a; the product in Int64 (32 x 24 bits) cannot overflow in checked
+    builds. Rotate and xor clustered IDs such as I1..I99999 (four of eight
+    bits per digit) and made the probing quadratic. }
+  H := 2166136261;
   for I := 1 to Length(S) do
-    H := ((H shl 5) or (H shr 27)) xor Cardinal(Ord(S[I]));
+    H := Cardinal((Int64(H xor Cardinal(Ord(S[I]))) * 16777619) and $FFFFFFFF);
   Mask := Integer(Length(FSlots)) - 1;
   Result := Integer(H and Cardinal(Mask));
   while FUsed[Result] and (FSlots[Result] <> S) do
