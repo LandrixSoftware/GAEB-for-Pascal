@@ -14,14 +14,14 @@
 
 { The bill of quantities of a syntax model as a flat list of nodes in
   document order (categories, items, markup items, execution
-  descriptions) with their ordinal number (OZ), the OZ order and key, and
+  descriptions, remarks) with their ordinal number (OZ), the OZ order and key, and
   the counting rule of the totals. Shared by the business rules
   (LandrixGaebRules) and the business facade, so that uniqueness, order,
   pair matching and totals agree everywhere.
 
   DE: Das Leistungsverzeichnis eines Syntaxmodells als flache Liste von
   Knoten in Dokumentreihenfolge (Bereiche, Positionen, Zuschlagspositionen,
-  Ausfuehrungsbeschreibungen) mit Ordnungszahl (OZ), OZ-Reihenfolge und
+  Ausfuehrungsbeschreibungen, Bemerkungen) mit Ordnungszahl (OZ), OZ-Reihenfolge und
   -Schluessel sowie der Zaehlregel der Summen. Gemeinsam genutzt von den
   Geschaeftsregeln (LandrixGaebRules) und der fachlichen Fassade, damit
   Eindeutigkeit, Reihenfolge, Paarzuordnung und Summen ueberall
@@ -53,6 +53,7 @@ const
   LandrixGaebTreeItem = 2;
   LandrixGaebTreeMarkup = 3;
   LandrixGaebTreePerf = 4;
+  LandrixGaebTreeRemark = 5;
 
 type
   { A category, item, markup item or execution description in document
@@ -70,16 +71,17 @@ type
       document). DE: Der Knoten des Syntaxmodells (nicht im Besitz; gueltig,
       solange das Dokument besteht). }
     Node: TLandrixGaebXmlNode;
-    { LandrixGaebTreeRoot to LandrixGaebTreePerf. DE: LandrixGaebTreeRoot
-      bis LandrixGaebTreePerf. }
+    { LandrixGaebTreeRoot to LandrixGaebTreeRemark. DE: LandrixGaebTreeRoot
+      bis LandrixGaebTreeRemark. }
     Kind: Integer;
     { Enclosing category, the root at top level, nil for the root.
       DE: Umgebender Bereich, auf oberster Ebene die Wurzel, nil fuer die
       Wurzel. }
     Parent: TLandrixGaebTreeNode;
     { RNoPart of every enclosing category and the own one (none for
-      execution descriptions). DE: RNoPart aller umgebenden Bereiche und der
-      eigene (keine bei Ausfuehrungsbeschreibungen). }
+      execution descriptions and remarks). DE: RNoPart aller umgebenden
+      Bereiche und der eigene (keine bei Ausfuehrungsbeschreibungen und
+      Bemerkungen). }
     Parts: array of TLandrixGaebString;
     { RNoIndex of an item. DE: RNoIndex einer Position. }
     Index: TLandrixGaebString;
@@ -578,7 +580,7 @@ begin
   Result.Order := Integer(FNodes.Count);
   Result.SumKnown := True;
   Result.Sum := LandrixXmlDecimalZero;
-  if AKind = LandrixGaebTreePerf then
+  if (AKind = LandrixGaebTreePerf) or (AKind = LandrixGaebTreeRemark) then
     Exit;
   SetLength(Result.Parts, Length(AParent.Parts) + 1);
   for I := 0 to Integer(High(AParent.Parts)) do
@@ -599,12 +601,13 @@ end;
 procedure TLandrixGaebTree.WalkBody(ABody: TLandrixGaebXmlBoQBody; AParent: TLandrixGaebTreeNode;
   const APath: TLandrixXmlUtf8);
 var
-  I, Ctgys, Perfs: Integer;
+  I, Ctgys, Perfs, Remarks: Integer;
   N: TLandrixGaebXmlNode;
   R: TLandrixGaebTreeNode;
 begin
   Ctgys := 0;
   Perfs := 0;
+  Remarks := 0;
   for I := 0 to Integer(ABody.Children.Count) - 1 do
   begin
     N := ABody.Children[I];
@@ -620,6 +623,11 @@ begin
     begin
       Inc(Perfs);
       AddNode(N, LandrixGaebTreePerf, AParent, APath + '/PerfDescr[' + IntToUtf8(Perfs) + ']', '', '');
+    end
+    else if N is TLandrixGaebXmlRemark then
+    begin
+      Inc(Remarks);
+      AddNode(N, LandrixGaebTreeRemark, AParent, APath + '/Remark[' + IntToUtf8(Remarks) + ']', '', '');
     end;
   end;
   if ABody.HasItemlist then
@@ -629,12 +637,13 @@ end;
 procedure TLandrixGaebTree.WalkItems(AList: TLandrixGaebXmlItemlist; AParent: TLandrixGaebTreeNode;
   const APath: TLandrixXmlUtf8);
 var
-  I, Items, Markups, Perfs: Integer;
+  I, Items, Markups, Perfs, Remarks: Integer;
   N: TLandrixGaebXmlNode;
 begin
   Items := 0;
   Markups := 0;
   Perfs := 0;
+  Remarks := 0;
   for I := 0 to Integer(AList.Children.Count) - 1 do
   begin
     N := AList.Children[I];
@@ -654,6 +663,11 @@ begin
     begin
       Inc(Perfs);
       AddNode(N, LandrixGaebTreePerf, AParent, APath + '/PerfDescr[' + IntToUtf8(Perfs) + ']', '', '');
+    end
+    else if N is TLandrixGaebXmlRemark then
+    begin
+      Inc(Remarks);
+      AddNode(N, LandrixGaebTreeRemark, AParent, APath + '/Remark[' + IntToUtf8(Remarks) + ']', '', '');
     end;
   end;
 end;
