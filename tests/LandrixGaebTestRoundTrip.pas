@@ -250,6 +250,7 @@ begin
   CheckFolder('coverage');
   CheckFolder('legacy');
   CheckFolder('rules');
+  CheckFolder('process');
 end;
 
 { ---- local corpus: counts only ---- }

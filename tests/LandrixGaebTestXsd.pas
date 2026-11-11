@@ -252,6 +252,29 @@ begin
     CheckDocuments('legacy');
 end;
 
+{ The documents of the bid process and the request X81 written as X83. }
+procedure TestProcessCases;
+var
+  Source, Output: TLandrixXmlUtf8;
+  G: TLandrixGaebXmlGAEB;
+  Det: TLandrixGaebDetection;
+  T: Integer;
+  XsdError: string;
+begin
+  if not HaveSchemas then
+    Exit;
+  CheckDocuments('process');
+  Source := ReadFileBytes(DataDir('process') + 'request.x81');
+  G := LandrixGaebXmlReadBuffer(Pointer(Source), Integer(Length(Source)), nil, Det);
+  try
+    T := TargetIndex(LandrixGaebTarget(Det.Target.Version, Det.Target.Edition, gp83));
+    Output := LandrixGaebXmlWriteUtf8(G, TargetOf(T), LandrixGaebXmlDefaultWriteOptions, nil);
+  finally
+    G.Free;
+  end;
+  Check(XsdValid(Output, T, XsdError), 'request.x81 written as X83: XSD ' + XsdError);
+end;
+
 { The coverage documents and their writer output (3.3/2019-11 written as
   2021-05, the same namespace). }
 procedure TestCoverageCases;
@@ -536,6 +559,7 @@ procedure Register;
 begin
   RegisterTest('Xsd.RuleCases', TestRuleCases);
   RegisterTest('Xsd.LegacyCases', TestLegacyCases);
+  RegisterTest('Xsd.ProcessCases', TestProcessCases);
   RegisterTest('Xsd.CoverageCases', TestCoverageCases);
   RegisterTest('Xsd.WriterTargets', TestWriterTargets);
   RegisterTest('Xsd.Agreement', TestAgreement);
