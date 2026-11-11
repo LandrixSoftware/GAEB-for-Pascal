@@ -548,17 +548,20 @@ def derive(content, src, dst):
         # modified (documentation 4.6.15)
         s = re.sub(r'(<Item ID="[^"]+"[^>]*>(?:(?!</Item>).)*?)(<QtyDeterm>|</Item>)',
                    r"\1<AlterBidStatus>New</AlterBidStatus>\2", s)
-    if src == "83" and dst in ("84", "86"):
-        # categories of a bid or an award carry totals
+    if src == "83" and dst in ("84", "86", "87"):
+        # categories of a bid, an award or a confirmation carry totals
         s = s.replace("</BoQBody></BoQCtgy>", "</BoQBody><Totals><Total>0.00</Total></Totals></BoQCtgy>")
-    if dst == "86":
-        # a markup item of an award carries its amounts
+    if dst in ("86", "87"):
+        # a markup item of an award or a confirmation carries its amounts
+        # (X86: ITMarkup and Markup required; X87: IT required)
+        amounts = "<ITMarkup>0.00</ITMarkup><Markup>0</Markup>" if dst == "86" else "<IT>0.00</IT>"
         s = re.sub(r"(</MarkupType>(?:<MarkupSubQty>.*?</MarkupSubQty>)*)(<Description>)",
-                   r"\1<ITMarkup>0.00</ITMarkup><Markup>0</Markup>\2", s)
+                   r"\1" + amounts + r"\2", s)
+        dp = "<DP>%s</DP>" % dst
         if "<CTR>" in s:
-            s = s.replace("<DP>86</DP>", "<DP>86</DP><OWN>%s</OWN>" % ADDRESS)
+            s = s.replace(dp, dp + "<OWN>%s</OWN>" % ADDRESS)
         else:
-            s = s.replace("<DP>86</DP>", "<DP>86</DP><OWN>%s</OWN><CTR>%s</CTR>" % (ADDRESS, ADDRESS))
+            s = s.replace(dp, dp + "<OWN>%s</OWN><CTR>%s</CTR>" % (ADDRESS, ADDRESS))
     return s
 
 
@@ -613,7 +616,7 @@ case("GAEB-BR-ITEM-001", "valid-2.x85",
 
 
 # alternatives and eventual items without total are no totals either
-for ph in ("80", "81", "82", "85", "86"):
+for ph in ("80", "81", "82", "85", "86", "87"):
     case("GAEB-BR-SUM-001", "valid-4.x" + ph,
          derive(std84(item84("I1", "0010", qty="10", up="2.50", it="0.00"), total="0.00"), "84", ph)
          .replace('<Item ID="I1" RNoPart="0010">', '<Item ID="I1" RNoPart="0010"><ALNGroupNo>1</ALNGroupNo>'
@@ -630,7 +633,7 @@ def bill(*items, **kw):
 
 
 B2 = (item84("I1", "0010", qty="10", up="2.50", it="25.00"), item84("I2", "0020", qty="4", up="1.00", it="4.00"))
-for ph in ("80", "81", "82", "85", "86"):
+for ph in ("80", "81", "82", "85", "86", "87"):
     case("GAEB-BR-SUM-003", "valid-1.x" + ph, derive(bill(*B2), "84", ph))
     case("GAEB-BR-SUM-003", "invalid-1.x" + ph, derive(bill(*B2, total="30.00"), "84", ph), 1,
          BODY + "/BoQCtgy[1]/Totals[1]")
@@ -660,6 +663,19 @@ case("GAEB-BR-SUM-003", "valid-4.x86",
      .replace('<Item ID="I2" RNoPart="0020">', '<Item ID="I2" RNoPart="0020"><ALNGroupNo>1</ALNGroupNo>'
               '<ALNSerNo>1</ALNSerNo><Accepted>AltAccept</Accepted>'))
 
+# X87: a markup item counts with its IT
+def with_markup(total):
+    doc = derive(std83(item83("I1", "0010", qty="10"), markup83("M1", "0020")), "83", "87")
+    i = doc.index('<Item ID="I1"')
+    j = doc.index("<Description>", i)
+    doc = doc[:j] + "<UP>10.00</UP><IT>100.00</IT>" + doc[j:]
+    doc = doc.replace("<IT>0.00</IT>", "<IT>10.00</IT>")
+    return doc.replace("<Totals><Total>0.00</Total></Totals>", "<Totals><Total>%s</Total></Totals>" % total)
+
+
+case("GAEB-BR-SUM-003", "valid-5.x87", with_markup("110.00"))
+case("GAEB-BR-SUM-003", "invalid-3.x87", with_markup("100.00"), 1, BODY + "/BoQCtgy[1]/Totals[1]")
+
 # PAIR-84-86 (warnings): the award against the bid
 BID = bill(*B2)
 AWARD = derive(BID, "84", "86")
@@ -675,10 +691,26 @@ case("GAEB-BR-PAIR-84-86-003", "pair-invalid-1",
      1, I1)
 
 
+# PAIR-86-87 (warnings): the order confirmation against the award
+CONFIRM = derive(BID, "84", "87")
+case("GAEB-BR-PAIR-86-87-001", "pair-valid-1", (AWARD, CONFIRM))
+case("GAEB-BR-PAIR-86-87-001", "pair-invalid-1", (AWARD, derive(bill(B2[0], total="25.00"), "84", "87")), 1, I2)
+case("GAEB-BR-PAIR-86-87-002", "pair-valid-1", (AWARD, CONFIRM))
+case("GAEB-BR-PAIR-86-87-002", "pair-invalid-1",
+     (AWARD, derive(bill(item84("I1", "0010", qty="10", up="2.40", it="24.00"), B2[1], total="28.00"), "84", "87")),
+     1, I1)
+case("GAEB-BR-PAIR-86-87-003", "pair-valid-1", (AWARD, CONFIRM))
+case("GAEB-BR-PAIR-86-87-003", "pair-invalid-1",
+     (AWARD, derive(bill(item84("I1", "0010", qty="12", up="2.50", it="30.00"), B2[1], total="34.00"), "84", "87")),
+     1, I1)
+
+
 def pair_names(rule):
     """File names of the two documents of a pair case."""
     if "-PAIR-84-86-" in rule:
         return "first.x84", "second.x86"
+    if "-PAIR-86-87-" in rule:
+        return "first.x86", "second.x87"
     return "first.x83", "second.x84"
 
 

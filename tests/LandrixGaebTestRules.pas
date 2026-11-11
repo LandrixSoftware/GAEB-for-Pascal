@@ -275,7 +275,7 @@ end;
   X83. }
 procedure TestSchemaGuarded;
 const
-  Exts: array[0..4] of string = ('x80', 'x81', 'x82', 'x83', 'x86');
+  Exts: array[0..5] of string = ('x80', 'x81', 'x82', 'x83', 'x86', 'x87');
 var
   G: TLandrixGaebXmlGAEB;
   Target: TLandrixGaebTarget;

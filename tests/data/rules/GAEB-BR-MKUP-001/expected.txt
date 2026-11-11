@@ -10,3 +10,5 @@ invalid-1.x85 1 /GAEB[1]/Award[1]/BoQ[1]/BoQBody[1]/BoQCtgy[1]/BoQBody[1]/Itemli
 invalid-2.x85 1 /GAEB[1]/Award[1]/BoQ[1]/BoQBody[1]/BoQCtgy[1]/BoQBody[1]/Itemlist[1]/MarkupItem[1]
 invalid-1.x86 1 /GAEB[1]/Award[1]/BoQ[1]/BoQBody[1]/BoQCtgy[1]/BoQBody[1]/Itemlist[1]/MarkupItem[1]
 invalid-2.x86 1 /GAEB[1]/Award[1]/BoQ[1]/BoQBody[1]/BoQCtgy[1]/BoQBody[1]/Itemlist[1]/MarkupItem[1]
+invalid-1.x87 1 /GAEB[1]/Award[1]/BoQ[1]/BoQBody[1]/BoQCtgy[1]/BoQBody[1]/Itemlist[1]/MarkupItem[1]
+invalid-2.x87 1 /GAEB[1]/Award[1]/BoQ[1]/BoQBody[1]/BoQCtgy[1]/BoQBody[1]/Itemlist[1]/MarkupItem[1]

@@ -69,7 +69,7 @@ const
     DE: Version des Regelwerks, unabhaengig von der Bibliotheksversion. }
   LandrixGaebRuleSetVersion = '2026.1';
   { Number of rules in the catalogue. DE: Anzahl der Regeln im Katalog. }
-  LandrixGaebRuleCount = 42;
+  LandrixGaebRuleCount = 45;
 
 type
   { One rule of the catalogue. Source names the section of the GAEB
@@ -103,97 +103,97 @@ const
     Exportprogramme erzeugen, sind Warnungen. }
   LandrixGaebRuleCatalog: array[0..LandrixGaebRuleCount - 1] of TLandrixGaebRule = (
     (ID: 'GAEB-BR-OZ-001'; Title: 'OZ unique within the bill of quantities';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.2.1'),
     (ID: 'GAEB-BR-OZ-002'; Title: 'OZ at most 14 characters including the index';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.2.1, 4.3.3'),
     (ID: 'GAEB-BR-OZ-003'; Title: 'OZ fits the breakdown of BoQBkdn (levels, lengths, index)';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.3.4'),
     (ID: 'GAEB-BR-OZ-004'; Title: 'OZ ascending in document order';
-      Severity: gsWarning; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
+      Severity: gsWarning; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.2.1'),
     (ID: 'GAEB-BR-OZ-005'; Title: 'Part of an OZ shorter than its level although not numeric';
-      Severity: gsInformation; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
+      Severity: gsInformation; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'corpus; Fachdokumentation 3.3 (2023-01), 4.3'),
     (ID: 'GAEB-BR-OZ-006'; Title: 'Part of an OZ made of zeros or underscores only';
-      Severity: gsWarning; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
+      Severity: gsWarning; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.2.1'),
     (ID: 'GAEB-BR-BKDN-001'; Title: 'Lengths of all BoQBkdn parts at most 14 together';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 BoQInfo 2'),
     (ID: 'GAEB-BR-BKDN-002'; Title: 'BoQBkdn order: Lot once and first, at most five levels, Item once, Index once after Item';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 BoQInfo 3-8'),
     (ID: 'GAEB-BR-BKDN-003'; Title: 'Index of the breakdown has length 1';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 BoQBkdn 2'),
     (ID: 'GAEB-BR-BKDN-004'; Title: 'Label of a breakdown part only for BoQLevel';
-      Severity: gsWarning; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
+      Severity: gsWarning; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 BoQBkdn 1'),
     (ID: 'GAEB-BR-UP-002'; Title: 'Labels of unit price components match NoUPComps';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 BoQInfo 9-10'),
     (ID: 'GAEB-BR-QTY-001'; Title: 'QtySplit not together with QtyTBD';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.11, 11.2.3 Item 5'),
     (ID: 'GAEB-BR-QTY-002'; Title: 'Quantities of QtySplit add up to the quantity of the item';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 Item 6'),
     (ID: 'GAEB-BR-QTY-003'; Title: 'Item with QtyTBD has no quantity';
       Severity: gsError; Phases: [gp83]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.11, 11.2.3 Item 3'),
     (ID: 'GAEB-BR-QTY-004'; Title: 'Quantity missing only with QtyTBD or LumpSumItem';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 Item 2'),
     (ID: 'GAEB-BR-QTY-005'; Title: 'Lump sum item not together with QtyTBD';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.5.5'),
     (ID: 'GAEB-BR-QTY-006'; Title: 'Lump sum item without quantity or with quantity 1';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.5.1'),
     (ID: 'GAEB-BR-ITEM-001'; Title: 'Item has a description';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 Item 7'),
     (ID: 'GAEB-BR-ITEM-002'; Title: 'Item with SumDescr has SubDescr';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.12, 11.2.3 Item 9'),
     (ID: 'GAEB-BR-TXT-001'; Title: 'Repetition description refers to an item that is no repetition';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.4.4'),
     (ID: 'GAEB-BR-TXT-002'; Title: 'Repetition description keeps the unit of its reference';
-      Severity: gsWarning; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
+      Severity: gsWarning; Phases: [gp80, gp81, gp82, gp83, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.4.4'),
     (ID: 'GAEB-BR-TXT-003'; Title: 'Reference description precedes its repetitions';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.4.4'),
     (ID: 'GAEB-BR-TXT-004'; Title: 'Long text with text complements has ComplTSA or ComplTSB';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 Description 1'),
     (ID: 'GAEB-BR-PERF-001'; Title: 'Number of an execution description unique';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.4.3, 11.2.3 PerfDescr 1'),
     (ID: 'GAEB-BR-PERF-002'; Title: 'Execution description precedes the items that refer to it';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.4.3, 11.2.3 PerfDescr 2'),
     (ID: 'GAEB-BR-MKUP-001'; Title: 'MarkupSubQty exactly with MarkupType ListInSubQty';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 MarkupItem 4'),
     (ID: 'GAEB-BR-UP-001'; Title: 'Unit price components add up to the unit price';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp84, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.5'),
     (ID: 'GAEB-BR-X84-001'; Title: 'Item not offered has no unit price';
       Severity: gsError; Phases: [gp84]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.4'),
     (ID: 'GAEB-BR-SUM-001'; Title: 'Total of an item is quantity times unit price, rounded';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp84, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.17'),
     (ID: 'GAEB-BR-SUM-002'; Title: 'Total after discount follows from total and discount';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp84, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.7, 4.6.17, 11.2.3 Totals 1'),
     (ID: 'GAEB-BR-SUM-003'; Title: 'Total of a category or of the bill is the sum of its counting items and subcategories';
-      Severity: gsError; Phases: [gp80, gp81, gp82, gp85, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.2.3, 4.5.2, 4.5.3, 4.6.17'),
     (ID: 'GAEB-BR-PAIR-83-84-001'; Title: 'Items of the bid are the items of the request (by OZ)';
       Severity: gsError; Phases: [gp84]; Pair: True;
@@ -233,7 +233,22 @@ const
       Source: 'Fachdokumentation 3.3 (2023-01), 2.3 (award on the bid); own rule'),
     (ID: 'GAEB-BR-PAIR-84-86-003'; Title: 'Quantities of the award are those of the bid';
       Severity: gsWarning; Phases: [gp86]; Pair: True;
-      Source: 'Fachdokumentation 3.3 (2023-01), 2.3 (award on the bid); own rule')
+      Source: 'Fachdokumentation 3.3 (2023-01), 2.3 (award on the bid); own rule'),
+    { X86 -> X87: the order confirmation may confirm the award in modified
+      form (documentation 2.3, 4.6.3), so these are warnings (owner decision
+      11.11.2026).
+      DE: X86 -> X87: die Auftragsbestaetigung darf den Auftrag auch in
+      geaenderter Form bestaetigen (Dokumentation 2.3, 4.6.3), daher
+      Warnungen (Entscheidung des Eigentuemers 11.11.2026). }
+    (ID: 'GAEB-BR-PAIR-86-87-001'; Title: 'Items and categories of the confirmation are those of the award (by OZ)';
+      Severity: gsWarning; Phases: [gp87]; Pair: True;
+      Source: 'Fachdokumentation 3.3 (2023-01), 2.3, 4.6.3 (confirmation, also modified); own rule'),
+    (ID: 'GAEB-BR-PAIR-86-87-002'; Title: 'Unit prices of the confirmation are those of the award';
+      Severity: gsWarning; Phases: [gp87]; Pair: True;
+      Source: 'Fachdokumentation 3.3 (2023-01), 2.3, 4.6.3 (confirmation, also modified); own rule'),
+    (ID: 'GAEB-BR-PAIR-86-87-003'; Title: 'Quantities of the confirmation are those of the award';
+      Severity: gsWarning; Phases: [gp87]; Pair: True;
+      Source: 'Fachdokumentation 3.3 (2023-01), 2.3, 4.6.3 (confirmation, also modified); own rule')
   );
 
 { Index of a rule in LandrixGaebRuleCatalog, -1 if unknown.
@@ -249,12 +264,13 @@ function LandrixGaebRuleIndex(const AID: string): Integer;
 function LandrixGaebCheckRules(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
   ADiagnostics: TLandrixGaebDiagnostics): Boolean;
 
-{ Checks the pair rules of two documents (X83 -> X84, X84 -> X86). Items and
+{ Checks the pair rules of two documents (X83 -> X84, X84 -> X86, X86 -> X87). Items and
   categories are matched by OZ. Paths of the diagnostics belong to the
   second document, except for elements that are missing there (then the
   path of the first document; the message says so). Raises
   ELandrixGaebError for a pair of phases without pair rules.
-  DE: Prueft die Paarregeln zweier Dokumente (X83 -> X84, X84 -> X86).
+  DE: Prueft die Paarregeln zweier Dokumente (X83 -> X84, X84 -> X86,
+  X86 -> X87).
   Positionen und Kategorien werden ueber die OZ zugeordnet. Die Pfade der
   Meldungen gehoeren zum zweiten Dokument, ausser bei Elementen, die dort
   fehlen (dann der Pfad im ersten Dokument; der Text sagt es). Loest fuer
@@ -1512,7 +1528,7 @@ begin
     if R.Kind = nkItem then
     begin
       { the catalog decides per phase which of these rules report: X80 to
-        X82, X85 and X86 carry both the request's structure and prices }
+        X82 and X85 to X87 carry both the request's structure and prices }
       CheckItem83(R, TLandrixGaebXmlItem(R.Node));
       CheckItem84(R, TLandrixGaebXmlItem(R.Node));
     end
@@ -1556,7 +1572,7 @@ type
       ASecond: TLandrixGaebXmlGAEB; ASecondPhase: TLandrixGaebPhase; ADiagnostics: TLandrixGaebDiagnostics);
     destructor Destroy; override;
     procedure Check83_84;
-    procedure Check84_86;
+    procedure CheckSame(const AStructure, APrice, AQuantity: string);
     function Errors: Integer;
   end;
 
@@ -1768,12 +1784,15 @@ begin
   end;
 end;
 
-{ PAIR-84-86-001 to -003 (warnings): the award against the bid, matched by
-  OZ: the same items and categories, unit prices and quantities.
-  DE: PAIR-84-86-001 bis -003 (Warnungen): der Auftrag gegen das Angebot,
-  zugeordnet ueber die OZ: dieselben Positionen und Bereiche, Einheitspreise
-  und Mengen. }
-procedure TPairRun.Check84_86;
+{ PAIR-84-86-001 to -003 and PAIR-86-87-001 to -003 (warnings): the award
+  against the bid, the confirmation against the award, matched by OZ: the
+  same items and categories (AStructure), unit prices (APrice) and
+  quantities (AQuantity).
+  DE: PAIR-84-86-001 bis -003 und PAIR-86-87-001 bis -003 (Warnungen): der
+  Auftrag gegen das Angebot, die Bestaetigung gegen den Auftrag, zugeordnet
+  ueber die OZ: dieselben Positionen und Bereiche (AStructure),
+  Einheitspreise (APrice) und Mengen (AQuantity). }
+procedure TPairRun.CheckSame(const AStructure, APrice, AQuantity: string);
 var
   FirstKeys, SecondKeys: TKeyIndex;
   I: Integer;
@@ -1787,24 +1806,24 @@ begin
     Fill(FSecond, SecondKeys);
     for I := 0 to FirstKeys.Count - 1 do
       if SecondKeys.Find(FirstKeys.Key(I)) = nil then
-        FSecond.Report('GAEB-BR-PAIR-84-86-001', FirstKeys.Node(I).Path,
+        FSecond.Report(AStructure, FirstKeys.Node(I).Path,
           'element of the first document (path there) missing in the second');
     for I := 0 to SecondKeys.Count - 1 do
     begin
       R := SecondKeys.Node(I);
       M := FirstKeys.Find(SecondKeys.Key(I));
       if M = nil then
-        FSecond.Report('GAEB-BR-PAIR-84-86-001', R.Path, 'element not in the first document')
+        FSecond.Report(AStructure, R.Path, 'element not in the first document')
       else if M.Kind <> R.Kind then
-        FSecond.Report('GAEB-BR-PAIR-84-86-001', R.Path, 'item and markup item swapped against the first document')
+        FSecond.Report(AStructure, R.Path, 'item and markup item swapped against the first document')
       else if R.Kind = nkItem then
       begin
         A := TLandrixGaebXmlItem(M.Node);
         B := TLandrixGaebXmlItem(R.Node);
         if A.UP.HasValue and B.UP.HasValue and not Same(XDec(A.UP), XDec(B.UP)) then
-          FSecond.Report('GAEB-BR-PAIR-84-86-002', R.Path, 'unit price differs from the bid');
+          FSecond.Report(APrice, R.Path, 'unit price differs from the first document');
         if A.Qty.HasValue and B.Qty.HasValue and not Same(XDec(A.Qty), XDec(B.Qty)) then
-          FSecond.Report('GAEB-BR-PAIR-84-86-003', R.Path, 'quantity differs from the bid');
+          FSecond.Report(AQuantity, R.Path, 'quantity differs from the first document');
       end;
     end;
   finally
@@ -1820,7 +1839,8 @@ var
   Run: TPairRun;
 begin
   if not ((AFirstTarget.Phase = gp83) and (ASecondTarget.Phase = gp84)) and
-    not ((AFirstTarget.Phase = gp84) and (ASecondTarget.Phase = gp86)) then
+    not ((AFirstTarget.Phase = gp84) and (ASecondTarget.Phase = gp86)) and
+    not ((AFirstTarget.Phase = gp86) and (ASecondTarget.Phase = gp87)) then
     raise ELandrixGaebError.Create('no pair rules for DA' +
       LandrixXmlUtf8ToString(LandrixGaebPhaseToDP(AFirstTarget.Phase)) + ' and DA' +
       LandrixXmlUtf8ToString(LandrixGaebPhaseToDP(ASecondTarget.Phase)));
@@ -1828,8 +1848,10 @@ begin
   try
     if ASecondTarget.Phase = gp84 then
       Run.Check83_84
+    else if ASecondTarget.Phase = gp86 then
+      Run.CheckSame('GAEB-BR-PAIR-84-86-001', 'GAEB-BR-PAIR-84-86-002', 'GAEB-BR-PAIR-84-86-003')
     else
-      Run.Check84_86;
+      Run.CheckSame('GAEB-BR-PAIR-86-87-001', 'GAEB-BR-PAIR-86-87-002', 'GAEB-BR-PAIR-86-87-003');
     Result := Run.Errors = 0;
   finally
     Run.Free;
