@@ -281,56 +281,25 @@ function LandrixGaebCheckPair(AFirst: TLandrixGaebXmlGAEB; const AFirstTarget: T
 
 implementation
 
+uses
+  LandrixGaebBoQTree;
+
 const
-  nkRoot = 0;
-  nkCtgy = 1;
-  nkItem = 2;
-  nkMarkup = 3;
-  nkPerf = 4;
+  nkCtgy = LandrixGaebTreeCtgy;
+  nkItem = LandrixGaebTreeItem;
+  nkMarkup = LandrixGaebTreeMarkup;
+  nkPerf = LandrixGaebTreePerf;
 
 type
-  { A category, item, markup item or execution description in document
-    order, with its OZ parts. }
-  TRuleNode = class(TObject)
-  public
-    Node: TLandrixGaebXmlNode;
-    Kind: Integer;
-    Parent: TRuleNode;
-    Parts: array of TLandrixGaebString;
-    Index: TLandrixGaebString;
-    Key: TLandrixGaebString;
-    Path: TLandrixXmlUtf8;
-    Order: Integer;
-    { PAIR-83-84-008: sum of the children; False if a child has no amount }
-    Sum: TLandrixXmlDecimal;
-    SumKnown: Boolean;
-  end;
-
-  { Keys with their nodes, sorted by key and order (string comparison of
-    the compiler; keys are ASCII). }
-  TKeyIndex = class(TObject)
-  private
-    FKeys: array of TLandrixGaebString;
-    FNodes: array of TRuleNode;
-    FCount: Integer;
-    function Less(I, J: Integer): Boolean;
-    procedure Swap(I, J: Integer);
-    procedure QuickSort(L, R: Integer);
-  public
-    procedure Add(const AKey: TLandrixGaebString; ANode: TRuleNode);
-    procedure Sort;
-    { First node with AKey, nil if none (after Sort). }
-    function Find(const AKey: TLandrixGaebString): TRuleNode;
-    function Key(I: Integer): TLandrixGaebString;
-    function Node(I: Integer): TRuleNode;
-    property Count: Integer read FCount;
-  end;
+  TRuleNode = TLandrixGaebTreeNode;
+  TKeyIndex = TLandrixGaebKeyIndex;
 
   { Collected structure of one document and the diagnostics of a run. }
   TRuleRun = class(TObject)
   private
     FDocument: TLandrixGaebXmlGAEB;
     FPhase: TLandrixGaebPhase;
+    FTree: TLandrixGaebTree;
     FDiagnostics: TLandrixGaebDiagnostics;
     FErrors: Integer;
     FNodes: TObjectList;
@@ -343,10 +312,6 @@ type
     FItemLength: Integer;
     FItemNum: Boolean;
     FHasIndex: Boolean;
-    function AddNode(ANode: TLandrixGaebXmlNode; AKind: Integer; AParent: TRuleNode;
-      const APath: TLandrixXmlUtf8; const APart, AIndex: TLandrixGaebString): TRuleNode;
-    procedure WalkBody(ABody: TLandrixGaebXmlBoQBody; AParent: TRuleNode; const APath: TLandrixXmlUtf8);
-    procedure WalkItems(AList: TLandrixGaebXmlItemlist; AParent: TRuleNode; const APath: TLandrixXmlUtf8);
     procedure CheckBkdn;
     procedure CheckUPCompLabels;
     procedure CheckOZ;
@@ -418,89 +383,6 @@ begin
     LandrixXmlDecimalMultiply(AAmount, APcnt), -2)));
 end;
 
-function IsDigits(const S: TLandrixGaebString): Boolean; forward;
-
-{ Digits without leading zeros ('' for zero). }
-function StripZeros(const S: TLandrixGaebString): TLandrixGaebString;
-var
-  I: Integer;
-begin
-  I := 1;
-  while (I <= Length(S)) and (S[I] = '0') do
-    Inc(I);
-  Result := Copy(S, I, MaxInt);
-end;
-
-{ OZ parts are compared right-aligned (left-padded with spaces, the lowest
-  character of the OZ sort order); parts of digits only by value.
-  DE: OZ-Teile werden rechtsbuendig verglichen (links mit Leerzeichen
-  aufgefuellt, dem kleinsten Zeichen der OZ-Sortierfolge); Teile nur aus
-  Ziffern nach ihrem Wert. }
-function ComparePart(const A, B: TLandrixGaebString): Integer;
-var
-  I, N: Integer;
-  CA, CB: TLandrixGaebChar;
-  SA, SB: TLandrixGaebString;
-begin
-  if IsDigits(A) and IsDigits(B) then
-  begin
-    { numeric parts by value, with or without leading zeros }
-    SA := StripZeros(A);
-    SB := StripZeros(B);
-    Result := Length(SA) - Length(SB);
-    if (Result = 0) and (SA <> SB) then
-    begin
-      if SA < SB then
-        Result := -1
-      else
-        Result := 1;
-    end;
-    Exit;
-  end;
-  N := Length(A);
-  if Length(B) > N then
-    N := Length(B);
-  for I := 0 to N - 1 do
-  begin
-    CA := ' ';
-    CB := ' ';
-    if I >= N - Length(A) then
-      CA := A[I - (N - Length(A)) + 1];
-    if I >= N - Length(B) then
-      CB := B[I - (N - Length(B)) + 1];
-    if CA <> CB then
-    begin
-      if CA < CB then
-        Result := -1
-      else
-        Result := 1;
-      Exit;
-    end;
-  end;
-  Result := 0;
-end;
-
-{ Order of two OZ: part by part (ComparePart), a shorter OZ first, then
-  the index.
-  DE: Reihenfolge zweier OZ: Teil fuer Teil (ComparePart), eine kuerzere OZ
-  zuerst, dann der Index. }
-function CompareOZ(A, B: TRuleNode): Integer;
-var
-  I: Integer;
-begin
-  I := 0;
-  while (I < Length(A.Parts)) and (I < Length(B.Parts)) do
-  begin
-    Result := ComparePart(A.Parts[I], B.Parts[I]);
-    if Result <> 0 then
-      Exit;
-    Inc(I);
-  end;
-  Result := Integer(Length(A.Parts)) - Integer(Length(B.Parts));
-  if Result = 0 then
-    Result := ComparePart(A.Index, B.Index);
-end;
-
 { True if S holds only '0', '_' or ' '. }
 function OnlyFiller(const S: TLandrixGaebString): Boolean;
 var
@@ -509,17 +391,6 @@ begin
   Result := False;
   for I := 1 to Length(S) do
     if (S[I] <> '0') and (S[I] <> '_') and (S[I] <> ' ') then
-      Exit;
-  Result := S <> '';
-end;
-
-function IsDigits(const S: TLandrixGaebString): Boolean;
-var
-  I: Integer;
-begin
-  Result := False;
-  for I := 1 to Length(S) do
-    if (S[I] < '0') or (S[I] > '9') then
       Exit;
   Result := S <> '';
 end;
@@ -541,12 +412,12 @@ begin
       Sign := '-';
     T := Copy(T, 2, MaxInt);
   end;
-  if not IsDigits(T) then
+  if not LandrixGaebIsDigits(T) then
   begin
     Result := S;
     Exit;
   end;
-  T := StripZeros(T);
+  T := LandrixGaebStripZeros(T);
   if T = '' then
     Result := '0'
   else
@@ -627,105 +498,6 @@ begin
     CollectComplements(ADescription.OutlineText.OutlTxt, AList);
 end;
 
-{ TKeyIndex }
-
-procedure TKeyIndex.Add(const AKey: TLandrixGaebString; ANode: TRuleNode);
-begin
-  if FCount >= Length(FKeys) then
-  begin
-    SetLength(FKeys, FCount * 2 + 16);
-    SetLength(FNodes, FCount * 2 + 16);
-  end;
-  FKeys[FCount] := AKey;
-  FNodes[FCount] := ANode;
-  Inc(FCount);
-end;
-
-function TKeyIndex.Less(I, J: Integer): Boolean;
-begin
-  if FKeys[I] <> FKeys[J] then
-    Result := FKeys[I] < FKeys[J]
-  else
-    Result := FNodes[I].Order < FNodes[J].Order;
-end;
-
-procedure TKeyIndex.Swap(I, J: Integer);
-var
-  K: TLandrixGaebString;
-  N: TRuleNode;
-begin
-  K := FKeys[I];
-  FKeys[I] := FKeys[J];
-  FKeys[J] := K;
-  N := FNodes[I];
-  FNodes[I] := FNodes[J];
-  FNodes[J] := N;
-end;
-
-procedure TKeyIndex.QuickSort(L, R: Integer);
-var
-  I, J, P: Integer;
-begin
-  while L < R do
-  begin
-    { median element as pivot, moved to the end }
-    Swap((L + R) div 2, R);
-    P := R;
-    I := L;
-    for J := L to R - 1 do
-      if Less(J, P) then
-      begin
-        Swap(I, J);
-        Inc(I);
-      end;
-    Swap(I, R);
-    if I - L < R - I then
-    begin
-      QuickSort(L, I - 1);
-      L := I + 1;
-    end
-    else
-    begin
-      QuickSort(I + 1, R);
-      R := I - 1;
-    end;
-  end;
-end;
-
-procedure TKeyIndex.Sort;
-begin
-  QuickSort(0, FCount - 1);
-end;
-
-function TKeyIndex.Find(const AKey: TLandrixGaebString): TRuleNode;
-var
-  Lo, Hi, Mid: Integer;
-begin
-  Lo := 0;
-  Hi := FCount - 1;
-  while Lo < Hi do
-  begin
-    Mid := (Lo + Hi) div 2;
-    if FKeys[Mid] < AKey then
-      Lo := Mid + 1
-    else
-      Hi := Mid;
-  end;
-  Result := nil;
-  if (Lo < FCount) and (FKeys[Lo] = AKey) then
-    Result := FNodes[Lo];
-end;
-
-function TKeyIndex.Key(I: Integer): TLandrixGaebString;
-begin
-  Result := FKeys[I];
-end;
-
-function TKeyIndex.Node(I: Integer): TRuleNode;
-begin
-  Result := FNodes[I];
-end;
-
 { TRuleRun }
 
 constructor TRuleRun.Create(ADocument: TLandrixGaebXmlGAEB; APhase: TLandrixGaebPhase;
@@ -735,14 +507,12 @@ begin
   FDocument := ADocument;
   FPhase := APhase;
   FDiagnostics := ADiagnostics;
-  FNodes := TObjectList.Create;
   FItemLength := -1;
 end;
 
 destructor TRuleRun.Destroy;
 begin
-  FRoot.Free;
-  FNodes.Free;
+  FTree.Free;
   inherited Destroy;
 end;
 
@@ -768,131 +538,12 @@ begin
       AMessage);
 end;
 
-{ Part of an OZ as it enters the key: parts of digits only by value, as in
-  ComparePart, so that uniqueness, order and pair matching agree.
-  DE: OZ-Teil fuer den Schluessel: Teile nur aus Ziffern nach ihrem Wert wie
-  in ComparePart, damit Eindeutigkeit, Reihenfolge und Paarzuordnung
-  uebereinstimmen. }
-function KeyPart(const APart: TLandrixGaebString): TLandrixGaebString;
-begin
-  Result := APart;
-  if IsDigits(APart) then
-  begin
-    Result := StripZeros(APart);
-    if Result = '' then
-      Result := '0';
-  end;
-end;
-
-function TRuleRun.AddNode(ANode: TLandrixGaebXmlNode; AKind: Integer; AParent: TRuleNode;
-  const APath: TLandrixXmlUtf8; const APart, AIndex: TLandrixGaebString): TRuleNode;
-var
-  I: Integer;
-begin
-  Result := TRuleNode.Create;
-  FNodes.Add(Result);
-  Result.Node := ANode;
-  Result.Kind := AKind;
-  Result.Parent := AParent;
-  Result.Path := APath;
-  Result.Order := Integer(FNodes.Count);
-  Result.SumKnown := True;
-  Result.Sum := LandrixXmlDecimalZero;
-  if AKind = nkPerf then
-    Exit;
-  SetLength(Result.Parts, Length(AParent.Parts) + 1);
-  for I := 0 to Integer(High(AParent.Parts)) do
-    Result.Parts[I] := AParent.Parts[I];
-  Result.Parts[High(Result.Parts)] := APart;
-  Result.Index := AIndex;
-  Result.Key := '';
-  for I := 0 to Integer(High(Result.Parts)) do
-  begin
-    if I > 0 then
-      Result.Key := Result.Key + '.';
-    Result.Key := Result.Key + KeyPart(Result.Parts[I]);
-  end;
-  if AIndex <> '' then
-    Result.Key := Result.Key + '#' + AIndex;
-end;
-
-procedure TRuleRun.WalkBody(ABody: TLandrixGaebXmlBoQBody; AParent: TRuleNode;
-  const APath: TLandrixXmlUtf8);
-var
-  I, Ctgys, Perfs: Integer;
-  N: TLandrixGaebXmlNode;
-  R: TRuleNode;
-begin
-  Ctgys := 0;
-  Perfs := 0;
-  for I := 0 to Integer(ABody.Children.Count) - 1 do
-  begin
-    N := ABody.Children[I];
-    if N is TLandrixGaebXmlBoQCtgy then
-    begin
-      Inc(Ctgys);
-      R := AddNode(N, nkCtgy, AParent, APath + '/BoQCtgy[' + IntToUtf8(Ctgys) + ']',
-        TLandrixGaebXmlBoQCtgy(N).RNoPart, '');
-      if TLandrixGaebXmlBoQCtgy(N).HasBoQBody then
-        WalkBody(TLandrixGaebXmlBoQCtgy(N).BoQBody, R, R.Path + '/BoQBody[1]');
-    end
-    else if N is TLandrixGaebXmlPerfDescr then
-    begin
-      Inc(Perfs);
-      AddNode(N, nkPerf, AParent, APath + '/PerfDescr[' + IntToUtf8(Perfs) + ']', '', '');
-    end;
-  end;
-  if ABody.HasItemlist then
-    WalkItems(ABody.Itemlist, AParent, APath + '/Itemlist[1]');
-end;
-
-procedure TRuleRun.WalkItems(AList: TLandrixGaebXmlItemlist; AParent: TRuleNode;
-  const APath: TLandrixXmlUtf8);
-var
-  I, Items, Markups, Perfs: Integer;
-  N: TLandrixGaebXmlNode;
-begin
-  Items := 0;
-  Markups := 0;
-  Perfs := 0;
-  for I := 0 to Integer(AList.Children.Count) - 1 do
-  begin
-    N := AList.Children[I];
-    if N is TLandrixGaebXmlItem then
-    begin
-      Inc(Items);
-      AddNode(N, nkItem, AParent, APath + '/Item[' + IntToUtf8(Items) + ']',
-        TLandrixGaebXmlItem(N).RNoPart, TLandrixGaebXmlItem(N).RNoIndex);
-    end
-    else if N is TLandrixGaebXmlMarkupItem then
-    begin
-      Inc(Markups);
-      AddNode(N, nkMarkup, AParent, APath + '/MarkupItem[' + IntToUtf8(Markups) + ']',
-        TLandrixGaebXmlMarkupItem(N).RNoPart, TLandrixGaebXmlMarkupItem(N).RNoIndex);
-    end
-    else if N is TLandrixGaebXmlPerfDescr then
-    begin
-      Inc(Perfs);
-      AddNode(N, nkPerf, AParent, APath + '/PerfDescr[' + IntToUtf8(Perfs) + ']', '', '');
-    end;
-  end;
-end;
-
 procedure TRuleRun.Collect;
-var
-  BoQPath: TLandrixXmlUtf8;
 begin
-  FRoot := TRuleNode.Create;
-  FRoot.Kind := nkRoot;
-  FRoot.SumKnown := True;
-  FRoot.Sum := LandrixXmlDecimalZero;
-  BoQPath := '/GAEB[1]/Award[1]/BoQ[1]';
-  FRoot.Path := BoQPath;
-  FInfoPath := BoQPath + '/BoQInfo[1]';
-  if not FDocument.HasAward or not FDocument.Award.HasBoQ then
-    Exit;
-  if FDocument.Award.BoQ.HasBoQBody then
-    WalkBody(FDocument.Award.BoQ.BoQBody, FRoot, BoQPath + '/BoQBody[1]');
+  FTree := TLandrixGaebTree.Create(FDocument);
+  FNodes := FTree.Nodes;
+  FRoot := FTree.Root;
+  FInfoPath := FTree.InfoPath;
 end;
 
 { BKDN-001 to -004: the breakdown BoQBkdn itself (total length, order of
@@ -1024,7 +675,7 @@ begin
     Exit;
   if Length(APart) > MaxLen then
     Report('GAEB-BR-OZ-003', R.Path, 'part of the OZ longer than its level in the breakdown')
-  else if (Length(APart) < MaxLen) and not (Num and IsDigits(APart)) then
+  else if (Length(APart) < MaxLen) and not (Num and LandrixGaebIsDigits(APart)) then
     Report('GAEB-BR-OZ-005', R.Path, 'part of the OZ shorter than its level in the breakdown');
 end;
 
@@ -1059,7 +710,7 @@ begin
           Inc(Len, Length(R.Parts[P]));
         if Len > 14 then
           Report('GAEB-BR-OZ-002', R.Path, 'OZ longer than 14 characters');
-        if (Last <> nil) and (CompareOZ(R, Last) < 0) then
+        if (Last <> nil) and (LandrixGaebCompareOZ(R, Last) < 0) then
           Report('GAEB-BR-OZ-004', R.Path, 'OZ lower than the OZ of the item before');
         Last := R;
         Keys.Add(R.Key, R);
@@ -1144,8 +795,6 @@ begin
   end;
 end;
 
-function NotCounted(ANode: TRuleNode): Boolean; forward;
-
 { Rules of a single item about prices (every phase but X83): UP-001, X84-001,
   SUM-001. A lump sum item without quantity counts with quantity 1. Items
   the document itself takes out of the totals (all but X84: alternative,
@@ -1184,7 +833,7 @@ begin
   if (AItem.NotOffered = 'Yes') and AItem.UP.HasValue then
     Report('GAEB-BR-X84-001', R.Path, 'unit price of an item not offered');
   if (AItem.Qty.HasValue or (AItem.LumpSumItem = 'Yes')) and AItem.UP.HasValue and
-    AItem.IT.HasValue and not NotCounted(R) then
+    AItem.IT.HasValue and not LandrixGaebNotCounted(R) then
   begin
     if AItem.Qty.HasValue then
       Qty := XDec(AItem.Qty)
@@ -1304,125 +953,6 @@ begin
     Report('GAEB-BR-SUM-002', Path, 'TotAfterDisc differs from total minus DiscountAmt');
 end;
 
-{ Amount a category passes to its parent: TotAfterDisc if given, else the
-  lump sum TotalLSUM, else Total; False if it has no totals.
-  DE: Betrag, den ein Bereich an den uebergeordneten weitergibt:
-  TotAfterDisc, sonst die Pauschale TotalLSUM, sonst Total; False ohne
-  Summen. }
-function CtgyAmount(ACtgy: TLandrixGaebXmlBoQCtgy; out AAmount: TLandrixXmlDecimal): Boolean;
-begin
-  Result := False;
-  if not ACtgy.HasTotals then
-    Exit;
-  if ACtgy.Totals.TotAfterDisc.HasValue then
-    AAmount := XDec(ACtgy.Totals.TotAfterDisc)
-  else if ACtgy.Totals.TotalLSUM.HasValue then
-    AAmount := XDec(ACtgy.Totals.TotalLSUM)
-  else if ACtgy.Totals.Total.HasValue then
-    AAmount := XDec(ACtgy.Totals.Total)
-  else
-    Exit;
-  Result := True;
-end;
-
-{ Total of an item or markup item, or the amount of a category; False if
-  there is none.
-  DE: Gesamtbetrag einer Position oder Zuschlagsposition bzw. Betrag eines
-  Bereichs; False, wenn keiner vorliegt. }
-function NodeAmount(ANode: TRuleNode; out AAmount: TLandrixXmlDecimal): Boolean;
-begin
-  Result := False;
-  case ANode.Kind of
-    nkItem:
-      begin
-        Result := TLandrixGaebXmlItem(ANode.Node).IT.HasValue;
-        if Result then
-          AAmount := XDec(TLandrixGaebXmlItem(ANode.Node).IT);
-      end;
-    nkMarkup:
-      begin
-        Result := TLandrixGaebXmlMarkupItem(ANode.Node).IT.HasValue;
-        if Result then
-          AAmount := XDec(TLandrixGaebXmlMarkupItem(ANode.Node).IT);
-      end;
-    nkCtgy:
-      Result := CtgyAmount(TLandrixGaebXmlBoQCtgy(ANode.Node), AAmount);
-  else
-    ;
-  end;
-end;
-
-{ Key of a category or item for matching two documents.
-  DE: Schluessel eines Bereichs oder einer Position fuer die Zuordnung
-  zweier Dokumente. }
-function KeyOf(ANode: TRuleNode): TLandrixGaebString;
-begin
-  if ANode.Kind = nkCtgy then
-    Result := 'C:' + ANode.Key
-  else
-    Result := 'I:' + ANode.Key;
-end;
-
-{ True if a serial number of an alternative is set and not 0.
-  DE: True, wenn die Nummer einer Alternative gesetzt und nicht 0 ist. }
-function IsAlternative(const ASerNo: TLandrixGaebString): Boolean;
-begin
-  Result := (ASerNo <> '') and (IntOf(ASerNo, 0) <> 0);
-end;
-
-{ True if a node with the kinds of a request (all phases but X84) is not part of
-  the totals: alternative items and categories (serial number other than
-  0), eventual items without total, items and categories not applicable,
-  items of a variant bid that are not required (AlterBidStatus N/A,
-  documentation 4.6.15).
-  DE: True, wenn ein Knoten mit den Kennzeichen einer Anfrage (alle Phasen
-  ausser X84) nicht in die Summen eingeht: Alternativpositionen und -bereiche
-  (Nummer ungleich 0), Bedarfspositionen ohne Gesamtbetrag, entfallende
-  Positionen und Bereiche, im Nebenangebot nicht erforderliche Positionen
-  (AlterBidStatus N/A, Dokumentation 4.6.15). }
-function NotCounted(ANode: TRuleNode): Boolean;
-begin
-  Result := False;
-  if ANode = nil then
-    Exit;
-  case ANode.Kind of
-    nkItem:
-      Result := IsAlternative(TLandrixGaebXmlItem(ANode.Node).ALNSerNo) or
-        (TLandrixGaebXmlItem(ANode.Node).Provis = 'WithoutTotal') or
-        (TLandrixGaebXmlItem(ANode.Node).NotAppl = 'Yes') or
-        (TLandrixGaebXmlItem(ANode.Node).AlterBidStatus = 'N/A');
-    nkMarkup:
-      Result := IsAlternative(TLandrixGaebXmlMarkupItem(ANode.Node).ALNSerNo) or
-        (TLandrixGaebXmlMarkupItem(ANode.Node).Provis = 'WithoutTotal') or
-        (TLandrixGaebXmlMarkupItem(ANode.Node).NotAppl = 'Yes');
-    nkCtgy:
-      Result := IsAlternative(TLandrixGaebXmlBoQCtgy(ANode.Node).ALNBSerNo) or
-        (TLandrixGaebXmlBoQCtgy(ANode.Node).NotApplBoQ = 'Yes');
-  else
-    ;
-  end;
-end;
-
-{ True if the award marks a node as accepted alternative or rejected basis
-  (Accepted). The documentation gives no rule for the totals then.
-  DE: True, wenn der Auftrag einen Knoten als beauftragte Alternative oder
-  zurueckgestellte Grundausfuehrung kennzeichnet (Accepted). Fuer die Summen
-  gibt die Dokumentation dann keine Regel. }
-function HasAccepted(ANode: TRuleNode): Boolean;
-begin
-  Result := False;
-  case ANode.Kind of
-    nkItem:
-      Result := TLandrixGaebXmlItem(ANode.Node).Accepted <> '';
-    nkMarkup:
-      Result := TLandrixGaebXmlMarkupItem(ANode.Node).Accepted <> '';
-    nkCtgy:
-      Result := TLandrixGaebXmlBoQCtgy(ANode.Node).Accepted <> '';
-  else
-    ;
-  end;
-end;
-
 { SUM-002: the totals blocks themselves (TotAfterDisc).
   DE: SUM-002: die Summenbloecke selbst (TotAfterDisc). }
 procedure TRuleRun.CheckSums;
@@ -1465,21 +995,21 @@ begin
     if not (R.Kind in [nkItem, nkMarkup, nkCtgy]) then
       Continue;
     if AFirst <> nil then
-      Kinds := AFirst.Find(KeyOf(R))
+      Kinds := AFirst.Find(LandrixGaebMatchKey(R))
     else
     begin
       Kinds := R;
-      if HasAccepted(R) then
+      if LandrixGaebHasAccepted(R) then
       begin
         R.Parent.SumKnown := False;
         Continue;
       end;
     end;
-    Known := NodeAmount(R, Amount);
+    Known := LandrixGaebNodeAmount(R, Amount);
     { nodes the request takes out of the totals do not count; an item not
       offered counts 0; any other node without an amount makes the sum of
       its parent unknown }
-    if NotCounted(Kinds) then
+    if LandrixGaebNotCounted(Kinds) then
       Continue;
     if Known then
       R.Parent.Sum := LandrixXmlDecimalAdd(R.Parent.Sum, Amount)
@@ -1614,7 +1144,7 @@ begin
   begin
     N := TRuleNode(ARun.Nodes[K]);
     if N.Kind in [nkCtgy, nkItem, nkMarkup] then
-      AKeys.Add(KeyOf(N), N);
+      AKeys.Add(LandrixGaebMatchKey(N), N);
   end;
   AKeys.Sort;
 end;
@@ -1744,7 +1274,7 @@ begin
       { alternatives and eventual items without total carry an IT that is
         no total (official test files: 0.00 or the product) }
       if B.UP.HasValue and B.IT.HasValue and
-        (B.Qty.HasValue or A.Qty.HasValue or (A.LumpSumItem = 'Yes')) and not NotCounted(M) then
+        (B.Qty.HasValue or A.Qty.HasValue or (A.LumpSumItem = 'Yes')) and not LandrixGaebNotCounted(M) then
       begin
         { a lump sum item without quantity counts with quantity 1 }
         if B.Qty.HasValue then
