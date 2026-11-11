@@ -90,6 +90,10 @@ def add(a, b):
     return -1 if a == -1 or b == -1 else a + b
 
 
+def most(a, b):
+    return -1 if a == -1 or b == -1 else max(a, b)
+
+
 def kind_of(t):
     if t["kind"] == "complex":
         return "simplecontent" if "simple" in t else "complex"
@@ -214,6 +218,30 @@ def walk(p, factor, s, where):
             collect_children(p, s, where)
             s.fields.append("#children")
         return
+    if p["k"] == "choice" and len(p["items"]) > 1:
+        # alternatives exclude each other: an element in several of them
+        # occurs as often as in the richest one, not the sum
+        alts = []
+        for i in p["items"]:
+            alt = Shape()
+            walk(i, mul(factor, p["max"]), alt, where)
+            alts.append(alt)
+        if all(a.children is None and a.group is None for a in alts):
+            best = {}   # name -> (type, max) over the alternatives
+            order = []
+            for a in alts:
+                for name in a.fields:
+                    etype, mx = a.field[name]
+                    if name in best:
+                        if best[name][0] != etype:
+                            fail("%s: element %s with different types in one tree" % (where, name))
+                        best[name] = (etype, most(best[name][1], mx))
+                    else:
+                        best[name] = (etype, mx)
+                        order.append(name)
+            for name in order:
+                s.add_field(name, best[name][0], best[name][1], where)
+            return
     for i in p["items"]:
         walk(i, mul(factor, p["max"]), s, where)
 

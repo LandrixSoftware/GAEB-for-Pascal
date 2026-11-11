@@ -166,6 +166,8 @@ procedure WriteGAEBInfo(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlGAEBIn
   ARow: Integer); forward;
 procedure WriteImage(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlImage; const AName: TLandrixXmlUtf8;
   ARow: Integer); forward;
+procedure WriteIndivAgrInfo(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlIndivAgrInfo; const AName: TLandrixXmlUtf8;
+  ARow: Integer); forward;
 procedure WriteInsAs(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlInsAs; const AName: TLandrixXmlUtf8;
   ARow: Integer); forward;
 procedure WriteItem(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlItem; const AName: TLandrixXmlUtf8;
@@ -404,26 +406,28 @@ begin
   W.ValueText(ARow + 0, 'DP', W.TargetDP(O.DP));
   if O.HasAwardInfo and W.Allowed(ARow + 1, 'AwardInfo', False) then
     WriteAwardInfo(W, O.AwardInfo, 'AwardInfo', W.ChildRow(ARow + 1));
-  if O.HasOWN and W.Allowed(ARow + 2, 'OWN', False) then
-    WriteOWN(W, O.OWN, 'OWN', W.ChildRow(ARow + 2));
+  if O.HasIndivAgrInfo and W.Allowed(ARow + 2, 'IndivAgrInfo', False) then
+    WriteIndivAgrInfo(W, O.IndivAgrInfo, 'IndivAgrInfo', W.ChildRow(ARow + 2));
+  if O.HasOWN and W.Allowed(ARow + 3, 'OWN', False) then
+    WriteOWN(W, O.OWN, 'OWN', W.ChildRow(ARow + 3));
   if O.HasRequester then
     for I := 0 to O.Requester.Count - 1 do
-      if O.Requester[I].IsPresent and W.Allowed(ARow + 3, 'Requester', False) then
-        WriteRequester(W, O.Requester[I], 'Requester', W.ChildRow(ARow + 3));
+      if O.Requester[I].IsPresent and W.Allowed(ARow + 4, 'Requester', False) then
+        WriteRequester(W, O.Requester[I], 'Requester', W.ChildRow(ARow + 4));
+  if O.HasCTR and W.Allowed(ARow + 5, 'CTR', False) then
+    WriteCTR(W, O.CTR, 'CTR', W.ChildRow(ARow + 5));
   if O.HasCnstSiteGroup then
     for I := 0 to O.CnstSiteGroup.Count - 1 do
-      if O.CnstSiteGroup[I].IsPresent and W.Allowed(ARow + 4, 'CnstSiteGroup', False) then
-        WriteAwardCnstSiteGroup(W, O.CnstSiteGroup[I], W.ChildRow(ARow + 4));
+      if O.CnstSiteGroup[I].IsPresent and W.Allowed(ARow + 6, 'CnstSiteGroup', False) then
+        WriteAwardCnstSiteGroup(W, O.CnstSiteGroup[I], W.ChildRow(ARow + 6));
   if O.HasAddText then
     for I := 0 to O.AddText.Count - 1 do
-      if O.AddText[I].IsPresent and W.Allowed(ARow + 5, 'AddText', False) then
-        WriteAddText(W, O.AddText[I], 'AddText', W.ChildRow(ARow + 5));
-  if O.HasCTR and W.Allowed(ARow + 6, 'CTR', False) then
-    WriteCTR(W, O.CTR, 'CTR', W.ChildRow(ARow + 6));
-  if O.HasBoQ and W.Allowed(ARow + 7, 'BoQ', False) then
-    WriteBoQ(W, O.BoQ, 'BoQ', W.ChildRow(ARow + 7));
-  if O.HasWgChange and W.Allowed(ARow + 8, 'WgChange', False) then
-    WriteWgChange(W, O.WgChange, 'WgChange', W.ChildRow(ARow + 8));
+      if O.AddText[I].IsPresent and W.Allowed(ARow + 7, 'AddText', False) then
+        WriteAddText(W, O.AddText[I], 'AddText', W.ChildRow(ARow + 7));
+  if O.HasBoQ and W.Allowed(ARow + 8, 'BoQ', False) then
+    WriteBoQ(W, O.BoQ, 'BoQ', W.ChildRow(ARow + 8));
+  if O.HasWgChange and W.Allowed(ARow + 9, 'WgChange', False) then
+    WriteWgChange(W, O.WgChange, 'WgChange', W.ChildRow(ARow + 9));
   W.EndElement;
 end;
 
@@ -687,18 +691,26 @@ begin
     W.ValueText(ARow + 7, 'ALNBSerNo', O.ALNBSerNo)
   else if O.IsMarkedEmpty('ALNBSerNo') then
     W.ValueText(ARow + 7, 'ALNBSerNo', '');
+  if O.Accepted <> '' then
+    W.ValueText(ARow + 8, 'Accepted', O.Accepted)
+  else if O.IsMarkedEmpty('Accepted') then
+    W.ValueText(ARow + 8, 'Accepted', '');
   if O.NotApplBoQ <> '' then
-    W.ValueText(ARow + 8, 'NotApplBoQ', O.NotApplBoQ)
+    W.ValueText(ARow + 9, 'NotApplBoQ', O.NotApplBoQ)
   else if O.IsMarkedEmpty('NotApplBoQ') then
-    W.ValueText(ARow + 8, 'NotApplBoQ', '');
+    W.ValueText(ARow + 9, 'NotApplBoQ', '');
   if O.HasCtlgAssign then
     for I := 0 to O.CtlgAssign.Count - 1 do
-      if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 9, 'CtlgAssign', False) then
-        WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 9));
-  if O.HasBoQBody and W.Allowed(ARow + 10, 'BoQBody', False) then
-    WriteBoQBody(W, O.BoQBody, 'BoQBody', W.ChildRow(ARow + 10));
-  if O.HasTotals and W.Allowed(ARow + 11, 'Totals', False) then
-    WriteTotals(W, O.Totals, 'Totals', W.ChildRow(ARow + 11));
+      if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 10, 'CtlgAssign', False) then
+        WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 10));
+  if O.HasBoQBody and W.Allowed(ARow + 11, 'BoQBody', False) then
+    WriteBoQBody(W, O.BoQBody, 'BoQBody', W.ChildRow(ARow + 11));
+  if O.HasTotals and W.Allowed(ARow + 12, 'Totals', False) then
+    WriteTotals(W, O.Totals, 'Totals', W.ChildRow(ARow + 12));
+  if O.AlterBidStatus <> '' then
+    W.ValueText(ARow + 13, 'AlterBidStatus', O.AlterBidStatus)
+  else if O.IsMarkedEmpty('AlterBidStatus') then
+    W.ValueText(ARow + 13, 'AlterBidStatus', '');
   W.EndElement;
 end;
 
@@ -764,12 +776,12 @@ begin
     for I := 0 to O.CtlgAssign.Count - 1 do
       if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 16, 'CtlgAssign', False) then
         WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 16));
+  if O.HasTotals and W.Allowed(ARow + 17, 'Totals', False) then
+    WriteTotals(W, O.Totals, 'Totals', W.ChildRow(ARow + 17));
   if O.HasCtlg then
     for I := 0 to O.Ctlg.Count - 1 do
-      if O.Ctlg[I].IsPresent and W.Allowed(ARow + 17, 'Ctlg', False) then
-        WriteCtlg(W, O.Ctlg[I], 'Ctlg', W.ChildRow(ARow + 17));
-  if O.HasTotals and W.Allowed(ARow + 18, 'Totals', False) then
-    WriteTotals(W, O.Totals, 'Totals', W.ChildRow(ARow + 18));
+      if O.Ctlg[I].IsPresent and W.Allowed(ARow + 18, 'Ctlg', False) then
+        WriteCtlg(W, O.Ctlg[I], 'Ctlg', W.ChildRow(ARow + 18));
   if O.HasQtyDetermInfo and W.Allowed(ARow + 19, 'QtyDetermInfo', False) then
     WriteQtyDetermInfo(W, O.QtyDetermInfo, 'QtyDetermInfo', W.ChildRow(ARow + 19));
   W.EndElement;
@@ -1037,32 +1049,36 @@ begin
     W.ValueText(ARow + 3, 'AcctsPayNo', O.AcctsPayNo)
   else if O.IsMarkedEmpty('AcctsPayNo') then
     W.ValueText(ARow + 3, 'AcctsPayNo', '');
+  if O.BidderNo <> '' then
+    W.ValueText(ARow + 4, 'BidderNo', O.BidderNo)
+  else if O.IsMarkedEmpty('BidderNo') then
+    W.ValueText(ARow + 4, 'BidderNo', '');
   if O.CntryType <> '' then
-    W.ValueText(ARow + 4, 'CntryType', O.CntryType)
+    W.ValueText(ARow + 5, 'CntryType', O.CntryType)
   else if O.IsMarkedEmpty('CntryType') then
-    W.ValueText(ARow + 4, 'CntryType', '');
+    W.ValueText(ARow + 5, 'CntryType', '');
   if O.CntryName <> '' then
-    W.ValueText(ARow + 5, 'CntryName', O.CntryName)
+    W.ValueText(ARow + 6, 'CntryName', O.CntryName)
   else if O.IsMarkedEmpty('CntryName') then
-    W.ValueText(ARow + 5, 'CntryName', '');
+    W.ValueText(ARow + 6, 'CntryName', '');
   if O.SectorType <> '' then
-    W.ValueText(ARow + 6, 'SectorType', O.SectorType)
+    W.ValueText(ARow + 7, 'SectorType', O.SectorType)
   else if O.IsMarkedEmpty('SectorType') then
-    W.ValueText(ARow + 6, 'SectorType', '');
+    W.ValueText(ARow + 7, 'SectorType', '');
   if O.PrefBidType <> '' then
-    W.ValueText(ARow + 7, 'PrefBidType', O.PrefBidType)
+    W.ValueText(ARow + 8, 'PrefBidType', O.PrefBidType)
   else if O.IsMarkedEmpty('PrefBidType') then
-    W.ValueText(ARow + 7, 'PrefBidType', '');
+    W.ValueText(ARow + 8, 'PrefBidType', '');
   if O.SCType <> '' then
-    W.ValueText(ARow + 8, 'SCType', O.SCType)
+    W.ValueText(ARow + 9, 'SCType', O.SCType)
   else if O.IsMarkedEmpty('SCType') then
-    W.ValueText(ARow + 8, 'SCType', '');
-  if O.HasInsAs and W.Allowed(ARow + 9, 'InsAs', False) then
-    WriteInsAs(W, O.InsAs, 'InsAs', W.ChildRow(ARow + 9));
+    W.ValueText(ARow + 9, 'SCType', '');
+  if O.HasInsAs and W.Allowed(ARow + 10, 'InsAs', False) then
+    WriteInsAs(W, O.InsAs, 'InsAs', W.ChildRow(ARow + 10));
   if O.HasAddText then
     for I := 0 to O.AddText.Count - 1 do
-      if O.AddText[I].IsPresent and W.Allowed(ARow + 10, 'AddText', False) then
-        WriteAddText(W, O.AddText[I], 'AddText', W.ChildRow(ARow + 10));
+      if O.AddText[I].IsPresent and W.Allowed(ARow + 11, 'AddText', False) then
+        WriteAddText(W, O.AddText[I], 'AddText', W.ChildRow(ARow + 11));
   W.EndElement;
 end;
 
@@ -1086,6 +1102,8 @@ begin
     WriteCompleteText(W, O.CompleteText, 'CompleteText', W.ChildRow(ARow + 4));
   if O.HasOutlineText and W.Allowed(ARow + 5, 'OutlineText', False) then
     WriteOutlineText(W, O.OutlineText, 'OutlineText', W.ChildRow(ARow + 5));
+  if O.HasSubmissionComment and W.Allowed(ARow + 6, 'SubmissionComment', False) then
+    WriteMLText(W, O.SubmissionComment, 'SubmissionComment', W.ChildRow(ARow + 6));
   W.EndElement;
 end;
 
@@ -1387,6 +1405,23 @@ begin
   W.EndElement;
 end;
 
+procedure WriteIndivAgrInfo(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlIndivAgrInfo; const AName: TLandrixXmlUtf8;
+  ARow: Integer);
+begin
+  W.StartElement(AName, False);
+  if O.InfoPerson <> '' then
+    W.ValueText(ARow + 0, 'InfoPerson', O.InfoPerson)
+  else if O.IsMarkedEmpty('InfoPerson') then
+    W.ValueText(ARow + 0, 'InfoPerson', '');
+  if O.AttestPerson <> '' then
+    W.ValueText(ARow + 1, 'AttestPerson', O.AttestPerson)
+  else if O.IsMarkedEmpty('AttestPerson') then
+    W.ValueText(ARow + 1, 'AttestPerson', '');
+  if O.HasCnstSiteLoc and W.Allowed(ARow + 2, 'CnstSiteLoc', False) then
+    WriteMLText(W, O.CnstSiteLoc, 'CnstSiteLoc', W.ChildRow(ARow + 2));
+  W.EndElement;
+end;
+
 procedure WriteInsAs(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlInsAs; const AName: TLandrixXmlUtf8;
   ARow: Integer);
 begin
@@ -1432,122 +1467,160 @@ begin
     W.ValueText(ARow + 4, 'ALNSerNo', O.ALNSerNo)
   else if O.IsMarkedEmpty('ALNSerNo') then
     W.ValueText(ARow + 4, 'ALNSerNo', '');
+  if O.Accepted <> '' then
+    W.ValueText(ARow + 5, 'Accepted', O.Accepted)
+  else if O.IsMarkedEmpty('Accepted') then
+    W.ValueText(ARow + 5, 'Accepted', '');
   if O.Provis <> '' then
-    W.ValueText(ARow + 5, 'Provis', O.Provis)
+    W.ValueText(ARow + 6, 'Provis', O.Provis)
   else if O.IsMarkedEmpty('Provis') then
-    W.ValueText(ARow + 5, 'Provis', '');
+    W.ValueText(ARow + 6, 'Provis', '');
+  if O.ProvisAccpt <> '' then
+    W.ValueText(ARow + 7, 'ProvisAccpt', O.ProvisAccpt)
+  else if O.IsMarkedEmpty('ProvisAccpt') then
+    W.ValueText(ARow + 7, 'ProvisAccpt', '');
   if O.LumpSumItem <> '' then
-    W.ValueText(ARow + 6, 'LumpSumItem', O.LumpSumItem)
+    W.ValueText(ARow + 8, 'LumpSumItem', O.LumpSumItem)
   else if O.IsMarkedEmpty('LumpSumItem') then
-    W.ValueText(ARow + 6, 'LumpSumItem', '');
+    W.ValueText(ARow + 8, 'LumpSumItem', '');
+  if O.NotAppl <> '' then
+    W.ValueText(ARow + 9, 'NotAppl', O.NotAppl)
+  else if O.IsMarkedEmpty('NotAppl') then
+    W.ValueText(ARow + 9, 'NotAppl', '');
   if O.HourIt <> '' then
-    W.ValueText(ARow + 7, 'HourIt', O.HourIt)
+    W.ValueText(ARow + 10, 'HourIt', O.HourIt)
   else if O.IsMarkedEmpty('HourIt') then
-    W.ValueText(ARow + 7, 'HourIt', '');
+    W.ValueText(ARow + 10, 'HourIt', '');
   if O.KeyIt <> '' then
-    W.ValueText(ARow + 8, 'KeyIt', O.KeyIt)
+    W.ValueText(ARow + 11, 'KeyIt', O.KeyIt)
   else if O.IsMarkedEmpty('KeyIt') then
-    W.ValueText(ARow + 8, 'KeyIt', '');
+    W.ValueText(ARow + 11, 'KeyIt', '');
   if O.UPBkdn <> '' then
-    W.ValueText(ARow + 9, 'UPBkdn', O.UPBkdn)
+    W.ValueText(ARow + 12, 'UPBkdn', O.UPBkdn)
   else if O.IsMarkedEmpty('UPBkdn') then
-    W.ValueText(ARow + 9, 'UPBkdn', '');
+    W.ValueText(ARow + 12, 'UPBkdn', '');
   if O.MarkupIt <> '' then
-    W.ValueText(ARow + 10, 'MarkupIt', O.MarkupIt)
+    W.ValueText(ARow + 13, 'MarkupIt', O.MarkupIt)
   else if O.IsMarkedEmpty('MarkupIt') then
-    W.ValueText(ARow + 10, 'MarkupIt', '');
+    W.ValueText(ARow + 13, 'MarkupIt', '');
   if O.CONo <> '' then
-    W.ValueText(ARow + 11, 'CONo', O.CONo)
+    W.ValueText(ARow + 14, 'CONo', O.CONo)
   else if O.IsMarkedEmpty('CONo') then
-    W.ValueText(ARow + 11, 'CONo', '');
+    W.ValueText(ARow + 14, 'CONo', '');
   if O.COStatus <> '' then
-    W.ValueText(ARow + 12, 'COStatus', O.COStatus)
+    W.ValueText(ARow + 15, 'COStatus', O.COStatus)
   else if O.IsMarkedEmpty('COStatus') then
-    W.ValueText(ARow + 12, 'COStatus', '');
+    W.ValueText(ARow + 15, 'COStatus', '');
   if O.RefDescr <> '' then
-    W.ValueText(ARow + 13, 'RefDescr', O.RefDescr)
+    W.ValueText(ARow + 16, 'RefDescr', O.RefDescr)
   else if O.IsMarkedEmpty('RefDescr') then
-    W.ValueText(ARow + 13, 'RefDescr', '');
-  if O.HasRefRNo and W.Allowed(ARow + 14, 'RefRNo', False) then
-    WriteRefItem(W, O.RefRNo, 'RefRNo', W.ChildRow(ARow + 14));
-  if O.HasRefPerfNo and W.Allowed(ARow + 15, 'RefPerfNo', False) then
-    WriteRefItem(W, O.RefPerfNo, 'RefPerfNo', W.ChildRow(ARow + 15));
+    W.ValueText(ARow + 16, 'RefDescr', '');
+  if O.HasRefRNo and W.Allowed(ARow + 17, 'RefRNo', False) then
+    WriteRefItem(W, O.RefRNo, 'RefRNo', W.ChildRow(ARow + 17));
+  if O.HasRefPerfNo and W.Allowed(ARow + 18, 'RefPerfNo', False) then
+    WriteRefItem(W, O.RefPerfNo, 'RefPerfNo', W.ChildRow(ARow + 18));
   if O.HoldOutType <> '' then
-    W.ValueText(ARow + 16, 'HoldOutType', O.HoldOutType)
+    W.ValueText(ARow + 19, 'HoldOutType', O.HoldOutType)
   else if O.IsMarkedEmpty('HoldOutType') then
-    W.ValueText(ARow + 16, 'HoldOutType', '');
+    W.ValueText(ARow + 19, 'HoldOutType', '');
   if O.UseDur.HasValue then
-    W.ValueDecimal(ARow + 17, 'UseDur', O.UseDur);
+    W.ValueDecimal(ARow + 20, 'UseDur', O.UseDur);
   if O.UseDurLblTime <> '' then
-    W.ValueText(ARow + 18, 'UseDurLblTime', O.UseDurLblTime)
+    W.ValueText(ARow + 21, 'UseDurLblTime', O.UseDurLblTime)
   else if O.IsMarkedEmpty('UseDurLblTime') then
-    W.ValueText(ARow + 18, 'UseDurLblTime', '');
+    W.ValueText(ARow + 21, 'UseDurLblTime', '');
   if O.HasRefBaseItem then
     for I := 0 to O.RefBaseItem.Count - 1 do
-      if O.RefBaseItem[I].IsPresent and W.Allowed(ARow + 19, 'RefBaseItem', False) then
-        WriteRefItem(W, O.RefBaseItem[I], 'RefBaseItem', W.ChildRow(ARow + 19));
+      if O.RefBaseItem[I].IsPresent and W.Allowed(ARow + 22, 'RefBaseItem', False) then
+        WriteRefItem(W, O.RefBaseItem[I], 'RefBaseItem', W.ChildRow(ARow + 22));
   if O.QtyTBD <> '' then
-    W.ValueText(ARow + 20, 'QtyTBD', O.QtyTBD)
+    W.ValueText(ARow + 23, 'QtyTBD', O.QtyTBD)
   else if O.IsMarkedEmpty('QtyTBD') then
-    W.ValueText(ARow + 20, 'QtyTBD', '');
+    W.ValueText(ARow + 23, 'QtyTBD', '');
   if O.NotOffered <> '' then
-    W.ValueText(ARow + 21, 'NotOffered', O.NotOffered)
+    W.ValueText(ARow + 24, 'NotOffered', O.NotOffered)
   else if O.IsMarkedEmpty('NotOffered') then
-    W.ValueText(ARow + 21, 'NotOffered', '');
+    W.ValueText(ARow + 24, 'NotOffered', '');
   if O.Qty.HasValue then
-    W.ValueDecimal(ARow + 22, 'Qty', O.Qty);
+    W.ValueDecimal(ARow + 25, 'Qty', O.Qty);
   if O.HasQtySplit then
     for I := 0 to O.QtySplit.Count - 1 do
-      if O.QtySplit[I].IsPresent and W.Allowed(ARow + 23, 'QtySplit', False) then
-        WriteQtySplit(W, O.QtySplit[I], 'QtySplit', W.ChildRow(ARow + 23));
+      if O.QtySplit[I].IsPresent and W.Allowed(ARow + 26, 'QtySplit', False) then
+        WriteQtySplit(W, O.QtySplit[I], 'QtySplit', W.ChildRow(ARow + 26));
+  if O.PredQty.HasValue then
+    W.ValueDecimal(ARow + 27, 'PredQty', O.PredQty);
+  if O.BillQty.HasValue then
+    W.ValueDecimal(ARow + 28, 'BillQty', O.BillQty);
   if O.QU <> '' then
-    W.ValueText(ARow + 24, 'QU', O.QU)
+    W.ValueText(ARow + 29, 'QU', O.QU)
   else if O.IsMarkedEmpty('QU') then
-    W.ValueText(ARow + 24, 'QU', '');
+    W.ValueText(ARow + 29, 'QU', '');
   if O.HasCtlgAssign then
     for I := 0 to O.CtlgAssign.Count - 1 do
-      if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 25, 'CtlgAssign', False) then
-        WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 25));
+      if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 30, 'CtlgAssign', False) then
+        WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 30));
   if O.UP.HasValue then
-    W.ValueDecimal(ARow + 26, 'UP', O.UP);
+    W.ValueDecimal(ARow + 31, 'UP', O.UP);
+  if O.UP110.HasValue then
+    W.ValueDecimal(ARow + 32, 'UP110', O.UP110);
   if O.UPComp1.HasValue then
-    W.ValueDecimal(ARow + 27, 'UPComp1', O.UPComp1);
+    W.ValueDecimal(ARow + 33, 'UPComp1', O.UPComp1);
   if O.UPComp2.HasValue then
-    W.ValueDecimal(ARow + 28, 'UPComp2', O.UPComp2);
+    W.ValueDecimal(ARow + 34, 'UPComp2', O.UPComp2);
   if O.UPComp3.HasValue then
-    W.ValueDecimal(ARow + 29, 'UPComp3', O.UPComp3);
+    W.ValueDecimal(ARow + 35, 'UPComp3', O.UPComp3);
   if O.UPComp4.HasValue then
-    W.ValueDecimal(ARow + 30, 'UPComp4', O.UPComp4);
+    W.ValueDecimal(ARow + 36, 'UPComp4', O.UPComp4);
   if O.UPComp5.HasValue then
-    W.ValueDecimal(ARow + 31, 'UPComp5', O.UPComp5);
+    W.ValueDecimal(ARow + 37, 'UPComp5', O.UPComp5);
   if O.UPComp6.HasValue then
-    W.ValueDecimal(ARow + 32, 'UPComp6', O.UPComp6);
+    W.ValueDecimal(ARow + 38, 'UPComp6', O.UPComp6);
   if O.DiscountPcnt.HasValue then
-    W.ValueDecimal(ARow + 33, 'DiscountPcnt', O.DiscountPcnt);
+    W.ValueDecimal(ARow + 39, 'DiscountPcnt', O.DiscountPcnt);
+  if O.UPFrom.HasValue then
+    W.ValueDecimal(ARow + 40, 'UPFrom', O.UPFrom);
+  if O.UPAvg.HasValue then
+    W.ValueDecimal(ARow + 41, 'UPAvg', O.UPAvg);
+  if O.UPTo.HasValue then
+    W.ValueDecimal(ARow + 42, 'UPTo', O.UPTo);
+  if O.UPWgFrom.HasValue then
+    W.ValueDecimal(ARow + 43, 'UPWgFrom', O.UPWgFrom);
+  if O.UPWgAvg.HasValue then
+    W.ValueDecimal(ARow + 44, 'UPWgAvg', O.UPWgAvg);
+  if O.UPWgTo.HasValue then
+    W.ValueDecimal(ARow + 45, 'UPWgTo', O.UPWgTo);
   if O.IT.HasValue then
-    W.ValueDecimal(ARow + 34, 'IT', O.IT);
+    W.ValueDecimal(ARow + 46, 'IT', O.IT);
   if O.VAT.HasValue then
-    W.ValueDecimal(ARow + 35, 'VAT', O.VAT);
+    W.ValueDecimal(ARow + 47, 'VAT', O.VAT);
+  if O.PriceInfo <> '' then
+    W.ValueText(ARow + 48, 'PriceInfo', O.PriceInfo)
+  else if O.IsMarkedEmpty('PriceInfo') then
+    W.ValueText(ARow + 48, 'PriceInfo', '');
   if O.TimeQu.HasValue then
-    W.ValueDecimal(ARow + 36, 'TimeQu', O.TimeQu);
-  if O.HasDescription and W.Allowed(ARow + 37, 'Description', False) then
-    WriteDescription(W, O.Description, 'Description', W.ChildRow(ARow + 37));
-  if O.SumDescr <> '' then
-    W.ValueText(ARow + 38, 'SumDescr', O.SumDescr)
-  else if O.IsMarkedEmpty('SumDescr') then
-    W.ValueText(ARow + 38, 'SumDescr', '');
+    W.ValueDecimal(ARow + 49, 'TimeQu', O.TimeQu);
+  if O.HasDescription and W.Allowed(ARow + 50, 'Description', False) then
+    WriteDescription(W, O.Description, 'Description', W.ChildRow(ARow + 50));
   if O.HasBidComm then
     for I := 0 to O.BidComm.Count - 1 do
-      if O.BidComm[I].IsPresent and W.Allowed(ARow + 39, 'BidComm', False) then
-        WriteMLText(W, O.BidComm[I], 'BidComm', W.ChildRow(ARow + 39));
+      if O.BidComm[I].IsPresent and W.Allowed(ARow + 51, 'BidComm', False) then
+        WriteMLText(W, O.BidComm[I], 'BidComm', W.ChildRow(ARow + 51));
+  if O.SumDescr <> '' then
+    W.ValueText(ARow + 52, 'SumDescr', O.SumDescr)
+  else if O.IsMarkedEmpty('SumDescr') then
+    W.ValueText(ARow + 52, 'SumDescr', '');
   if O.HasSubDescr then
     for I := 0 to O.SubDescr.Count - 1 do
-      if O.SubDescr[I].IsPresent and W.Allowed(ARow + 40, 'SubDescr', False) then
-        WriteSubDescr(W, O.SubDescr[I], 'SubDescr', W.ChildRow(ARow + 40));
-  if O.HasProduct and W.Allowed(ARow + 41, 'Product', False) then
-    WriteProduct(W, O.Product, 'Product', W.ChildRow(ARow + 41));
-  if O.HasQtyDeterm and W.Allowed(ARow + 42, 'QtyDeterm', False) then
-    WriteQtyDeterm(W, O.QtyDeterm, 'QtyDeterm', W.ChildRow(ARow + 42));
+      if O.SubDescr[I].IsPresent and W.Allowed(ARow + 53, 'SubDescr', False) then
+        WriteSubDescr(W, O.SubDescr[I], 'SubDescr', W.ChildRow(ARow + 53));
+  if O.HasProduct and W.Allowed(ARow + 54, 'Product', False) then
+    WriteProduct(W, O.Product, 'Product', W.ChildRow(ARow + 54));
+  if O.AlterBidStatus <> '' then
+    W.ValueText(ARow + 55, 'AlterBidStatus', O.AlterBidStatus)
+  else if O.IsMarkedEmpty('AlterBidStatus') then
+    W.ValueText(ARow + 55, 'AlterBidStatus', '');
+  if O.HasQtyDeterm and W.Allowed(ARow + 56, 'QtyDeterm', False) then
+    WriteQtyDeterm(W, O.QtyDeterm, 'QtyDeterm', W.ChildRow(ARow + 56));
   W.EndElement;
 end;
 
@@ -1799,56 +1872,72 @@ begin
     W.ValueText(ARow + 4, 'ALNSerNo', O.ALNSerNo)
   else if O.IsMarkedEmpty('ALNSerNo') then
     W.ValueText(ARow + 4, 'ALNSerNo', '');
+  if O.Accepted <> '' then
+    W.ValueText(ARow + 5, 'Accepted', O.Accepted)
+  else if O.IsMarkedEmpty('Accepted') then
+    W.ValueText(ARow + 5, 'Accepted', '');
   if O.Provis <> '' then
-    W.ValueText(ARow + 5, 'Provis', O.Provis)
+    W.ValueText(ARow + 6, 'Provis', O.Provis)
   else if O.IsMarkedEmpty('Provis') then
-    W.ValueText(ARow + 5, 'Provis', '');
+    W.ValueText(ARow + 6, 'Provis', '');
+  if O.ProvisAccpt <> '' then
+    W.ValueText(ARow + 7, 'ProvisAccpt', O.ProvisAccpt)
+  else if O.IsMarkedEmpty('ProvisAccpt') then
+    W.ValueText(ARow + 7, 'ProvisAccpt', '');
+  if O.NotAppl <> '' then
+    W.ValueText(ARow + 8, 'NotAppl', O.NotAppl)
+  else if O.IsMarkedEmpty('NotAppl') then
+    W.ValueText(ARow + 8, 'NotAppl', '');
   if O.HourIt <> '' then
-    W.ValueText(ARow + 6, 'HourIt', O.HourIt)
+    W.ValueText(ARow + 9, 'HourIt', O.HourIt)
   else if O.IsMarkedEmpty('HourIt') then
-    W.ValueText(ARow + 6, 'HourIt', '');
+    W.ValueText(ARow + 9, 'HourIt', '');
   if O.KeyIt <> '' then
-    W.ValueText(ARow + 7, 'KeyIt', O.KeyIt)
+    W.ValueText(ARow + 10, 'KeyIt', O.KeyIt)
   else if O.IsMarkedEmpty('KeyIt') then
-    W.ValueText(ARow + 7, 'KeyIt', '');
+    W.ValueText(ARow + 10, 'KeyIt', '');
   if O.CONo <> '' then
-    W.ValueText(ARow + 8, 'CONo', O.CONo)
+    W.ValueText(ARow + 11, 'CONo', O.CONo)
   else if O.IsMarkedEmpty('CONo') then
-    W.ValueText(ARow + 8, 'CONo', '');
+    W.ValueText(ARow + 11, 'CONo', '');
   if O.COStatus <> '' then
-    W.ValueText(ARow + 9, 'COStatus', O.COStatus)
+    W.ValueText(ARow + 12, 'COStatus', O.COStatus)
   else if O.IsMarkedEmpty('COStatus') then
-    W.ValueText(ARow + 9, 'COStatus', '');
+    W.ValueText(ARow + 12, 'COStatus', '');
   if O.RefDescr <> '' then
-    W.ValueText(ARow + 10, 'RefDescr', O.RefDescr)
+    W.ValueText(ARow + 13, 'RefDescr', O.RefDescr)
   else if O.IsMarkedEmpty('RefDescr') then
-    W.ValueText(ARow + 10, 'RefDescr', '');
-  if O.HasRefRNo and W.Allowed(ARow + 11, 'RefRNo', False) then
-    WriteRefItem(W, O.RefRNo, 'RefRNo', W.ChildRow(ARow + 11));
-  if O.HasRefPerfNo and W.Allowed(ARow + 12, 'RefPerfNo', False) then
-    WriteRefItem(W, O.RefPerfNo, 'RefPerfNo', W.ChildRow(ARow + 12));
+    W.ValueText(ARow + 13, 'RefDescr', '');
+  if O.HasRefRNo and W.Allowed(ARow + 14, 'RefRNo', False) then
+    WriteRefItem(W, O.RefRNo, 'RefRNo', W.ChildRow(ARow + 14));
+  if O.HasRefPerfNo and W.Allowed(ARow + 15, 'RefPerfNo', False) then
+    WriteRefItem(W, O.RefPerfNo, 'RefPerfNo', W.ChildRow(ARow + 15));
   if O.MarkupType <> '' then
-    W.ValueText(ARow + 13, 'MarkupType', O.MarkupType)
+    W.ValueText(ARow + 16, 'MarkupType', O.MarkupType)
   else if O.IsMarkedEmpty('MarkupType') then
-    W.ValueText(ARow + 13, 'MarkupType', '');
+    W.ValueText(ARow + 16, 'MarkupType', '');
   if O.HasMarkupSubQty then
     for I := 0 to O.MarkupSubQty.Count - 1 do
-      if O.MarkupSubQty[I].IsPresent and W.Allowed(ARow + 14, 'MarkupSubQty', False) then
-        WriteMarkupSubQty(W, O.MarkupSubQty[I], 'MarkupSubQty', W.ChildRow(ARow + 14));
+      if O.MarkupSubQty[I].IsPresent and W.Allowed(ARow + 17, 'MarkupSubQty', False) then
+        WriteMarkupSubQty(W, O.MarkupSubQty[I], 'MarkupSubQty', W.ChildRow(ARow + 17));
   if O.ITMarkup.HasValue then
-    W.ValueDecimal(ARow + 15, 'ITMarkup', O.ITMarkup);
+    W.ValueDecimal(ARow + 18, 'ITMarkup', O.ITMarkup);
   if O.Markup.HasValue then
-    W.ValueDecimal(ARow + 16, 'Markup', O.Markup);
+    W.ValueDecimal(ARow + 19, 'Markup', O.Markup);
   if O.DiscountPcnt.HasValue then
-    W.ValueDecimal(ARow + 17, 'DiscountPcnt', O.DiscountPcnt);
+    W.ValueDecimal(ARow + 20, 'DiscountPcnt', O.DiscountPcnt);
   if O.IT.HasValue then
-    W.ValueDecimal(ARow + 18, 'IT', O.IT);
-  if O.HasDescription and W.Allowed(ARow + 19, 'Description', False) then
-    WriteDescription(W, O.Description, 'Description', W.ChildRow(ARow + 19));
+    W.ValueDecimal(ARow + 21, 'IT', O.IT);
+  if O.HasDescription and W.Allowed(ARow + 22, 'Description', False) then
+    WriteDescription(W, O.Description, 'Description', W.ChildRow(ARow + 22));
   if O.HasCtlgAssign then
     for I := 0 to O.CtlgAssign.Count - 1 do
-      if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 20, 'CtlgAssign', False) then
-        WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 20));
+      if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 23, 'CtlgAssign', False) then
+        WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 23));
+  if O.AlterBidStatus <> '' then
+    W.ValueText(ARow + 24, 'AlterBidStatus', O.AlterBidStatus)
+  else if O.IsMarkedEmpty('AlterBidStatus') then
+    W.ValueText(ARow + 24, 'AlterBidStatus', '');
   W.EndElement;
 end;
 
@@ -2181,10 +2270,14 @@ begin
     W.ValueText(ARow + 4, 'CONo', O.CONo)
   else if O.IsMarkedEmpty('CONo') then
     W.ValueText(ARow + 4, 'CONo', '');
+  if O.AlterBidStatus <> '' then
+    W.ValueText(ARow + 5, 'AlterBidStatus', O.AlterBidStatus)
+  else if O.IsMarkedEmpty('AlterBidStatus') then
+    W.ValueText(ARow + 5, 'AlterBidStatus', '');
   if O.HasCtlgAssign then
     for I := 0 to O.CtlgAssign.Count - 1 do
-      if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 5, 'CtlgAssign', False) then
-        WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 5));
+      if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 6, 'CtlgAssign', False) then
+        WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 6));
   W.EndElement;
 end;
 
@@ -2210,10 +2303,12 @@ begin
     WriteCompleteText(W, O.CompleteText, 'CompleteText', W.ChildRow(ARow + 4));
   if O.HasOutlineText and W.Allowed(ARow + 5, 'OutlineText', False) then
     WriteOutlineText(W, O.OutlineText, 'OutlineText', W.ChildRow(ARow + 5));
+  if O.HasSubmissionComment and W.Allowed(ARow + 6, 'SubmissionComment', False) then
+    WriteMLText(W, O.SubmissionComment, 'SubmissionComment', W.ChildRow(ARow + 6));
   if O.HasCtlgAssign then
     for I := 0 to O.CtlgAssign.Count - 1 do
-      if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 6, 'CtlgAssign', False) then
-        WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 6));
+      if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 7, 'CtlgAssign', False) then
+        WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 7));
   W.EndElement;
 end;
 
@@ -2524,10 +2619,14 @@ begin
     W.ValueText(ARow + 2, 'CONo', O.CONo)
   else if O.IsMarkedEmpty('CONo') then
     W.ValueText(ARow + 2, 'CONo', '');
+  if O.AlterBidStatus <> '' then
+    W.ValueText(ARow + 3, 'AlterBidStatus', O.AlterBidStatus)
+  else if O.IsMarkedEmpty('AlterBidStatus') then
+    W.ValueText(ARow + 3, 'AlterBidStatus', '');
   if O.HasCtlgAssign then
     for I := 0 to O.CtlgAssign.Count - 1 do
-      if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 3, 'CtlgAssign', False) then
-        WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 3));
+      if O.CtlgAssign[I].IsPresent and W.Allowed(ARow + 4, 'CtlgAssign', False) then
+        WriteCtlgAssign(W, O.CtlgAssign[I], 'CtlgAssign', W.ChildRow(ARow + 4));
   W.EndElement;
 end;
 

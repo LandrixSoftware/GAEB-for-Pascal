@@ -288,7 +288,7 @@ var
   First: string;
 begin
   Det := LandrixGaebDetectFile(FileName, nil, 0);
-  if (Det.Format <> gfXml) or not Det.Accepted or not (Det.Target.Phase in [gp83, gp84]) or
+  if (Det.Format <> gfXml) or not Det.Accepted or not (Det.Target.Phase in [gp81, gp83, gp84, gp86]) or
     not ((Det.Target.Version = gv32) or (Det.Target.Version = gv33)) or
     not LandrixGaebTargetIsSupported(Det.Target, False) then
     Exit;

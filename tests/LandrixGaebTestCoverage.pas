@@ -14,7 +14,7 @@
 
 { Coverage of the model (plan, phase 1 step 9): the documents of
   tools/coverage/make-coverage-cases.py (tests/data/coverage) hold every
-  element and attribute of the six targets. Each one must read without a
+  element and attribute of the twelve targets. Each one must read without a
   diagnostic, pass the content model check, go through the rules without
   an exception and come back unchanged from the writer. }
 
@@ -299,7 +299,7 @@ begin
       FindClose(SR);
     end;
     Names.Sort;
-    CheckEquals(18, Names.Count, 'six targets, one minimal and two full documents each');
+    CheckEquals(36, Names.Count, 'twelve targets, one minimal and two full documents each');
     for I := 0 to Names.Count - 1 do
       CheckDocument(Names[I]);
   finally

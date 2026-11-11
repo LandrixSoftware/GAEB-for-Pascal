@@ -281,7 +281,7 @@ var
   S: AnsiString;
   Raised: Boolean;
 begin
-  S := DocFor('81', '');
+  S := DocFor('82', '');
   Raised := False;
   try
     ReadDoc(S, nil).Free;
@@ -289,7 +289,7 @@ begin
     on ELandrixGaebError do
       Raised := True;
   end;
-  Check(Raised, 'X81 is outside the model of phase 1');
+  Check(Raised, 'X82 is outside the model (phase 3)');
   S := '<?xml version="1.0"?><!DOCTYPE GAEB><GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3"/>';
   Raised := False;
   try
@@ -322,7 +322,7 @@ var
 begin
   Det := LandrixGaebDetectFile(FileName, nil, 0);
   if (Det.Format <> gfXml) or not Det.Accepted or
-    not (Det.Target.Phase in [gp83, gp84]) or
+    not (Det.Target.Phase in [gp81, gp83, gp84, gp86]) or
     not ((Det.Target.Version = gv32) or (Det.Target.Version = gv33)) then
   begin
     Inc(SweepSkipped);

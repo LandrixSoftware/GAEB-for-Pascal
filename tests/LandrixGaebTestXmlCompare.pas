@@ -79,6 +79,7 @@ procedure CmpFTextTC(const P: string; A, B: TLandrixGaebXmlFTextTC; D: TStrings)
 procedure CmpGAEB(const P: string; A, B: TLandrixGaebXmlGAEB; D: TStrings); forward;
 procedure CmpGAEBInfo(const P: string; A, B: TLandrixGaebXmlGAEBInfo; D: TStrings); forward;
 procedure CmpImage(const P: string; A, B: TLandrixGaebXmlImage; D: TStrings); forward;
+procedure CmpIndivAgrInfo(const P: string; A, B: TLandrixGaebXmlIndivAgrInfo; D: TStrings); forward;
 procedure CmpInsAs(const P: string; A, B: TLandrixGaebXmlInsAs; D: TStrings); forward;
 procedure CmpItem(const P: string; A, B: TLandrixGaebXmlItem; D: TStrings); forward;
 procedure CmpItemlist(const P: string; A, B: TLandrixGaebXmlItemlist; D: TStrings); forward;
@@ -238,6 +239,8 @@ begin
     CmpGAEBInfo(P, TLandrixGaebXmlGAEBInfo(A), TLandrixGaebXmlGAEBInfo(B), D)
   else if A is TLandrixGaebXmlImage then
     CmpImage(P, TLandrixGaebXmlImage(A), TLandrixGaebXmlImage(B), D)
+  else if A is TLandrixGaebXmlIndivAgrInfo then
+    CmpIndivAgrInfo(P, TLandrixGaebXmlIndivAgrInfo(A), TLandrixGaebXmlIndivAgrInfo(B), D)
   else if A is TLandrixGaebXmlInsAs then
     CmpInsAs(P, TLandrixGaebXmlInsAs(A), TLandrixGaebXmlInsAs(B), D)
   else if A is TLandrixGaebXmlItem then
@@ -518,6 +521,10 @@ begin
     D.Add(P + '/AwardInfo (presence)')
   else if A.HasAwardInfo then
     CmpAwardInfo(P + '/AwardInfo', A.AwardInfo, B.AwardInfo, D);
+  if A.HasIndivAgrInfo <> B.HasIndivAgrInfo then
+    D.Add(P + '/IndivAgrInfo (presence)')
+  else if A.HasIndivAgrInfo then
+    CmpIndivAgrInfo(P + '/IndivAgrInfo', A.IndivAgrInfo, B.IndivAgrInfo, D);
   if A.HasOWN <> B.HasOWN then
     D.Add(P + '/OWN (presence)')
   else if A.HasOWN then
@@ -534,6 +541,10 @@ begin
     for I := 0 to N - 1 do
       CmpRequester(P + '/Requester[' + IntToStr(I + 1) + ']', A.Requester[I], B.Requester[I], D);
   end;
+  if A.HasCTR <> B.HasCTR then
+    D.Add(P + '/CTR (presence)')
+  else if A.HasCTR then
+    CmpCTR(P + '/CTR', A.CTR, B.CTR, D);
   if A.HasCnstSiteGroup <> B.HasCnstSiteGroup then
     D.Add(P + '/CnstSiteGroup (presence)')
   else if A.HasCnstSiteGroup then
@@ -558,10 +569,6 @@ begin
     for I := 0 to N - 1 do
       CmpAddText(P + '/AddText[' + IntToStr(I + 1) + ']', A.AddText[I], B.AddText[I], D);
   end;
-  if A.HasCTR <> B.HasCTR then
-    D.Add(P + '/CTR (presence)')
-  else if A.HasCTR then
-    CmpCTR(P + '/CTR', A.CTR, B.CTR, D);
   if A.HasBoQ <> B.HasBoQ then
     D.Add(P + '/BoQ (presence)')
   else if A.HasBoQ then
@@ -866,6 +873,10 @@ begin
     D.Add(P + '/ALNBSerNo');
   if A.IsMarkedEmpty('ALNBSerNo') <> B.IsMarkedEmpty('ALNBSerNo') then
     D.Add(P + '/ALNBSerNo (empty mark)');
+  if A.Accepted <> B.Accepted then
+    D.Add(P + '/Accepted');
+  if A.IsMarkedEmpty('Accepted') <> B.IsMarkedEmpty('Accepted') then
+    D.Add(P + '/Accepted (empty mark)');
   if A.NotApplBoQ <> B.NotApplBoQ then
     D.Add(P + '/NotApplBoQ');
   if A.IsMarkedEmpty('NotApplBoQ') <> B.IsMarkedEmpty('NotApplBoQ') then
@@ -890,6 +901,10 @@ begin
     D.Add(P + '/Totals (presence)')
   else if A.HasTotals then
     CmpTotals(P + '/Totals', A.Totals, B.Totals, D);
+  if A.AlterBidStatus <> B.AlterBidStatus then
+    D.Add(P + '/AlterBidStatus');
+  if A.IsMarkedEmpty('AlterBidStatus') <> B.IsMarkedEmpty('AlterBidStatus') then
+    D.Add(P + '/AlterBidStatus (empty mark)');
 end;
 
 procedure CmpBoQInfo(const P: string; A, B: TLandrixGaebXmlBoQInfo; D: TStrings);
@@ -990,6 +1005,10 @@ begin
     for I := 0 to N - 1 do
       CmpCtlgAssign(P + '/CtlgAssign[' + IntToStr(I + 1) + ']', A.CtlgAssign[I], B.CtlgAssign[I], D);
   end;
+  if A.HasTotals <> B.HasTotals then
+    D.Add(P + '/Totals (presence)')
+  else if A.HasTotals then
+    CmpTotals(P + '/Totals', A.Totals, B.Totals, D);
   if A.HasCtlg <> B.HasCtlg then
     D.Add(P + '/Ctlg (presence)')
   else if A.HasCtlg then
@@ -1002,10 +1021,6 @@ begin
     for I := 0 to N - 1 do
       CmpCtlg(P + '/Ctlg[' + IntToStr(I + 1) + ']', A.Ctlg[I], B.Ctlg[I], D);
   end;
-  if A.HasTotals <> B.HasTotals then
-    D.Add(P + '/Totals (presence)')
-  else if A.HasTotals then
-    CmpTotals(P + '/Totals', A.Totals, B.Totals, D);
   if A.HasQtyDetermInfo <> B.HasQtyDetermInfo then
     D.Add(P + '/QtyDetermInfo (presence)')
   else if A.HasQtyDetermInfo then
@@ -1100,6 +1115,10 @@ begin
     D.Add(P + '/AcctsPayNo');
   if A.IsMarkedEmpty('AcctsPayNo') <> B.IsMarkedEmpty('AcctsPayNo') then
     D.Add(P + '/AcctsPayNo (empty mark)');
+  if A.BidderNo <> B.BidderNo then
+    D.Add(P + '/BidderNo');
+  if A.IsMarkedEmpty('BidderNo') <> B.IsMarkedEmpty('BidderNo') then
+    D.Add(P + '/BidderNo (empty mark)');
   if A.CntryType <> B.CntryType then
     D.Add(P + '/CntryType');
   if A.IsMarkedEmpty('CntryType') <> B.IsMarkedEmpty('CntryType') then
@@ -1338,6 +1357,10 @@ begin
     D.Add(P + '/OutlineText (presence)')
   else if A.HasOutlineText then
     CmpOutlineText(P + '/OutlineText', A.OutlineText, B.OutlineText, D);
+  if A.HasSubmissionComment <> B.HasSubmissionComment then
+    D.Add(P + '/SubmissionComment (presence)')
+  else if A.HasSubmissionComment then
+    CmpMLText(P + '/SubmissionComment', A.SubmissionComment, B.SubmissionComment, D);
 end;
 
 procedure CmpFText(const P: string; A, B: TLandrixGaebXmlFText; D: TStrings);
@@ -1482,6 +1505,24 @@ begin
     D.Add(P + '/#base64');
 end;
 
+procedure CmpIndivAgrInfo(const P: string; A, B: TLandrixGaebXmlIndivAgrInfo; D: TStrings);
+begin
+  if A.IsPresent <> B.IsPresent then
+    D.Add(P + ' (presence)');
+  if A.InfoPerson <> B.InfoPerson then
+    D.Add(P + '/InfoPerson');
+  if A.IsMarkedEmpty('InfoPerson') <> B.IsMarkedEmpty('InfoPerson') then
+    D.Add(P + '/InfoPerson (empty mark)');
+  if A.AttestPerson <> B.AttestPerson then
+    D.Add(P + '/AttestPerson');
+  if A.IsMarkedEmpty('AttestPerson') <> B.IsMarkedEmpty('AttestPerson') then
+    D.Add(P + '/AttestPerson (empty mark)');
+  if A.HasCnstSiteLoc <> B.HasCnstSiteLoc then
+    D.Add(P + '/CnstSiteLoc (presence)')
+  else if A.HasCnstSiteLoc then
+    CmpMLText(P + '/CnstSiteLoc', A.CnstSiteLoc, B.CnstSiteLoc, D);
+end;
+
 procedure CmpInsAs(const P: string; A, B: TLandrixGaebXmlInsAs; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
@@ -1526,14 +1567,26 @@ begin
     D.Add(P + '/ALNSerNo');
   if A.IsMarkedEmpty('ALNSerNo') <> B.IsMarkedEmpty('ALNSerNo') then
     D.Add(P + '/ALNSerNo (empty mark)');
+  if A.Accepted <> B.Accepted then
+    D.Add(P + '/Accepted');
+  if A.IsMarkedEmpty('Accepted') <> B.IsMarkedEmpty('Accepted') then
+    D.Add(P + '/Accepted (empty mark)');
   if A.Provis <> B.Provis then
     D.Add(P + '/Provis');
   if A.IsMarkedEmpty('Provis') <> B.IsMarkedEmpty('Provis') then
     D.Add(P + '/Provis (empty mark)');
+  if A.ProvisAccpt <> B.ProvisAccpt then
+    D.Add(P + '/ProvisAccpt');
+  if A.IsMarkedEmpty('ProvisAccpt') <> B.IsMarkedEmpty('ProvisAccpt') then
+    D.Add(P + '/ProvisAccpt (empty mark)');
   if A.LumpSumItem <> B.LumpSumItem then
     D.Add(P + '/LumpSumItem');
   if A.IsMarkedEmpty('LumpSumItem') <> B.IsMarkedEmpty('LumpSumItem') then
     D.Add(P + '/LumpSumItem (empty mark)');
+  if A.NotAppl <> B.NotAppl then
+    D.Add(P + '/NotAppl');
+  if A.IsMarkedEmpty('NotAppl') <> B.IsMarkedEmpty('NotAppl') then
+    D.Add(P + '/NotAppl (empty mark)');
   if A.HourIt <> B.HourIt then
     D.Add(P + '/HourIt');
   if A.IsMarkedEmpty('HourIt') <> B.IsMarkedEmpty('HourIt') then
@@ -1618,6 +1671,14 @@ begin
     for I := 0 to N - 1 do
       CmpQtySplit(P + '/QtySplit[' + IntToStr(I + 1) + ']', A.QtySplit[I], B.QtySplit[I], D);
   end;
+  if not A.PredQty.Equals(B.PredQty) then
+    D.Add(P + '/PredQty');
+  if A.IsMarkedEmpty('PredQty') <> B.IsMarkedEmpty('PredQty') then
+    D.Add(P + '/PredQty (empty mark)');
+  if not A.BillQty.Equals(B.BillQty) then
+    D.Add(P + '/BillQty');
+  if A.IsMarkedEmpty('BillQty') <> B.IsMarkedEmpty('BillQty') then
+    D.Add(P + '/BillQty (empty mark)');
   if A.QU <> B.QU then
     D.Add(P + '/QU');
   if A.IsMarkedEmpty('QU') <> B.IsMarkedEmpty('QU') then
@@ -1638,6 +1699,10 @@ begin
     D.Add(P + '/UP');
   if A.IsMarkedEmpty('UP') <> B.IsMarkedEmpty('UP') then
     D.Add(P + '/UP (empty mark)');
+  if not A.UP110.Equals(B.UP110) then
+    D.Add(P + '/UP110');
+  if A.IsMarkedEmpty('UP110') <> B.IsMarkedEmpty('UP110') then
+    D.Add(P + '/UP110 (empty mark)');
   if not A.UPComp1.Equals(B.UPComp1) then
     D.Add(P + '/UPComp1');
   if A.IsMarkedEmpty('UPComp1') <> B.IsMarkedEmpty('UPComp1') then
@@ -1666,6 +1731,30 @@ begin
     D.Add(P + '/DiscountPcnt');
   if A.IsMarkedEmpty('DiscountPcnt') <> B.IsMarkedEmpty('DiscountPcnt') then
     D.Add(P + '/DiscountPcnt (empty mark)');
+  if not A.UPFrom.Equals(B.UPFrom) then
+    D.Add(P + '/UPFrom');
+  if A.IsMarkedEmpty('UPFrom') <> B.IsMarkedEmpty('UPFrom') then
+    D.Add(P + '/UPFrom (empty mark)');
+  if not A.UPAvg.Equals(B.UPAvg) then
+    D.Add(P + '/UPAvg');
+  if A.IsMarkedEmpty('UPAvg') <> B.IsMarkedEmpty('UPAvg') then
+    D.Add(P + '/UPAvg (empty mark)');
+  if not A.UPTo.Equals(B.UPTo) then
+    D.Add(P + '/UPTo');
+  if A.IsMarkedEmpty('UPTo') <> B.IsMarkedEmpty('UPTo') then
+    D.Add(P + '/UPTo (empty mark)');
+  if not A.UPWgFrom.Equals(B.UPWgFrom) then
+    D.Add(P + '/UPWgFrom');
+  if A.IsMarkedEmpty('UPWgFrom') <> B.IsMarkedEmpty('UPWgFrom') then
+    D.Add(P + '/UPWgFrom (empty mark)');
+  if not A.UPWgAvg.Equals(B.UPWgAvg) then
+    D.Add(P + '/UPWgAvg');
+  if A.IsMarkedEmpty('UPWgAvg') <> B.IsMarkedEmpty('UPWgAvg') then
+    D.Add(P + '/UPWgAvg (empty mark)');
+  if not A.UPWgTo.Equals(B.UPWgTo) then
+    D.Add(P + '/UPWgTo');
+  if A.IsMarkedEmpty('UPWgTo') <> B.IsMarkedEmpty('UPWgTo') then
+    D.Add(P + '/UPWgTo (empty mark)');
   if not A.IT.Equals(B.IT) then
     D.Add(P + '/IT');
   if A.IsMarkedEmpty('IT') <> B.IsMarkedEmpty('IT') then
@@ -1674,6 +1763,10 @@ begin
     D.Add(P + '/VAT');
   if A.IsMarkedEmpty('VAT') <> B.IsMarkedEmpty('VAT') then
     D.Add(P + '/VAT (empty mark)');
+  if A.PriceInfo <> B.PriceInfo then
+    D.Add(P + '/PriceInfo');
+  if A.IsMarkedEmpty('PriceInfo') <> B.IsMarkedEmpty('PriceInfo') then
+    D.Add(P + '/PriceInfo (empty mark)');
   if not A.TimeQu.Equals(B.TimeQu) then
     D.Add(P + '/TimeQu');
   if A.IsMarkedEmpty('TimeQu') <> B.IsMarkedEmpty('TimeQu') then
@@ -1682,10 +1775,6 @@ begin
     D.Add(P + '/Description (presence)')
   else if A.HasDescription then
     CmpDescription(P + '/Description', A.Description, B.Description, D);
-  if A.SumDescr <> B.SumDescr then
-    D.Add(P + '/SumDescr');
-  if A.IsMarkedEmpty('SumDescr') <> B.IsMarkedEmpty('SumDescr') then
-    D.Add(P + '/SumDescr (empty mark)');
   if A.HasBidComm <> B.HasBidComm then
     D.Add(P + '/BidComm (presence)')
   else if A.HasBidComm then
@@ -1698,6 +1787,10 @@ begin
     for I := 0 to N - 1 do
       CmpMLText(P + '/BidComm[' + IntToStr(I + 1) + ']', A.BidComm[I], B.BidComm[I], D);
   end;
+  if A.SumDescr <> B.SumDescr then
+    D.Add(P + '/SumDescr');
+  if A.IsMarkedEmpty('SumDescr') <> B.IsMarkedEmpty('SumDescr') then
+    D.Add(P + '/SumDescr (empty mark)');
   if A.HasSubDescr <> B.HasSubDescr then
     D.Add(P + '/SubDescr (presence)')
   else if A.HasSubDescr then
@@ -1714,6 +1807,10 @@ begin
     D.Add(P + '/Product (presence)')
   else if A.HasProduct then
     CmpProduct(P + '/Product', A.Product, B.Product, D);
+  if A.AlterBidStatus <> B.AlterBidStatus then
+    D.Add(P + '/AlterBidStatus');
+  if A.IsMarkedEmpty('AlterBidStatus') <> B.IsMarkedEmpty('AlterBidStatus') then
+    D.Add(P + '/AlterBidStatus (empty mark)');
   if A.HasQtyDeterm <> B.HasQtyDeterm then
     D.Add(P + '/QtyDeterm (presence)')
   else if A.HasQtyDeterm then
@@ -1860,10 +1957,22 @@ begin
     D.Add(P + '/ALNSerNo');
   if A.IsMarkedEmpty('ALNSerNo') <> B.IsMarkedEmpty('ALNSerNo') then
     D.Add(P + '/ALNSerNo (empty mark)');
+  if A.Accepted <> B.Accepted then
+    D.Add(P + '/Accepted');
+  if A.IsMarkedEmpty('Accepted') <> B.IsMarkedEmpty('Accepted') then
+    D.Add(P + '/Accepted (empty mark)');
   if A.Provis <> B.Provis then
     D.Add(P + '/Provis');
   if A.IsMarkedEmpty('Provis') <> B.IsMarkedEmpty('Provis') then
     D.Add(P + '/Provis (empty mark)');
+  if A.ProvisAccpt <> B.ProvisAccpt then
+    D.Add(P + '/ProvisAccpt');
+  if A.IsMarkedEmpty('ProvisAccpt') <> B.IsMarkedEmpty('ProvisAccpt') then
+    D.Add(P + '/ProvisAccpt (empty mark)');
+  if A.NotAppl <> B.NotAppl then
+    D.Add(P + '/NotAppl');
+  if A.IsMarkedEmpty('NotAppl') <> B.IsMarkedEmpty('NotAppl') then
+    D.Add(P + '/NotAppl (empty mark)');
   if A.HourIt <> B.HourIt then
     D.Add(P + '/HourIt');
   if A.IsMarkedEmpty('HourIt') <> B.IsMarkedEmpty('HourIt') then
@@ -1940,6 +2049,10 @@ begin
     for I := 0 to N - 1 do
       CmpCtlgAssign(P + '/CtlgAssign[' + IntToStr(I + 1) + ']', A.CtlgAssign[I], B.CtlgAssign[I], D);
   end;
+  if A.AlterBidStatus <> B.AlterBidStatus then
+    D.Add(P + '/AlterBidStatus');
+  if A.IsMarkedEmpty('AlterBidStatus') <> B.IsMarkedEmpty('AlterBidStatus') then
+    D.Add(P + '/AlterBidStatus (empty mark)');
 end;
 
 procedure CmpMarkupSubQty(const P: string; A, B: TLandrixGaebXmlMarkupSubQty; D: TStrings);
@@ -2168,6 +2281,10 @@ begin
     D.Add(P + '/CONo');
   if A.IsMarkedEmpty('CONo') <> B.IsMarkedEmpty('CONo') then
     D.Add(P + '/CONo (empty mark)');
+  if A.AlterBidStatus <> B.AlterBidStatus then
+    D.Add(P + '/AlterBidStatus');
+  if A.IsMarkedEmpty('AlterBidStatus') <> B.IsMarkedEmpty('AlterBidStatus') then
+    D.Add(P + '/AlterBidStatus (empty mark)');
   if A.HasCtlgAssign <> B.HasCtlgAssign then
     D.Add(P + '/CtlgAssign (presence)')
   else if A.HasCtlgAssign then
@@ -2212,6 +2329,10 @@ begin
     D.Add(P + '/OutlineText (presence)')
   else if A.HasOutlineText then
     CmpOutlineText(P + '/OutlineText', A.OutlineText, B.OutlineText, D);
+  if A.HasSubmissionComment <> B.HasSubmissionComment then
+    D.Add(P + '/SubmissionComment (presence)')
+  else if A.HasSubmissionComment then
+    CmpMLText(P + '/SubmissionComment', A.SubmissionComment, B.SubmissionComment, D);
   if A.HasCtlgAssign <> B.HasCtlgAssign then
     D.Add(P + '/CtlgAssign (presence)')
   else if A.HasCtlgAssign then
@@ -2526,6 +2647,10 @@ begin
     D.Add(P + '/CONo');
   if A.IsMarkedEmpty('CONo') <> B.IsMarkedEmpty('CONo') then
     D.Add(P + '/CONo (empty mark)');
+  if A.AlterBidStatus <> B.AlterBidStatus then
+    D.Add(P + '/AlterBidStatus');
+  if A.IsMarkedEmpty('AlterBidStatus') <> B.IsMarkedEmpty('AlterBidStatus') then
+    D.Add(P + '/AlterBidStatus (empty mark)');
   if A.HasCtlgAssign <> B.HasCtlgAssign then
     D.Add(P + '/CtlgAssign (presence)')
   else if A.HasCtlgAssign then

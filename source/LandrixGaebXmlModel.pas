@@ -90,6 +90,7 @@ type
   TLandrixGaebXmlGAEB = class;
   TLandrixGaebXmlGAEBInfo = class;
   TLandrixGaebXmlImage = class;
+  TLandrixGaebXmlIndivAgrInfo = class;
   TLandrixGaebXmlInsAs = class;
   TLandrixGaebXmlItem = class;
   TLandrixGaebXmlItemlist = class;
@@ -669,19 +670,21 @@ type
   TLandrixGaebXmlAward = class(TLandrixGaebXmlNode)
   private
     FAwardInfo: TLandrixGaebXmlAwardInfo;
+    FIndivAgrInfo: TLandrixGaebXmlIndivAgrInfo;
     FOWN: TLandrixGaebXmlOWN;
     FRequester: TLandrixGaebXmlRequesterList;
+    FCTR: TLandrixGaebXmlCTR;
     FCnstSiteGroup: TLandrixGaebXmlAwardCnstSiteGroupList;
     FAddText: TLandrixGaebXmlAddTextList;
-    FCTR: TLandrixGaebXmlCTR;
     FBoQ: TLandrixGaebXmlBoQ;
     FWgChange: TLandrixGaebXmlWgChange;
     function GetAwardInfo: TLandrixGaebXmlAwardInfo;
+    function GetIndivAgrInfo: TLandrixGaebXmlIndivAgrInfo;
     function GetOWN: TLandrixGaebXmlOWN;
     function GetRequester: TLandrixGaebXmlRequesterList;
+    function GetCTR: TLandrixGaebXmlCTR;
     function GetCnstSiteGroup: TLandrixGaebXmlAwardCnstSiteGroupList;
     function GetAddText: TLandrixGaebXmlAddTextList;
-    function GetCTR: TLandrixGaebXmlCTR;
     function GetBoQ: TLandrixGaebXmlBoQ;
     function GetWgChange: TLandrixGaebXmlWgChange;
   public
@@ -696,6 +699,12 @@ type
     { True if AwardInfo is present; creates nothing. DE: True, wenn AwardInfo vorhanden ist; legt
       nichts an. }
     function HasAwardInfo: Boolean;
+    { Element IndivAgrInfo (tgIndivAgrInfo); created on first access, never nil. DE: Element
+      IndivAgrInfo (tgIndivAgrInfo); beim ersten Zugriff angelegt, nie nil. }
+    property IndivAgrInfo: TLandrixGaebXmlIndivAgrInfo read GetIndivAgrInfo;
+    { True if IndivAgrInfo is present; creates nothing. DE: True, wenn IndivAgrInfo vorhanden ist;
+      legt nichts an. }
+    function HasIndivAgrInfo: Boolean;
     { Element OWN (tgOWN); created on first access, never nil. DE: Element OWN (tgOWN); beim ersten
       Zugriff angelegt, nie nil. }
     property OWN: TLandrixGaebXmlOWN read GetOWN;
@@ -707,6 +716,11 @@ type
     { True if Requester is present; creates nothing. DE: True, wenn Requester vorhanden ist; legt
       nichts an. }
     function HasRequester: Boolean;
+    { Element CTR (tgCTR); created on first access, never nil. DE: Element CTR (tgCTR); beim ersten
+      Zugriff angelegt, nie nil. }
+    property CTR: TLandrixGaebXmlCTR read GetCTR;
+    { True if CTR is present; creates nothing. DE: True, wenn CTR vorhanden ist; legt nichts an. }
+    function HasCTR: Boolean;
     { Repeated groups (TLandrixGaebXmlAwardCnstSiteGroup). DE: Wiederholte Gruppen
       (TLandrixGaebXmlAwardCnstSiteGroup). }
     property CnstSiteGroup: TLandrixGaebXmlAwardCnstSiteGroupList read GetCnstSiteGroup;
@@ -719,11 +733,6 @@ type
     { True if AddText is present; creates nothing. DE: True, wenn AddText vorhanden ist; legt
       nichts an. }
     function HasAddText: Boolean;
-    { Element CTR (tgCTR); created on first access, never nil. DE: Element CTR (tgCTR); beim ersten
-      Zugriff angelegt, nie nil. }
-    property CTR: TLandrixGaebXmlCTR read GetCTR;
-    { True if CTR is present; creates nothing. DE: True, wenn CTR vorhanden ist; legt nichts an. }
-    function HasCTR: Boolean;
     { Element BoQ (tgBoQ); created on first access, never nil. DE: Element BoQ (tgBoQ); beim ersten
       Zugriff angelegt, nie nil. }
     property BoQ: TLandrixGaebXmlBoQ read GetBoQ;
@@ -982,8 +991,12 @@ type
     ALNBGroupNo: TLandrixGaebString;
     { Element ALNBSerNo (tgALNSerNo). DE: Element ALNBSerNo (tgALNSerNo). }
     ALNBSerNo: TLandrixGaebString;
+    { Element Accepted (tgAccepted). DE: Element Accepted (tgAccepted). }
+    Accepted: TLandrixGaebString;
     { Element NotApplBoQ (tgNotAppl). DE: Element NotApplBoQ (tgNotAppl). }
     NotApplBoQ: TLandrixGaebString;
+    { Element AlterBidStatus (tgAlterBidStatus). DE: Element AlterBidStatus (tgAlterBidStatus). }
+    AlterBidStatus: TLandrixGaebString;
     { Attribute ID (xs:ID, required). DE: Attribut ID (xs:ID, Pflicht). }
     ID: TLandrixGaebString;
     { Attribute RNoPart (tgRNoPart, required). DE: Attribut RNoPart (tgRNoPart, Pflicht). }
@@ -1035,8 +1048,8 @@ type
     FLblUPComp5: TLandrixGaebXmlLblUpComp;
     FLblUPComp6: TLandrixGaebXmlLblUpComp;
     FCtlgAssign: TLandrixGaebXmlCtlgAssignList;
-    FCtlg: TLandrixGaebXmlCtlgList;
     FTotals: TLandrixGaebXmlTotals;
+    FCtlg: TLandrixGaebXmlCtlgList;
     FQtyDetermInfo: TLandrixGaebXmlQtyDetermInfo;
     function GetCPVCode: TLandrixGaebXmlCPVCodeList;
     function GetBoQBkdn: TLandrixGaebXmlBoQBkdnList;
@@ -1047,8 +1060,8 @@ type
     function GetLblUPComp5: TLandrixGaebXmlLblUpComp;
     function GetLblUPComp6: TLandrixGaebXmlLblUpComp;
     function GetCtlgAssign: TLandrixGaebXmlCtlgAssignList;
-    function GetCtlg: TLandrixGaebXmlCtlgList;
     function GetTotals: TLandrixGaebXmlTotals;
+    function GetCtlg: TLandrixGaebXmlCtlgList;
     function GetQtyDetermInfo: TLandrixGaebXmlQtyDetermInfo;
   public
     { Element Name (tgNormalizedString20). DE: Element Name (tgNormalizedString20). }
@@ -1124,18 +1137,18 @@ type
     { True if CtlgAssign is present; creates nothing. DE: True, wenn CtlgAssign vorhanden ist; legt
       nichts an. }
     function HasCtlgAssign: Boolean;
-    { Element Ctlg (tgCtlg), repeated; created on first access. DE: Element Ctlg (tgCtlg),
-      wiederholt; beim ersten Zugriff angelegt. }
-    property Ctlg: TLandrixGaebXmlCtlgList read GetCtlg;
-    { True if Ctlg is present; creates nothing. DE: True, wenn Ctlg vorhanden ist; legt nichts an.
-      }
-    function HasCtlg: Boolean;
     { Element Totals (tgTotals); created on first access, never nil. DE: Element Totals (tgTotals);
       beim ersten Zugriff angelegt, nie nil. }
     property Totals: TLandrixGaebXmlTotals read GetTotals;
     { True if Totals is present; creates nothing. DE: True, wenn Totals vorhanden ist; legt nichts
       an. }
     function HasTotals: Boolean;
+    { Element Ctlg (tgCtlg), repeated; created on first access. DE: Element Ctlg (tgCtlg),
+      wiederholt; beim ersten Zugriff angelegt. }
+    property Ctlg: TLandrixGaebXmlCtlgList read GetCtlg;
+    { True if Ctlg is present; creates nothing. DE: True, wenn Ctlg vorhanden ist; legt nichts an.
+      }
+    function HasCtlg: Boolean;
     { Element QtyDetermInfo (tgQtyDetermInfo); created on first access, never nil. DE: Element
       QtyDetermInfo (tgQtyDetermInfo); beim ersten Zugriff angelegt, nie nil. }
     property QtyDetermInfo: TLandrixGaebXmlQtyDetermInfo read GetQtyDetermInfo;
@@ -1417,6 +1430,8 @@ type
     AwardNo: TLandrixGaebString;
     { Element AcctsPayNo (tgNormalizedString20). DE: Element AcctsPayNo (tgNormalizedString20). }
     AcctsPayNo: TLandrixGaebString;
+    { Element BidderNo (tgNormalizedString8). DE: Element BidderNo (tgNormalizedString8). }
+    BidderNo: TLandrixGaebString;
     { Element CntryType (tgCntryType). DE: Element CntryType (tgCntryType). }
     CntryType: TLandrixGaebString;
     { Element CntryName (tgCntryName). DE: Element CntryName (tgCntryName). }
@@ -1457,10 +1472,12 @@ type
     FStLNo: TLandrixGaebXmlStLNo;
     FCompleteText: TLandrixGaebXmlCompleteText;
     FOutlineText: TLandrixGaebXmlOutlineText;
+    FSubmissionComment: TLandrixGaebXmlMLText;
     function GetSTLBBau: TLandrixGaebXmlSTLBBau;
     function GetStLNo: TLandrixGaebXmlStLNo;
     function GetCompleteText: TLandrixGaebXmlCompleteText;
     function GetOutlineText: TLandrixGaebXmlOutlineText;
+    function GetSubmissionComment: TLandrixGaebXmlMLText;
   public
     { Element WICNo (tgNormalizedString40). DE: Element WICNo (tgNormalizedString40). }
     WICNo: TLandrixGaebString;
@@ -1493,6 +1510,12 @@ type
     { True if OutlineText is present; creates nothing. DE: True, wenn OutlineText vorhanden ist;
       legt nichts an. }
     function HasOutlineText: Boolean;
+    { Element SubmissionComment (tgMLText); created on first access, never nil. DE: Element
+      SubmissionComment (tgMLText); beim ersten Zugriff angelegt, nie nil. }
+    property SubmissionComment: TLandrixGaebXmlMLText read GetSubmissionComment;
+    { True if SubmissionComment is present; creates nothing. DE: True, wenn SubmissionComment
+      vorhanden ist; legt nichts an. }
+    function HasSubmissionComment: Boolean;
   end;
 
   { Schema type tgdiv. DE: Schematyp tgdiv. }
@@ -1728,6 +1751,28 @@ type
     procedure Clear; override;
   end;
 
+  { Schema type tgIndivAgrInfo. DE: Schematyp tgIndivAgrInfo. }
+  TLandrixGaebXmlIndivAgrInfo = class(TLandrixGaebXmlNode)
+  private
+    FCnstSiteLoc: TLandrixGaebXmlMLText;
+    function GetCnstSiteLoc: TLandrixGaebXmlMLText;
+  public
+    { Element InfoPerson (tgNormalizedString80). DE: Element InfoPerson (tgNormalizedString80). }
+    InfoPerson: TLandrixGaebString;
+    { Element AttestPerson (tgNormalizedString80). DE: Element AttestPerson (tgNormalizedString80).
+      }
+    AttestPerson: TLandrixGaebString;
+    destructor Destroy; override;
+    function IsEmpty: Boolean; override;
+    procedure Clear; override;
+    { Element CnstSiteLoc (tgMLText); created on first access, never nil. DE: Element CnstSiteLoc
+      (tgMLText); beim ersten Zugriff angelegt, nie nil. }
+    property CnstSiteLoc: TLandrixGaebXmlMLText read GetCnstSiteLoc;
+    { True if CnstSiteLoc is present; creates nothing. DE: True, wenn CnstSiteLoc vorhanden ist;
+      legt nichts an. }
+    function HasCnstSiteLoc: Boolean;
+  end;
+
   { Schema type tgInsAs. DE: Schematyp tgInsAs. }
   TLandrixGaebXmlInsAs = class(TLandrixGaebXmlNode)
   public
@@ -1770,10 +1815,16 @@ type
     ALNGroupNo: TLandrixGaebString;
     { Element ALNSerNo (tgALNSerNo). DE: Element ALNSerNo (tgALNSerNo). }
     ALNSerNo: TLandrixGaebString;
+    { Element Accepted (tgAccepted). DE: Element Accepted (tgAccepted). }
+    Accepted: TLandrixGaebString;
     { Element Provis (tgProvis). DE: Element Provis (tgProvis). }
     Provis: TLandrixGaebString;
+    { Element ProvisAccpt (tgYesNo). DE: Element ProvisAccpt (tgYesNo). }
+    ProvisAccpt: TLandrixGaebString;
     { Element LumpSumItem (tgYesNo). DE: Element LumpSumItem (tgYesNo). }
     LumpSumItem: TLandrixGaebString;
+    { Element NotAppl (tgNotAppl). DE: Element NotAppl (tgNotAppl). }
+    NotAppl: TLandrixGaebString;
     { Element HourIt (tgHourIt). DE: Element HourIt (tgHourIt). }
     HourIt: TLandrixGaebString;
     { Element KeyIt (tgKeyIt). DE: Element KeyIt (tgKeyIt). }
@@ -1800,10 +1851,16 @@ type
     NotOffered: TLandrixGaebString;
     { Element Qty (tgDecimal_11_3). DE: Element Qty (tgDecimal_11_3). }
     Qty: TLandrixGaebDecimal;
+    { Element PredQty (tgDecimal_11_3). DE: Element PredQty (tgDecimal_11_3). }
+    PredQty: TLandrixGaebDecimal;
+    { Element BillQty (tgDecimal_11_3). DE: Element BillQty (tgDecimal_11_3). }
+    BillQty: TLandrixGaebDecimal;
     { Element QU (tgNormalizedString4). DE: Element QU (tgNormalizedString4). }
     QU: TLandrixGaebString;
     { Element UP (tgDecimal_13_3). DE: Element UP (tgDecimal_13_3). }
     UP: TLandrixGaebDecimal;
+    { Element UP110 (tgDecimal_13_3). DE: Element UP110 (tgDecimal_13_3). }
+    UP110: TLandrixGaebDecimal;
     { Element UPComp1 (tgDecimal_13_3). DE: Element UPComp1 (tgDecimal_13_3). }
     UPComp1: TLandrixGaebDecimal;
     { Element UPComp2 (tgDecimal_13_3). DE: Element UPComp2 (tgDecimal_13_3). }
@@ -1818,14 +1875,30 @@ type
     UPComp6: TLandrixGaebDecimal;
     { Element DiscountPcnt (tgDecimal_9_6). DE: Element DiscountPcnt (tgDecimal_9_6). }
     DiscountPcnt: TLandrixGaebDecimal;
+    { Element UPFrom (tgDecimal_13_3). DE: Element UPFrom (tgDecimal_13_3). }
+    UPFrom: TLandrixGaebDecimal;
+    { Element UPAvg (tgDecimal_13_3). DE: Element UPAvg (tgDecimal_13_3). }
+    UPAvg: TLandrixGaebDecimal;
+    { Element UPTo (tgDecimal_13_3). DE: Element UPTo (tgDecimal_13_3). }
+    UPTo: TLandrixGaebDecimal;
+    { Element UPWgFrom (tgDecimal_13_3). DE: Element UPWgFrom (tgDecimal_13_3). }
+    UPWgFrom: TLandrixGaebDecimal;
+    { Element UPWgAvg (tgDecimal_13_3). DE: Element UPWgAvg (tgDecimal_13_3). }
+    UPWgAvg: TLandrixGaebDecimal;
+    { Element UPWgTo (tgDecimal_13_3). DE: Element UPWgTo (tgDecimal_13_3). }
+    UPWgTo: TLandrixGaebDecimal;
     { Element IT (tgDecimal_13_2). DE: Element IT (tgDecimal_13_2). }
     IT: TLandrixGaebDecimal;
     { Element VAT (tgDecimal_5_2). DE: Element VAT (tgDecimal_5_2). }
     VAT: TLandrixGaebDecimal;
+    { Element PriceInfo (tgPriceInfo). DE: Element PriceInfo (tgPriceInfo). }
+    PriceInfo: TLandrixGaebString;
     { Element TimeQu (tgDecimal_13_2). DE: Element TimeQu (tgDecimal_13_2). }
     TimeQu: TLandrixGaebDecimal;
     { Element SumDescr (tgYes). DE: Element SumDescr (tgYes). }
     SumDescr: TLandrixGaebString;
+    { Element AlterBidStatus (tgAlterBidStatus). DE: Element AlterBidStatus (tgAlterBidStatus). }
+    AlterBidStatus: TLandrixGaebString;
     { Attribute ID (xs:ID, required). DE: Attribut ID (xs:ID, Pflicht). }
     ID: TLandrixGaebString;
     { Attribute RNoPart (tgRNoPart, required). DE: Attribut RNoPart (tgRNoPart, Pflicht). }
@@ -2086,8 +2159,14 @@ type
     ALNGroupNo: TLandrixGaebString;
     { Element ALNSerNo (tgALNSerNo). DE: Element ALNSerNo (tgALNSerNo). }
     ALNSerNo: TLandrixGaebString;
+    { Element Accepted (tgAccepted). DE: Element Accepted (tgAccepted). }
+    Accepted: TLandrixGaebString;
     { Element Provis (tgProvis). DE: Element Provis (tgProvis). }
     Provis: TLandrixGaebString;
+    { Element ProvisAccpt (tgYesNo). DE: Element ProvisAccpt (tgYesNo). }
+    ProvisAccpt: TLandrixGaebString;
+    { Element NotAppl (tgNotAppl). DE: Element NotAppl (tgNotAppl). }
+    NotAppl: TLandrixGaebString;
     { Element HourIt (tgHourIt). DE: Element HourIt (tgHourIt). }
     HourIt: TLandrixGaebString;
     { Element KeyIt (tgKeyIt). DE: Element KeyIt (tgKeyIt). }
@@ -2108,6 +2187,8 @@ type
     DiscountPcnt: TLandrixGaebDecimal;
     { Element IT (tgDecimal_13_2). DE: Element IT (tgDecimal_13_2). }
     IT: TLandrixGaebDecimal;
+    { Element AlterBidStatus (tgAlterBidStatus). DE: Element AlterBidStatus (tgAlterBidStatus). }
+    AlterBidStatus: TLandrixGaebString;
     { Attribute ID (xs:ID, required). DE: Attribut ID (xs:ID, Pflicht). }
     ID: TLandrixGaebString;
     { Attribute RNoPart (tgRNoPart, required). DE: Attribut RNoPart (tgRNoPart, Pflicht). }
@@ -2476,6 +2557,8 @@ type
     PerfLbl: TLandrixGaebString;
     { Element CONo (tgCONo). DE: Element CONo (tgCONo). }
     CONo: TLandrixGaebString;
+    { Element AlterBidStatus (tgAlterBidStatus). DE: Element AlterBidStatus (tgAlterBidStatus). }
+    AlterBidStatus: TLandrixGaebString;
     { Attribute ID (xs:ID, required). DE: Attribut ID (xs:ID, Pflicht). }
     ID: TLandrixGaebString;
     destructor Destroy; override;
@@ -2502,11 +2585,13 @@ type
     FStLNo: TLandrixGaebXmlStLNo;
     FCompleteText: TLandrixGaebXmlCompleteText;
     FOutlineText: TLandrixGaebXmlOutlineText;
+    FSubmissionComment: TLandrixGaebXmlMLText;
     FCtlgAssign: TLandrixGaebXmlCtlgAssignList;
     function GetSTLBBau: TLandrixGaebXmlSTLBBau;
     function GetStLNo: TLandrixGaebXmlStLNo;
     function GetCompleteText: TLandrixGaebXmlCompleteText;
     function GetOutlineText: TLandrixGaebXmlOutlineText;
+    function GetSubmissionComment: TLandrixGaebXmlMLText;
     function GetCtlgAssign: TLandrixGaebXmlCtlgAssignList;
   public
     { Element WICNo (tgNormalizedString40). DE: Element WICNo (tgNormalizedString40). }
@@ -2540,6 +2625,12 @@ type
     { True if OutlineText is present; creates nothing. DE: True, wenn OutlineText vorhanden ist;
       legt nichts an. }
     function HasOutlineText: Boolean;
+    { Element SubmissionComment (tgMLText); created on first access, never nil. DE: Element
+      SubmissionComment (tgMLText); beim ersten Zugriff angelegt, nie nil. }
+    property SubmissionComment: TLandrixGaebXmlMLText read GetSubmissionComment;
+    { True if SubmissionComment is present; creates nothing. DE: True, wenn SubmissionComment
+      vorhanden ist; legt nichts an. }
+    function HasSubmissionComment: Boolean;
     { Element CtlgAssign (tgCtlgAssign), repeated; created on first access. DE: Element CtlgAssign
       (tgCtlgAssign), wiederholt; beim ersten Zugriff angelegt. }
     property CtlgAssign: TLandrixGaebXmlCtlgAssignList read GetCtlgAssign;
@@ -2858,6 +2949,8 @@ type
   public
     { Element CONo (tgCONo). DE: Element CONo (tgCONo). }
     CONo: TLandrixGaebString;
+    { Element AlterBidStatus (tgAlterBidStatus). DE: Element AlterBidStatus (tgAlterBidStatus). }
+    AlterBidStatus: TLandrixGaebString;
     { Attribute ID (xs:ID, required). DE: Attribut ID (xs:ID, Pflicht). }
     ID: TLandrixGaebString;
     destructor Destroy; override;
@@ -4410,6 +4503,21 @@ begin
   Result := (FAwardInfo <> nil) and FAwardInfo.IsPresent;
 end;
 
+function TLandrixGaebXmlAward.GetIndivAgrInfo: TLandrixGaebXmlIndivAgrInfo;
+begin
+  if FIndivAgrInfo = nil then
+  begin
+    FIndivAgrInfo := TLandrixGaebXmlIndivAgrInfo.Create;
+    FIndivAgrInfo.ElementName := 'IndivAgrInfo';
+  end;
+  Result := FIndivAgrInfo;
+end;
+
+function TLandrixGaebXmlAward.HasIndivAgrInfo: Boolean;
+begin
+  Result := (FIndivAgrInfo <> nil) and FIndivAgrInfo.IsPresent;
+end;
+
 function TLandrixGaebXmlAward.GetOWN: TLandrixGaebXmlOWN;
 begin
   if FOWN = nil then
@@ -4437,6 +4545,21 @@ begin
   Result := (FRequester <> nil) and not FRequester.IsEmpty;
 end;
 
+function TLandrixGaebXmlAward.GetCTR: TLandrixGaebXmlCTR;
+begin
+  if FCTR = nil then
+  begin
+    FCTR := TLandrixGaebXmlCTR.Create;
+    FCTR.ElementName := 'CTR';
+  end;
+  Result := FCTR;
+end;
+
+function TLandrixGaebXmlAward.HasCTR: Boolean;
+begin
+  Result := (FCTR <> nil) and FCTR.IsPresent;
+end;
+
 function TLandrixGaebXmlAward.GetCnstSiteGroup: TLandrixGaebXmlAwardCnstSiteGroupList;
 begin
   if FCnstSiteGroup = nil then
@@ -4459,21 +4582,6 @@ end;
 function TLandrixGaebXmlAward.HasAddText: Boolean;
 begin
   Result := (FAddText <> nil) and not FAddText.IsEmpty;
-end;
-
-function TLandrixGaebXmlAward.GetCTR: TLandrixGaebXmlCTR;
-begin
-  if FCTR = nil then
-  begin
-    FCTR := TLandrixGaebXmlCTR.Create;
-    FCTR.ElementName := 'CTR';
-  end;
-  Result := FCTR;
-end;
-
-function TLandrixGaebXmlAward.HasCTR: Boolean;
-begin
-  Result := (FCTR <> nil) and FCTR.IsPresent;
 end;
 
 function TLandrixGaebXmlAward.GetBoQ: TLandrixGaebXmlBoQ;
@@ -4509,11 +4617,12 @@ end;
 destructor TLandrixGaebXmlAward.Destroy;
 begin
   FAwardInfo.Free;
+  FIndivAgrInfo.Free;
   FOWN.Free;
   FRequester.Free;
+  FCTR.Free;
   FCnstSiteGroup.Free;
   FAddText.Free;
-  FCTR.Free;
   FBoQ.Free;
   FWgChange.Free;
   inherited Destroy;
@@ -4524,11 +4633,12 @@ begin
   Result := inherited IsEmpty and
     (DP = '') and
     not HasAwardInfo and
+    not HasIndivAgrInfo and
     not HasOWN and
     not HasRequester and
+    not HasCTR and
     not HasCnstSiteGroup and
     not HasAddText and
-    not HasCTR and
     not HasBoQ and
     not HasWgChange;
 end;
@@ -4538,11 +4648,12 @@ begin
   inherited Clear;
   DP := '';
   FreeAndNil(FAwardInfo);
+  FreeAndNil(FIndivAgrInfo);
   FreeAndNil(FOWN);
   FreeAndNil(FRequester);
+  FreeAndNil(FCTR);
   FreeAndNil(FCnstSiteGroup);
   FreeAndNil(FAddText);
-  FreeAndNil(FCTR);
   FreeAndNil(FBoQ);
   FreeAndNil(FWgChange);
 end;
@@ -5023,7 +5134,9 @@ begin
     (COStatus = '') and
     (ALNBGroupNo = '') and
     (ALNBSerNo = '') and
+    (Accepted = '') and
     (NotApplBoQ = '') and
+    (AlterBidStatus = '') and
     (ID = '') and
     (RNoPart = '') and
     not HasLblTx and
@@ -5040,7 +5153,9 @@ begin
   COStatus := '';
   ALNBGroupNo := '';
   ALNBSerNo := '';
+  Accepted := '';
   NotApplBoQ := '';
+  AlterBidStatus := '';
   ID := '';
   RNoPart := '';
   FreeAndNil(FLblTx);
@@ -5178,18 +5293,6 @@ begin
   Result := (FCtlgAssign <> nil) and not FCtlgAssign.IsEmpty;
 end;
 
-function TLandrixGaebXmlBoQInfo.GetCtlg: TLandrixGaebXmlCtlgList;
-begin
-  if FCtlg = nil then
-    FCtlg := TLandrixGaebXmlCtlgList.Create;
-  Result := FCtlg;
-end;
-
-function TLandrixGaebXmlBoQInfo.HasCtlg: Boolean;
-begin
-  Result := (FCtlg <> nil) and not FCtlg.IsEmpty;
-end;
-
 function TLandrixGaebXmlBoQInfo.GetTotals: TLandrixGaebXmlTotals;
 begin
   if FTotals = nil then
@@ -5203,6 +5306,18 @@ end;
 function TLandrixGaebXmlBoQInfo.HasTotals: Boolean;
 begin
   Result := (FTotals <> nil) and FTotals.IsPresent;
+end;
+
+function TLandrixGaebXmlBoQInfo.GetCtlg: TLandrixGaebXmlCtlgList;
+begin
+  if FCtlg = nil then
+    FCtlg := TLandrixGaebXmlCtlgList.Create;
+  Result := FCtlg;
+end;
+
+function TLandrixGaebXmlBoQInfo.HasCtlg: Boolean;
+begin
+  Result := (FCtlg <> nil) and not FCtlg.IsEmpty;
 end;
 
 function TLandrixGaebXmlBoQInfo.GetQtyDetermInfo: TLandrixGaebXmlQtyDetermInfo;
@@ -5231,8 +5346,8 @@ begin
   FLblUPComp5.Free;
   FLblUPComp6.Free;
   FCtlgAssign.Free;
-  FCtlg.Free;
   FTotals.Free;
+  FCtlg.Free;
   FQtyDetermInfo.Free;
   inherited Destroy;
 end;
@@ -5257,8 +5372,8 @@ begin
     not HasLblUPComp5 and
     not HasLblUPComp6 and
     not HasCtlgAssign and
-    not HasCtlg and
     not HasTotals and
+    not HasCtlg and
     not HasQtyDetermInfo;
 end;
 
@@ -5282,8 +5397,8 @@ begin
   FreeAndNil(FLblUPComp5);
   FreeAndNil(FLblUPComp6);
   FreeAndNil(FCtlgAssign);
-  FreeAndNil(FCtlg);
   FreeAndNil(FTotals);
+  FreeAndNil(FCtlg);
   FreeAndNil(FQtyDetermInfo);
 end;
 
@@ -5799,6 +5914,7 @@ begin
     (DPNo = '') and
     (AwardNo = '') and
     (AcctsPayNo = '') and
+    (BidderNo = '') and
     (CntryType = '') and
     (CntryName = '') and
     (SectorType = '') and
@@ -5815,6 +5931,7 @@ begin
   DPNo := '';
   AwardNo := '';
   AcctsPayNo := '';
+  BidderNo := '';
   CntryType := '';
   CntryName := '';
   SectorType := '';
@@ -5887,12 +6004,28 @@ begin
   Result := (FOutlineText <> nil) and FOutlineText.IsPresent;
 end;
 
+function TLandrixGaebXmlDescription.GetSubmissionComment: TLandrixGaebXmlMLText;
+begin
+  if FSubmissionComment = nil then
+  begin
+    FSubmissionComment := TLandrixGaebXmlMLText.Create;
+    FSubmissionComment.ElementName := 'SubmissionComment';
+  end;
+  Result := FSubmissionComment;
+end;
+
+function TLandrixGaebXmlDescription.HasSubmissionComment: Boolean;
+begin
+  Result := (FSubmissionComment <> nil) and FSubmissionComment.IsPresent;
+end;
+
 destructor TLandrixGaebXmlDescription.Destroy;
 begin
   FSTLBBau.Free;
   FStLNo.Free;
   FCompleteText.Free;
   FOutlineText.Free;
+  FSubmissionComment.Free;
   inherited Destroy;
 end;
 
@@ -5904,7 +6037,8 @@ begin
     not HasSTLBBau and
     not HasStLNo and
     not HasCompleteText and
-    not HasOutlineText;
+    not HasOutlineText and
+    not HasSubmissionComment;
 end;
 
 procedure TLandrixGaebXmlDescription.Clear;
@@ -5916,6 +6050,7 @@ begin
   FreeAndNil(FStLNo);
   FreeAndNil(FCompleteText);
   FreeAndNil(FOutlineText);
+  FreeAndNil(FSubmissionComment);
 end;
 
 { TLandrixGaebXmlDiv }
@@ -6370,6 +6505,45 @@ begin
   Base64 := '';
 end;
 
+{ TLandrixGaebXmlIndivAgrInfo }
+
+function TLandrixGaebXmlIndivAgrInfo.GetCnstSiteLoc: TLandrixGaebXmlMLText;
+begin
+  if FCnstSiteLoc = nil then
+  begin
+    FCnstSiteLoc := TLandrixGaebXmlMLText.Create;
+    FCnstSiteLoc.ElementName := 'CnstSiteLoc';
+  end;
+  Result := FCnstSiteLoc;
+end;
+
+function TLandrixGaebXmlIndivAgrInfo.HasCnstSiteLoc: Boolean;
+begin
+  Result := (FCnstSiteLoc <> nil) and FCnstSiteLoc.IsPresent;
+end;
+
+destructor TLandrixGaebXmlIndivAgrInfo.Destroy;
+begin
+  FCnstSiteLoc.Free;
+  inherited Destroy;
+end;
+
+function TLandrixGaebXmlIndivAgrInfo.IsEmpty: Boolean;
+begin
+  Result := inherited IsEmpty and
+    (InfoPerson = '') and
+    (AttestPerson = '') and
+    not HasCnstSiteLoc;
+end;
+
+procedure TLandrixGaebXmlIndivAgrInfo.Clear;
+begin
+  inherited Clear;
+  InfoPerson := '';
+  AttestPerson := '';
+  FreeAndNil(FCnstSiteLoc);
+end;
+
 { TLandrixGaebXmlInsAs }
 
 destructor TLandrixGaebXmlInsAs.Destroy;
@@ -6550,8 +6724,11 @@ begin
   Result := inherited IsEmpty and
     (ALNGroupNo = '') and
     (ALNSerNo = '') and
+    (Accepted = '') and
     (Provis = '') and
+    (ProvisAccpt = '') and
     (LumpSumItem = '') and
+    (NotAppl = '') and
     (HourIt = '') and
     (KeyIt = '') and
     (UPBkdn = '') and
@@ -6565,8 +6742,11 @@ begin
     (QtyTBD = '') and
     (NotOffered = '') and
     not Qty.HasValue and
+    not PredQty.HasValue and
+    not BillQty.HasValue and
     (QU = '') and
     not UP.HasValue and
+    not UP110.HasValue and
     not UPComp1.HasValue and
     not UPComp2.HasValue and
     not UPComp3.HasValue and
@@ -6574,10 +6754,18 @@ begin
     not UPComp5.HasValue and
     not UPComp6.HasValue and
     not DiscountPcnt.HasValue and
+    not UPFrom.HasValue and
+    not UPAvg.HasValue and
+    not UPTo.HasValue and
+    not UPWgFrom.HasValue and
+    not UPWgAvg.HasValue and
+    not UPWgTo.HasValue and
     not IT.HasValue and
     not VAT.HasValue and
+    (PriceInfo = '') and
     not TimeQu.HasValue and
     (SumDescr = '') and
+    (AlterBidStatus = '') and
     (ID = '') and
     (RNoPart = '') and
     (RNoIndex = '') and
@@ -6598,8 +6786,11 @@ begin
   inherited Clear;
   ALNGroupNo := '';
   ALNSerNo := '';
+  Accepted := '';
   Provis := '';
+  ProvisAccpt := '';
   LumpSumItem := '';
+  NotAppl := '';
   HourIt := '';
   KeyIt := '';
   UPBkdn := '';
@@ -6613,8 +6804,11 @@ begin
   QtyTBD := '';
   NotOffered := '';
   Qty.Clear;
+  PredQty.Clear;
+  BillQty.Clear;
   QU := '';
   UP.Clear;
+  UP110.Clear;
   UPComp1.Clear;
   UPComp2.Clear;
   UPComp3.Clear;
@@ -6622,10 +6816,18 @@ begin
   UPComp5.Clear;
   UPComp6.Clear;
   DiscountPcnt.Clear;
+  UPFrom.Clear;
+  UPAvg.Clear;
+  UPTo.Clear;
+  UPWgFrom.Clear;
+  UPWgAvg.Clear;
+  UPWgTo.Clear;
   IT.Clear;
   VAT.Clear;
+  PriceInfo := '';
   TimeQu.Clear;
   SumDescr := '';
+  AlterBidStatus := '';
   ID := '';
   RNoPart := '';
   RNoIndex := '';
@@ -7065,7 +7267,10 @@ begin
   Result := inherited IsEmpty and
     (ALNGroupNo = '') and
     (ALNSerNo = '') and
+    (Accepted = '') and
     (Provis = '') and
+    (ProvisAccpt = '') and
+    (NotAppl = '') and
     (HourIt = '') and
     (KeyIt = '') and
     (CONo = '') and
@@ -7076,6 +7281,7 @@ begin
     not Markup.HasValue and
     not DiscountPcnt.HasValue and
     not IT.HasValue and
+    (AlterBidStatus = '') and
     (ID = '') and
     (RNoPart = '') and
     (RNoIndex = '') and
@@ -7091,7 +7297,10 @@ begin
   inherited Clear;
   ALNGroupNo := '';
   ALNSerNo := '';
+  Accepted := '';
   Provis := '';
+  ProvisAccpt := '';
+  NotAppl := '';
   HourIt := '';
   KeyIt := '';
   CONo := '';
@@ -7102,6 +7311,7 @@ begin
   Markup.Clear;
   DiscountPcnt.Clear;
   IT.Clear;
+  AlterBidStatus := '';
   ID := '';
   RNoPart := '';
   RNoIndex := '';
@@ -7727,6 +7937,7 @@ begin
     (PerfNo = '') and
     (PerfLbl = '') and
     (CONo = '') and
+    (AlterBidStatus = '') and
     (ID = '') and
     not HasDescription and
     not HasCtlgAssign;
@@ -7738,6 +7949,7 @@ begin
   PerfNo := '';
   PerfLbl := '';
   CONo := '';
+  AlterBidStatus := '';
   ID := '';
   FreeAndNil(FDescription);
   FreeAndNil(FCtlgAssign);
@@ -7805,6 +8017,21 @@ begin
   Result := (FOutlineText <> nil) and FOutlineText.IsPresent;
 end;
 
+function TLandrixGaebXmlPerfDescription.GetSubmissionComment: TLandrixGaebXmlMLText;
+begin
+  if FSubmissionComment = nil then
+  begin
+    FSubmissionComment := TLandrixGaebXmlMLText.Create;
+    FSubmissionComment.ElementName := 'SubmissionComment';
+  end;
+  Result := FSubmissionComment;
+end;
+
+function TLandrixGaebXmlPerfDescription.HasSubmissionComment: Boolean;
+begin
+  Result := (FSubmissionComment <> nil) and FSubmissionComment.IsPresent;
+end;
+
 function TLandrixGaebXmlPerfDescription.GetCtlgAssign: TLandrixGaebXmlCtlgAssignList;
 begin
   if FCtlgAssign = nil then
@@ -7823,6 +8050,7 @@ begin
   FStLNo.Free;
   FCompleteText.Free;
   FOutlineText.Free;
+  FSubmissionComment.Free;
   FCtlgAssign.Free;
   inherited Destroy;
 end;
@@ -7836,6 +8064,7 @@ begin
     not HasStLNo and
     not HasCompleteText and
     not HasOutlineText and
+    not HasSubmissionComment and
     not HasCtlgAssign;
 end;
 
@@ -7848,6 +8077,7 @@ begin
   FreeAndNil(FStLNo);
   FreeAndNil(FCompleteText);
   FreeAndNil(FOutlineText);
+  FreeAndNil(FSubmissionComment);
   FreeAndNil(FCtlgAssign);
 end;
 
@@ -8442,6 +8672,7 @@ function TLandrixGaebXmlRemark.IsEmpty: Boolean;
 begin
   Result := inherited IsEmpty and
     (CONo = '') and
+    (AlterBidStatus = '') and
     (ID = '') and
     not HasDescription and
     not HasCtlgAssign;
@@ -8451,6 +8682,7 @@ procedure TLandrixGaebXmlRemark.Clear;
 begin
   inherited Clear;
   CONo := '';
+  AlterBidStatus := '';
   ID := '';
   FreeAndNil(FDescription);
   FreeAndNil(FCtlgAssign);

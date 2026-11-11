@@ -50,6 +50,13 @@ uses
   LandrixGaebTypes;
 
 type
+  { Codes of tgAccepted. DE: Codes von tgAccepted. }
+  TLandrixGaebXmlAccepted = (gxaNone, gxaUnrecognized, gxaAltAccept, gxaBasReject);
+
+  { Codes of tgAlterBidStatus. DE: Codes von tgAlterBidStatus. }
+  TLandrixGaebXmlAlterBidStatus = (gxabsNone, gxabsUnrecognized, gxabsIdentical, gxabsN_A,
+    gxabsModified, gxabsNew);
+
   { Codes of tgAttAlign. DE: Codes von tgAttAlign. }
   TLandrixGaebXmlAttAlign = (gxaaNone, gxaaUnrecognized, gxaaleft, gxaacenter, gxaaright,
     gxaajustify);
@@ -171,6 +178,9 @@ type
   TLandrixGaebXmlPrefBidType = (gxpbtNone, gxpbtUnrecognized, gxpbtDisplPers, gxpbtRefugee,
     gxpbtPersecutee, gxpbtWrkShopForDis, gxpbtWrkShopForBli, gxpbtOther);
 
+  { Codes of tgPriceInfo. DE: Codes von tgPriceInfo. }
+  TLandrixGaebXmlPriceInfo = (gxpiNone, gxpiUnrecognized, gxpiscope, gxpito, gxpiapprox, gxpilump);
+
   { Codes of tgProvis. DE: Codes von tgProvis. }
   TLandrixGaebXmlProvis = (gxpNone, gxpUnrecognized, gxpWithoutTotal, gxpWithTotal);
 
@@ -216,6 +226,21 @@ type
 
   { Codes of tgYesNo. DE: Codes von tgYesNo. }
   TLandrixGaebXmlYesNo = (gxynNone, gxynUnrecognized, gxynYes, gxynNo);
+
+{ Enumeration value of a tgAccepted code ('' -> first member, unknown code -> second). DE:
+  Aufzaehlungswert eines tgAccepted-Codes ('' -> erstes Element, unbekannter Code -> zweites). }
+function LandrixGaebXmlAcceptedFromText(const AText: TLandrixGaebString): TLandrixGaebXmlAccepted;
+{ Code text of a tgAccepted value ('' for the first two members). DE: Codetext eines
+  tgAccepted-Werts ('' fuer die ersten beiden Elemente). }
+function LandrixGaebXmlAcceptedToText(AValue: TLandrixGaebXmlAccepted): TLandrixGaebString;
+
+{ Enumeration value of a tgAlterBidStatus code ('' -> first member, unknown code -> second). DE:
+  Aufzaehlungswert eines tgAlterBidStatus-Codes ('' -> erstes Element, unbekannter Code ->
+  zweites). }
+function LandrixGaebXmlAlterBidStatusFromText(const AText: TLandrixGaebString): TLandrixGaebXmlAlterBidStatus;
+{ Code text of a tgAlterBidStatus value ('' for the first two members). DE: Codetext eines
+  tgAlterBidStatus-Werts ('' fuer die ersten beiden Elemente). }
+function LandrixGaebXmlAlterBidStatusToText(AValue: TLandrixGaebXmlAlterBidStatus): TLandrixGaebString;
 
 { Enumeration value of a tgAttAlign code ('' -> first member, unknown code -> second). DE:
   Aufzaehlungswert eines tgAttAlign-Codes ('' -> erstes Element, unbekannter Code -> zweites). }
@@ -451,6 +476,13 @@ function LandrixGaebXmlPrefBidTypeFromText(const AText: TLandrixGaebString): TLa
   tgPrefBidType-Werts ('' fuer die ersten beiden Elemente). }
 function LandrixGaebXmlPrefBidTypeToText(AValue: TLandrixGaebXmlPrefBidType): TLandrixGaebString;
 
+{ Enumeration value of a tgPriceInfo code ('' -> first member, unknown code -> second). DE:
+  Aufzaehlungswert eines tgPriceInfo-Codes ('' -> erstes Element, unbekannter Code -> zweites). }
+function LandrixGaebXmlPriceInfoFromText(const AText: TLandrixGaebString): TLandrixGaebXmlPriceInfo;
+{ Code text of a tgPriceInfo value ('' for the first two members). DE: Codetext eines
+  tgPriceInfo-Werts ('' fuer die ersten beiden Elemente). }
+function LandrixGaebXmlPriceInfoToText(AValue: TLandrixGaebXmlPriceInfo): TLandrixGaebString;
+
 { Enumeration value of a tgProvis code ('' -> first member, unknown code -> second). DE:
   Aufzaehlungswert eines tgProvis-Codes ('' -> erstes Element, unbekannter Code -> zweites). }
 function LandrixGaebXmlProvisFromText(const AText: TLandrixGaebString): TLandrixGaebXmlProvis;
@@ -567,6 +599,10 @@ begin
 end;
 
 const
+  AcceptedCodes: array[TLandrixGaebXmlAccepted] of TLandrixXmlUtf8 = ('', '', 'AltAccept',
+    'BasReject');
+  AlterBidStatusCodes: array[TLandrixGaebXmlAlterBidStatus] of TLandrixXmlUtf8 = ('', '',
+    'Identical', 'N/A', 'Modified', 'New');
   AttAlignCodes: array[TLandrixGaebXmlAttAlign] of TLandrixXmlUtf8 = ('', '', 'left', 'center',
     'right', 'justify');
   AttAlignTableCodes: array[TLandrixGaebXmlAttAlignTable] of TLandrixXmlUtf8 = ('', '', 'left',
@@ -625,6 +661,8 @@ const
     'DetailTxt');
   PrefBidTypeCodes: array[TLandrixGaebXmlPrefBidType] of TLandrixXmlUtf8 = ('', '', 'DisplPers',
     'Refugee', 'Persecutee', 'WrkShopForDis', 'WrkShopForBli', 'Other');
+  PriceInfoCodes: array[TLandrixGaebXmlPriceInfo] of TLandrixXmlUtf8 = ('', '', 'scope', 'to',
+    'approx', 'lump');
   ProvisCodes: array[TLandrixGaebXmlProvis] of TLandrixXmlUtf8 = ('', '', 'WithoutTotal',
     'WithTotal');
   QtyDetermInfoMethodDescriptionCodes: array[TLandrixGaebXmlQtyDetermInfoMethodDescription] of TLandrixXmlUtf8 = (
@@ -646,6 +684,26 @@ const
   WarrUnitCodes: array[TLandrixGaebXmlWarrUnit] of TLandrixXmlUtf8 = ('', '', 'Years', 'Months');
   YesCodes: array[TLandrixGaebXmlYes] of TLandrixXmlUtf8 = ('', '', 'Yes');
   YesNoCodes: array[TLandrixGaebXmlYesNo] of TLandrixXmlUtf8 = ('', '', 'Yes', 'No');
+
+function LandrixGaebXmlAcceptedFromText(const AText: TLandrixGaebString): TLandrixGaebXmlAccepted;
+begin
+  Result := TLandrixGaebXmlAccepted(CodeIndex(AText, AcceptedCodes));
+end;
+
+function LandrixGaebXmlAcceptedToText(AValue: TLandrixGaebXmlAccepted): TLandrixGaebString;
+begin
+  Result := LandrixXmlUtf8ToWide(AcceptedCodes[AValue]);
+end;
+
+function LandrixGaebXmlAlterBidStatusFromText(const AText: TLandrixGaebString): TLandrixGaebXmlAlterBidStatus;
+begin
+  Result := TLandrixGaebXmlAlterBidStatus(CodeIndex(AText, AlterBidStatusCodes));
+end;
+
+function LandrixGaebXmlAlterBidStatusToText(AValue: TLandrixGaebXmlAlterBidStatus): TLandrixGaebString;
+begin
+  Result := LandrixXmlUtf8ToWide(AlterBidStatusCodes[AValue]);
+end;
 
 function LandrixGaebXmlAttAlignFromText(const AText: TLandrixGaebString): TLandrixGaebXmlAttAlign;
 begin
@@ -965,6 +1023,16 @@ end;
 function LandrixGaebXmlPrefBidTypeToText(AValue: TLandrixGaebXmlPrefBidType): TLandrixGaebString;
 begin
   Result := LandrixXmlUtf8ToWide(PrefBidTypeCodes[AValue]);
+end;
+
+function LandrixGaebXmlPriceInfoFromText(const AText: TLandrixGaebString): TLandrixGaebXmlPriceInfo;
+begin
+  Result := TLandrixGaebXmlPriceInfo(CodeIndex(AText, PriceInfoCodes));
+end;
+
+function LandrixGaebXmlPriceInfoToText(AValue: TLandrixGaebXmlPriceInfo): TLandrixGaebString;
+begin
+  Result := LandrixXmlUtf8ToWide(PriceInfoCodes[AValue]);
 end;
 
 function LandrixGaebXmlProvisFromText(const AText: TLandrixGaebString): TLandrixGaebXmlProvis;

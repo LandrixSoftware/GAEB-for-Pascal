@@ -39,8 +39,8 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 SCHEMA_OUT = os.path.join(ROOT, "tools", "schema", "out")
 OUT = os.path.join(ROOT, "tests", "data", "coverage")
 
-CONTEXTS = ["3.2-2013-10-83", "3.2-2013-10-84", "3.3-2019-11-83", "3.3-2019-11-84",
-            "3.3-2021-05-83", "3.3-2021-05-84"]
+CONTEXTS = ["%s-%s" % (e, p) for e in ("3.2-2013-10", "3.3-2019-11", "3.3-2021-05")
+            for p in ("81", "83", "84", "86")]
 
 # deepest nesting of elements; below it only required content
 MAX_DEPTH = 24

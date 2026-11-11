@@ -286,7 +286,7 @@ begin
       Source := ReadFileBytes(Files[I]);
       Det := LandrixGaebDetectBuffer(Pointer(Source), Integer(Length(Source)), False, nil);
       if not Det.Accepted or (Det.Format <> gfXml) or not LandrixGaebTargetIsSupported(Det.Target, False) or
-        not (Det.Target.Phase in [gp83, gp84]) or not (Det.Target.Version in [gv32, gv33]) then
+        not (Det.Target.Phase in [gp81, gp83, gp84, gp86]) or not (Det.Target.Version in [gv32, gv33]) then
         Continue;
       Inc(Compared);
       Diffs.Clear;

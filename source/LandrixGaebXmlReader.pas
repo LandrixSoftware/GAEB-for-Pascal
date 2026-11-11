@@ -115,6 +115,7 @@ procedure ReadFTextTC(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlFTextTC);
 procedure ReadGAEB(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlGAEB); forward;
 procedure ReadGAEBInfo(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlGAEBInfo); forward;
 procedure ReadImage(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlImage); forward;
+procedure ReadIndivAgrInfo(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlIndivAgrInfo); forward;
 procedure ReadInsAs(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlInsAs); forward;
 procedure ReadItem(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlItem); forward;
 procedure ReadItemlist(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlItemlist); forward;
@@ -481,23 +482,37 @@ begin
               ReadAwardInfo(C, O.AwardInfo);
             end;
           end
+          else if C.NameIs('IndivAgrInfo') then
+          begin
+            if C.Order(Last, 2, True, O.HasIndivAgrInfo) then
+            begin
+              ReadIndivAgrInfo(C, O.IndivAgrInfo);
+            end;
+          end
           else if C.NameIs('OWN') then
           begin
-            if C.Order(Last, 2, True, O.HasOWN) then
+            if C.Order(Last, 3, True, O.HasOWN) then
             begin
               ReadOWN(C, O.OWN);
             end;
           end
           else if C.NameIs('Requester') then
           begin
-            if C.Order(Last, 3, False, False) then
+            if C.Order(Last, 4, False, False) then
             begin
               ReadRequester(C, O.Requester.Add);
             end;
           end
+          else if C.NameIs('CTR') then
+          begin
+            if C.Order(Last, 5, True, O.HasCTR) then
+            begin
+              ReadCTR(C, O.CTR);
+            end;
+          end
           else if C.NameIs('CnstSite') then
           begin
-            if C.Order(Last, 4, False, False) then
+            if C.Order(Last, 6, False, False) then
             begin
               if (GCnstSiteGroup = nil) or C.NewGroup(GCnstSiteGroupLast, 0, True) then
               begin
@@ -513,7 +528,7 @@ begin
           end
           else if C.NameIs('NotifSite') then
           begin
-            if C.Order(Last, 4, False, False) then
+            if C.Order(Last, 6, False, False) then
             begin
               if (GCnstSiteGroup = nil) or C.NewGroup(GCnstSiteGroupLast, 1, True) then
               begin
@@ -529,28 +544,21 @@ begin
           end
           else if C.NameIs('AddText') then
           begin
-            if C.Order(Last, 5, False, False) then
+            if C.Order(Last, 7, False, False) then
             begin
               ReadAddText(C, O.AddText.Add);
             end;
           end
-          else if C.NameIs('CTR') then
-          begin
-            if C.Order(Last, 6, True, O.HasCTR) then
-            begin
-              ReadCTR(C, O.CTR);
-            end;
-          end
           else if C.NameIs('BoQ') then
           begin
-            if C.Order(Last, 7, True, O.HasBoQ) then
+            if C.Order(Last, 8, True, O.HasBoQ) then
             begin
               ReadBoQ(C, O.BoQ);
             end;
           end
           else if C.NameIs('WgChange') then
           begin
-            if C.Order(Last, 8, True, O.HasWgChange) then
+            if C.Order(Last, 9, True, O.HasWgChange) then
             begin
               ReadWgChange(C, O.WgChange);
             end;
@@ -1126,9 +1134,18 @@ begin
                 O.MarkEmpty('ALNBSerNo');
             end;
           end
+          else if C.NameIs('Accepted') then
+          begin
+            if C.Order(Last, 6, True, (O.Accepted <> '')) then
+            begin
+              O.Accepted := C.ElementText;
+              if O.Accepted = '' then
+                O.MarkEmpty('Accepted');
+            end;
+          end
           else if C.NameIs('NotApplBoQ') then
           begin
-            if C.Order(Last, 6, True, (O.NotApplBoQ <> '')) then
+            if C.Order(Last, 7, True, (O.NotApplBoQ <> '')) then
             begin
               O.NotApplBoQ := C.ElementText;
               if O.NotApplBoQ = '' then
@@ -1137,23 +1154,32 @@ begin
           end
           else if C.NameIs('CtlgAssign') then
           begin
-            if C.Order(Last, 7, False, False) then
+            if C.Order(Last, 8, False, False) then
             begin
               ReadCtlgAssign(C, O.CtlgAssign.Add);
             end;
           end
           else if C.NameIs('BoQBody') then
           begin
-            if C.Order(Last, 8, True, O.HasBoQBody) then
+            if C.Order(Last, 9, True, O.HasBoQBody) then
             begin
               ReadBoQBody(C, O.BoQBody);
             end;
           end
           else if C.NameIs('Totals') then
           begin
-            if C.Order(Last, 9, True, O.HasTotals) then
+            if C.Order(Last, 10, True, O.HasTotals) then
             begin
               ReadTotals(C, O.Totals);
+            end;
+          end
+          else if C.NameIs('AlterBidStatus') then
+          begin
+            if C.Order(Last, 11, True, (O.AlterBidStatus <> '')) then
+            begin
+              O.AlterBidStatus := C.ElementText;
+              if O.AlterBidStatus = '' then
+                O.MarkEmpty('AlterBidStatus');
             end;
           end
           else
@@ -1315,18 +1341,18 @@ begin
               ReadCtlgAssign(C, O.CtlgAssign.Add);
             end;
           end
-          else if C.NameIs('Ctlg') then
-          begin
-            if C.Order(Last, 17, False, False) then
-            begin
-              ReadCtlg(C, O.Ctlg.Add);
-            end;
-          end
           else if C.NameIs('Totals') then
           begin
-            if C.Order(Last, 18, True, O.HasTotals) then
+            if C.Order(Last, 17, True, O.HasTotals) then
             begin
               ReadTotals(C, O.Totals);
+            end;
+          end
+          else if C.NameIs('Ctlg') then
+          begin
+            if C.Order(Last, 18, False, False) then
+            begin
+              ReadCtlg(C, O.Ctlg.Add);
             end;
           end
           else if C.NameIs('QtyDetermInfo') then
@@ -1990,9 +2016,18 @@ begin
                 O.MarkEmpty('AcctsPayNo');
             end;
           end
+          else if C.NameIs('BidderNo') then
+          begin
+            if C.Order(Last, 4, True, (O.BidderNo <> '')) then
+            begin
+              O.BidderNo := C.ElementText;
+              if O.BidderNo = '' then
+                O.MarkEmpty('BidderNo');
+            end;
+          end
           else if C.NameIs('CntryType') then
           begin
-            if C.Order(Last, 4, True, (O.CntryType <> '')) then
+            if C.Order(Last, 5, True, (O.CntryType <> '')) then
             begin
               O.CntryType := C.ElementText;
               if O.CntryType = '' then
@@ -2001,7 +2036,7 @@ begin
           end
           else if C.NameIs('CntryName') then
           begin
-            if C.Order(Last, 5, True, (O.CntryName <> '')) then
+            if C.Order(Last, 6, True, (O.CntryName <> '')) then
             begin
               O.CntryName := C.ElementText;
               if O.CntryName = '' then
@@ -2010,7 +2045,7 @@ begin
           end
           else if C.NameIs('SectorType') then
           begin
-            if C.Order(Last, 6, True, (O.SectorType <> '')) then
+            if C.Order(Last, 7, True, (O.SectorType <> '')) then
             begin
               O.SectorType := C.ElementText;
               if O.SectorType = '' then
@@ -2019,7 +2054,7 @@ begin
           end
           else if C.NameIs('PrefBidType') then
           begin
-            if C.Order(Last, 7, True, (O.PrefBidType <> '')) then
+            if C.Order(Last, 8, True, (O.PrefBidType <> '')) then
             begin
               O.PrefBidType := C.ElementText;
               if O.PrefBidType = '' then
@@ -2028,7 +2063,7 @@ begin
           end
           else if C.NameIs('SCType') then
           begin
-            if C.Order(Last, 8, True, (O.SCType <> '')) then
+            if C.Order(Last, 9, True, (O.SCType <> '')) then
             begin
               O.SCType := C.ElementText;
               if O.SCType = '' then
@@ -2037,14 +2072,14 @@ begin
           end
           else if C.NameIs('InsAs') then
           begin
-            if C.Order(Last, 9, True, O.HasInsAs) then
+            if C.Order(Last, 10, True, O.HasInsAs) then
             begin
               ReadInsAs(C, O.InsAs);
             end;
           end
           else if C.NameIs('AddText') then
           begin
-            if C.Order(Last, 10, False, False) then
+            if C.Order(Last, 11, False, False) then
             begin
               ReadAddText(C, O.AddText.Add);
             end;
@@ -2114,6 +2149,13 @@ begin
             if C.Order(Last, 4, True, O.HasOutlineText) then
             begin
               ReadOutlineText(C, O.OutlineText);
+            end;
+          end
+          else if C.NameIs('SubmissionComment') then
+          begin
+            if C.Order(Last, 5, True, O.HasSubmissionComment) then
+            begin
+              ReadMLText(C, O.SubmissionComment);
             end;
           end
           else
@@ -2636,6 +2678,55 @@ begin
   O.Base64 := C.ContentTextUtf8;
 end;
 
+procedure ReadIndivAgrInfo(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlIndivAgrInfo);
+var
+  I, D, Last: Integer;
+begin
+  C.Enter(O);
+  for I := 0 to C.Reader.AttributeCount - 1 do
+    if C.IsPlainAttribute(I) then
+      C.UnknownAttribute(I);
+  D := C.Reader.Depth;
+  Last := -1;
+  while C.Next(D) do
+    case C.Reader.TokenType of
+      xttStartElement:
+        if C.IsGaeb then
+          if C.NameIs('InfoPerson') then
+          begin
+            if C.Order(Last, 0, True, (O.InfoPerson <> '')) then
+            begin
+              O.InfoPerson := C.ElementText;
+              if O.InfoPerson = '' then
+                O.MarkEmpty('InfoPerson');
+            end;
+          end
+          else if C.NameIs('AttestPerson') then
+          begin
+            if C.Order(Last, 1, True, (O.AttestPerson <> '')) then
+            begin
+              O.AttestPerson := C.ElementText;
+              if O.AttestPerson = '' then
+                O.MarkEmpty('AttestPerson');
+            end;
+          end
+          else if C.NameIs('CnstSiteLoc') then
+          begin
+            if C.Order(Last, 2, True, O.HasCnstSiteLoc) then
+            begin
+              ReadMLText(C, O.CnstSiteLoc);
+            end;
+          end
+          else
+            C.UnknownElement;
+      xttText, xttCData:
+        if not C.Reader.IsWhitespace then
+          C.TextInElementContent(nil);
+    else
+      ;
+    end;
+end;
+
 procedure ReadInsAs(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlInsAs);
 var
   I, D, Last: Integer;
@@ -2737,27 +2828,54 @@ begin
                 O.MarkEmpty('ALNSerNo');
             end;
           end
+          else if C.NameIs('Accepted') then
+          begin
+            if C.Order(Last, 2, True, (O.Accepted <> '')) then
+            begin
+              O.Accepted := C.ElementText;
+              if O.Accepted = '' then
+                O.MarkEmpty('Accepted');
+            end;
+          end
           else if C.NameIs('Provis') then
           begin
-            if C.Order(Last, 2, True, (O.Provis <> '')) then
+            if C.Order(Last, 3, True, (O.Provis <> '')) then
             begin
               O.Provis := C.ElementText;
               if O.Provis = '' then
                 O.MarkEmpty('Provis');
             end;
           end
+          else if C.NameIs('ProvisAccpt') then
+          begin
+            if C.Order(Last, 4, True, (O.ProvisAccpt <> '')) then
+            begin
+              O.ProvisAccpt := C.ElementText;
+              if O.ProvisAccpt = '' then
+                O.MarkEmpty('ProvisAccpt');
+            end;
+          end
           else if C.NameIs('LumpSumItem') then
           begin
-            if C.Order(Last, 3, True, (O.LumpSumItem <> '')) then
+            if C.Order(Last, 5, True, (O.LumpSumItem <> '')) then
             begin
               O.LumpSumItem := C.ElementText;
               if O.LumpSumItem = '' then
                 O.MarkEmpty('LumpSumItem');
             end;
           end
+          else if C.NameIs('NotAppl') then
+          begin
+            if C.Order(Last, 6, True, (O.NotAppl <> '')) then
+            begin
+              O.NotAppl := C.ElementText;
+              if O.NotAppl = '' then
+                O.MarkEmpty('NotAppl');
+            end;
+          end
           else if C.NameIs('HourIt') then
           begin
-            if C.Order(Last, 4, True, (O.HourIt <> '')) then
+            if C.Order(Last, 7, True, (O.HourIt <> '')) then
             begin
               O.HourIt := C.ElementText;
               if O.HourIt = '' then
@@ -2766,7 +2884,7 @@ begin
           end
           else if C.NameIs('KeyIt') then
           begin
-            if C.Order(Last, 5, True, (O.KeyIt <> '')) then
+            if C.Order(Last, 8, True, (O.KeyIt <> '')) then
             begin
               O.KeyIt := C.ElementText;
               if O.KeyIt = '' then
@@ -2775,7 +2893,7 @@ begin
           end
           else if C.NameIs('UPBkdn') then
           begin
-            if C.Order(Last, 6, True, (O.UPBkdn <> '')) then
+            if C.Order(Last, 9, True, (O.UPBkdn <> '')) then
             begin
               O.UPBkdn := C.ElementText;
               if O.UPBkdn = '' then
@@ -2784,7 +2902,7 @@ begin
           end
           else if C.NameIs('MarkupIt') then
           begin
-            if C.Order(Last, 7, True, (O.MarkupIt <> '')) then
+            if C.Order(Last, 10, True, (O.MarkupIt <> '')) then
             begin
               O.MarkupIt := C.ElementText;
               if O.MarkupIt = '' then
@@ -2793,7 +2911,7 @@ begin
           end
           else if C.NameIs('CONo') then
           begin
-            if C.Order(Last, 8, True, (O.CONo <> '')) then
+            if C.Order(Last, 11, True, (O.CONo <> '')) then
             begin
               O.CONo := C.ElementText;
               if O.CONo = '' then
@@ -2802,7 +2920,7 @@ begin
           end
           else if C.NameIs('COStatus') then
           begin
-            if C.Order(Last, 9, True, (O.COStatus <> '')) then
+            if C.Order(Last, 12, True, (O.COStatus <> '')) then
             begin
               O.COStatus := C.ElementText;
               if O.COStatus = '' then
@@ -2811,7 +2929,7 @@ begin
           end
           else if C.NameIs('RefDescr') then
           begin
-            if C.Order(Last, 10, True, (O.RefDescr <> '')) then
+            if C.Order(Last, 13, True, (O.RefDescr <> '')) then
             begin
               O.RefDescr := C.ElementText;
               if O.RefDescr = '' then
@@ -2820,21 +2938,21 @@ begin
           end
           else if C.NameIs('RefRNo') then
           begin
-            if C.Order(Last, 11, True, O.HasRefRNo) then
+            if C.Order(Last, 14, True, O.HasRefRNo) then
             begin
               ReadRefItem(C, O.RefRNo);
             end;
           end
           else if C.NameIs('RefPerfNo') then
           begin
-            if C.Order(Last, 12, True, O.HasRefPerfNo) then
+            if C.Order(Last, 15, True, O.HasRefPerfNo) then
             begin
               ReadRefItem(C, O.RefPerfNo);
             end;
           end
           else if C.NameIs('HoldOutType') then
           begin
-            if C.Order(Last, 13, True, (O.HoldOutType <> '')) then
+            if C.Order(Last, 16, True, (O.HoldOutType <> '')) then
             begin
               O.HoldOutType := C.ElementText;
               if O.HoldOutType = '' then
@@ -2843,14 +2961,14 @@ begin
           end
           else if C.NameIs('UseDur') then
           begin
-            if C.Order(Last, 14, True, O.UseDur.HasValue) then
+            if C.Order(Last, 17, True, O.UseDur.HasValue) then
             begin
               C.ElementDecimal(O.UseDur);
             end;
           end
           else if C.NameIs('UseDurLblTime') then
           begin
-            if C.Order(Last, 15, True, (O.UseDurLblTime <> '')) then
+            if C.Order(Last, 18, True, (O.UseDurLblTime <> '')) then
             begin
               O.UseDurLblTime := C.ElementText;
               if O.UseDurLblTime = '' then
@@ -2859,14 +2977,14 @@ begin
           end
           else if C.NameIs('RefBaseItem') then
           begin
-            if C.Order(Last, 16, False, False) then
+            if C.Order(Last, 19, False, False) then
             begin
               ReadRefItem(C, O.RefBaseItem.Add);
             end;
           end
           else if C.NameIs('QtyTBD') then
           begin
-            if C.Order(Last, 17, True, (O.QtyTBD <> '')) then
+            if C.Order(Last, 20, True, (O.QtyTBD <> '')) then
             begin
               O.QtyTBD := C.ElementText;
               if O.QtyTBD = '' then
@@ -2875,7 +2993,7 @@ begin
           end
           else if C.NameIs('NotOffered') then
           begin
-            if C.Order(Last, 18, True, (O.NotOffered <> '')) then
+            if C.Order(Last, 21, True, (O.NotOffered <> '')) then
             begin
               O.NotOffered := C.ElementText;
               if O.NotOffered = '' then
@@ -2884,21 +3002,35 @@ begin
           end
           else if C.NameIs('Qty') then
           begin
-            if C.Order(Last, 19, True, O.Qty.HasValue) then
+            if C.Order(Last, 22, True, O.Qty.HasValue) then
             begin
               C.ElementDecimal(O.Qty);
             end;
           end
           else if C.NameIs('QtySplit') then
           begin
-            if C.Order(Last, 20, False, False) then
+            if C.Order(Last, 23, False, False) then
             begin
               ReadQtySplit(C, O.QtySplit.Add);
             end;
           end
+          else if C.NameIs('PredQty') then
+          begin
+            if C.Order(Last, 24, True, O.PredQty.HasValue) then
+            begin
+              C.ElementDecimal(O.PredQty);
+            end;
+          end
+          else if C.NameIs('BillQty') then
+          begin
+            if C.Order(Last, 25, True, O.BillQty.HasValue) then
+            begin
+              C.ElementDecimal(O.BillQty);
+            end;
+          end
           else if C.NameIs('QU') then
           begin
-            if C.Order(Last, 21, True, (O.QU <> '')) then
+            if C.Order(Last, 26, True, (O.QU <> '')) then
             begin
               O.QU := C.ElementText;
               if O.QU = '' then
@@ -2907,128 +3039,195 @@ begin
           end
           else if C.NameIs('CtlgAssign') then
           begin
-            if C.Order(Last, 22, False, False) then
+            if C.Order(Last, 27, False, False) then
             begin
               ReadCtlgAssign(C, O.CtlgAssign.Add);
             end;
           end
           else if C.NameIs('UP') then
           begin
-            if C.Order(Last, 23, True, O.UP.HasValue) then
+            if C.Order(Last, 28, True, O.UP.HasValue) then
             begin
               C.ElementDecimal(O.UP);
             end;
           end
+          else if C.NameIs('UP110') then
+          begin
+            if C.Order(Last, 29, True, O.UP110.HasValue) then
+            begin
+              C.ElementDecimal(O.UP110);
+            end;
+          end
           else if C.NameIs('UPComp1') then
           begin
-            if C.Order(Last, 24, True, O.UPComp1.HasValue) then
+            if C.Order(Last, 30, True, O.UPComp1.HasValue) then
             begin
               C.ElementDecimal(O.UPComp1);
             end;
           end
           else if C.NameIs('UPComp2') then
           begin
-            if C.Order(Last, 25, True, O.UPComp2.HasValue) then
+            if C.Order(Last, 31, True, O.UPComp2.HasValue) then
             begin
               C.ElementDecimal(O.UPComp2);
             end;
           end
           else if C.NameIs('UPComp3') then
           begin
-            if C.Order(Last, 26, True, O.UPComp3.HasValue) then
+            if C.Order(Last, 32, True, O.UPComp3.HasValue) then
             begin
               C.ElementDecimal(O.UPComp3);
             end;
           end
           else if C.NameIs('UPComp4') then
           begin
-            if C.Order(Last, 27, True, O.UPComp4.HasValue) then
+            if C.Order(Last, 33, True, O.UPComp4.HasValue) then
             begin
               C.ElementDecimal(O.UPComp4);
             end;
           end
           else if C.NameIs('UPComp5') then
           begin
-            if C.Order(Last, 28, True, O.UPComp5.HasValue) then
+            if C.Order(Last, 34, True, O.UPComp5.HasValue) then
             begin
               C.ElementDecimal(O.UPComp5);
             end;
           end
           else if C.NameIs('UPComp6') then
           begin
-            if C.Order(Last, 29, True, O.UPComp6.HasValue) then
+            if C.Order(Last, 35, True, O.UPComp6.HasValue) then
             begin
               C.ElementDecimal(O.UPComp6);
             end;
           end
           else if C.NameIs('DiscountPcnt') then
           begin
-            if C.Order(Last, 30, True, O.DiscountPcnt.HasValue) then
+            if C.Order(Last, 36, True, O.DiscountPcnt.HasValue) then
             begin
               C.ElementDecimal(O.DiscountPcnt);
             end;
           end
+          else if C.NameIs('UPFrom') then
+          begin
+            if C.Order(Last, 37, True, O.UPFrom.HasValue) then
+            begin
+              C.ElementDecimal(O.UPFrom);
+            end;
+          end
+          else if C.NameIs('UPAvg') then
+          begin
+            if C.Order(Last, 38, True, O.UPAvg.HasValue) then
+            begin
+              C.ElementDecimal(O.UPAvg);
+            end;
+          end
+          else if C.NameIs('UPTo') then
+          begin
+            if C.Order(Last, 39, True, O.UPTo.HasValue) then
+            begin
+              C.ElementDecimal(O.UPTo);
+            end;
+          end
+          else if C.NameIs('UPWgFrom') then
+          begin
+            if C.Order(Last, 40, True, O.UPWgFrom.HasValue) then
+            begin
+              C.ElementDecimal(O.UPWgFrom);
+            end;
+          end
+          else if C.NameIs('UPWgAvg') then
+          begin
+            if C.Order(Last, 41, True, O.UPWgAvg.HasValue) then
+            begin
+              C.ElementDecimal(O.UPWgAvg);
+            end;
+          end
+          else if C.NameIs('UPWgTo') then
+          begin
+            if C.Order(Last, 42, True, O.UPWgTo.HasValue) then
+            begin
+              C.ElementDecimal(O.UPWgTo);
+            end;
+          end
           else if C.NameIs('IT') then
           begin
-            if C.Order(Last, 31, True, O.IT.HasValue) then
+            if C.Order(Last, 43, True, O.IT.HasValue) then
             begin
               C.ElementDecimal(O.IT);
             end;
           end
           else if C.NameIs('VAT') then
           begin
-            if C.Order(Last, 32, True, O.VAT.HasValue) then
+            if C.Order(Last, 44, True, O.VAT.HasValue) then
             begin
               C.ElementDecimal(O.VAT);
             end;
           end
+          else if C.NameIs('PriceInfo') then
+          begin
+            if C.Order(Last, 45, True, (O.PriceInfo <> '')) then
+            begin
+              O.PriceInfo := C.ElementText;
+              if O.PriceInfo = '' then
+                O.MarkEmpty('PriceInfo');
+            end;
+          end
           else if C.NameIs('TimeQu') then
           begin
-            if C.Order(Last, 33, True, O.TimeQu.HasValue) then
+            if C.Order(Last, 46, True, O.TimeQu.HasValue) then
             begin
               C.ElementDecimal(O.TimeQu);
             end;
           end
           else if C.NameIs('Description') then
           begin
-            if C.Order(Last, 34, True, O.HasDescription) then
+            if C.Order(Last, 47, True, O.HasDescription) then
             begin
               ReadDescription(C, O.Description);
             end;
           end
+          else if C.NameIs('BidComm') then
+          begin
+            if C.Order(Last, 48, False, False) then
+            begin
+              ReadMLText(C, O.BidComm.Add);
+            end;
+          end
           else if C.NameIs('SumDescr') then
           begin
-            if C.Order(Last, 35, True, (O.SumDescr <> '')) then
+            if C.Order(Last, 49, True, (O.SumDescr <> '')) then
             begin
               O.SumDescr := C.ElementText;
               if O.SumDescr = '' then
                 O.MarkEmpty('SumDescr');
             end;
           end
-          else if C.NameIs('BidComm') then
-          begin
-            if C.Order(Last, 36, False, False) then
-            begin
-              ReadMLText(C, O.BidComm.Add);
-            end;
-          end
           else if C.NameIs('SubDescr') then
           begin
-            if C.Order(Last, 37, False, False) then
+            if C.Order(Last, 50, False, False) then
             begin
               ReadSubDescr(C, O.SubDescr.Add);
             end;
           end
           else if C.NameIs('Product') then
           begin
-            if C.Order(Last, 38, True, O.HasProduct) then
+            if C.Order(Last, 51, True, O.HasProduct) then
             begin
               ReadProduct(C, O.Product);
             end;
           end
+          else if C.NameIs('AlterBidStatus') then
+          begin
+            if C.Order(Last, 52, True, (O.AlterBidStatus <> '')) then
+            begin
+              O.AlterBidStatus := C.ElementText;
+              if O.AlterBidStatus = '' then
+                O.MarkEmpty('AlterBidStatus');
+            end;
+          end
           else if C.NameIs('QtyDeterm') then
           begin
-            if C.Order(Last, 39, True, O.HasQtyDeterm) then
+            if C.Order(Last, 53, True, O.HasQtyDeterm) then
             begin
               ReadQtyDeterm(C, O.QtyDeterm);
             end;
@@ -3463,18 +3662,45 @@ begin
                 O.MarkEmpty('ALNSerNo');
             end;
           end
+          else if C.NameIs('Accepted') then
+          begin
+            if C.Order(Last, 2, True, (O.Accepted <> '')) then
+            begin
+              O.Accepted := C.ElementText;
+              if O.Accepted = '' then
+                O.MarkEmpty('Accepted');
+            end;
+          end
           else if C.NameIs('Provis') then
           begin
-            if C.Order(Last, 2, True, (O.Provis <> '')) then
+            if C.Order(Last, 3, True, (O.Provis <> '')) then
             begin
               O.Provis := C.ElementText;
               if O.Provis = '' then
                 O.MarkEmpty('Provis');
             end;
           end
+          else if C.NameIs('ProvisAccpt') then
+          begin
+            if C.Order(Last, 4, True, (O.ProvisAccpt <> '')) then
+            begin
+              O.ProvisAccpt := C.ElementText;
+              if O.ProvisAccpt = '' then
+                O.MarkEmpty('ProvisAccpt');
+            end;
+          end
+          else if C.NameIs('NotAppl') then
+          begin
+            if C.Order(Last, 5, True, (O.NotAppl <> '')) then
+            begin
+              O.NotAppl := C.ElementText;
+              if O.NotAppl = '' then
+                O.MarkEmpty('NotAppl');
+            end;
+          end
           else if C.NameIs('HourIt') then
           begin
-            if C.Order(Last, 3, True, (O.HourIt <> '')) then
+            if C.Order(Last, 6, True, (O.HourIt <> '')) then
             begin
               O.HourIt := C.ElementText;
               if O.HourIt = '' then
@@ -3483,7 +3709,7 @@ begin
           end
           else if C.NameIs('KeyIt') then
           begin
-            if C.Order(Last, 4, True, (O.KeyIt <> '')) then
+            if C.Order(Last, 7, True, (O.KeyIt <> '')) then
             begin
               O.KeyIt := C.ElementText;
               if O.KeyIt = '' then
@@ -3492,7 +3718,7 @@ begin
           end
           else if C.NameIs('CONo') then
           begin
-            if C.Order(Last, 5, True, (O.CONo <> '')) then
+            if C.Order(Last, 8, True, (O.CONo <> '')) then
             begin
               O.CONo := C.ElementText;
               if O.CONo = '' then
@@ -3501,7 +3727,7 @@ begin
           end
           else if C.NameIs('COStatus') then
           begin
-            if C.Order(Last, 6, True, (O.COStatus <> '')) then
+            if C.Order(Last, 9, True, (O.COStatus <> '')) then
             begin
               O.COStatus := C.ElementText;
               if O.COStatus = '' then
@@ -3510,7 +3736,7 @@ begin
           end
           else if C.NameIs('RefDescr') then
           begin
-            if C.Order(Last, 7, True, (O.RefDescr <> '')) then
+            if C.Order(Last, 10, True, (O.RefDescr <> '')) then
             begin
               O.RefDescr := C.ElementText;
               if O.RefDescr = '' then
@@ -3519,21 +3745,21 @@ begin
           end
           else if C.NameIs('RefRNo') then
           begin
-            if C.Order(Last, 8, True, O.HasRefRNo) then
+            if C.Order(Last, 11, True, O.HasRefRNo) then
             begin
               ReadRefItem(C, O.RefRNo);
             end;
           end
           else if C.NameIs('RefPerfNo') then
           begin
-            if C.Order(Last, 9, True, O.HasRefPerfNo) then
+            if C.Order(Last, 12, True, O.HasRefPerfNo) then
             begin
               ReadRefItem(C, O.RefPerfNo);
             end;
           end
           else if C.NameIs('MarkupType') then
           begin
-            if C.Order(Last, 10, True, (O.MarkupType <> '')) then
+            if C.Order(Last, 13, True, (O.MarkupType <> '')) then
             begin
               O.MarkupType := C.ElementText;
               if O.MarkupType = '' then
@@ -3542,51 +3768,60 @@ begin
           end
           else if C.NameIs('MarkupSubQty') then
           begin
-            if C.Order(Last, 11, False, False) then
+            if C.Order(Last, 14, False, False) then
             begin
               ReadMarkupSubQty(C, O.MarkupSubQty.Add);
             end;
           end
           else if C.NameIs('ITMarkup') then
           begin
-            if C.Order(Last, 12, True, O.ITMarkup.HasValue) then
+            if C.Order(Last, 15, True, O.ITMarkup.HasValue) then
             begin
               C.ElementDecimal(O.ITMarkup);
             end;
           end
           else if C.NameIs('Markup') then
           begin
-            if C.Order(Last, 13, True, O.Markup.HasValue) then
+            if C.Order(Last, 16, True, O.Markup.HasValue) then
             begin
               C.ElementDecimal(O.Markup);
             end;
           end
           else if C.NameIs('DiscountPcnt') then
           begin
-            if C.Order(Last, 14, True, O.DiscountPcnt.HasValue) then
+            if C.Order(Last, 17, True, O.DiscountPcnt.HasValue) then
             begin
               C.ElementDecimal(O.DiscountPcnt);
             end;
           end
           else if C.NameIs('IT') then
           begin
-            if C.Order(Last, 15, True, O.IT.HasValue) then
+            if C.Order(Last, 18, True, O.IT.HasValue) then
             begin
               C.ElementDecimal(O.IT);
             end;
           end
           else if C.NameIs('Description') then
           begin
-            if C.Order(Last, 16, True, O.HasDescription) then
+            if C.Order(Last, 19, True, O.HasDescription) then
             begin
               ReadDescription(C, O.Description);
             end;
           end
           else if C.NameIs('CtlgAssign') then
           begin
-            if C.Order(Last, 17, False, False) then
+            if C.Order(Last, 20, False, False) then
             begin
               ReadCtlgAssign(C, O.CtlgAssign.Add);
+            end;
+          end
+          else if C.NameIs('AlterBidStatus') then
+          begin
+            if C.Order(Last, 21, True, (O.AlterBidStatus <> '')) then
+            begin
+              O.AlterBidStatus := C.ElementText;
+              if O.AlterBidStatus = '' then
+                O.MarkEmpty('AlterBidStatus');
             end;
           end
           else
@@ -4290,9 +4525,18 @@ begin
                 O.MarkEmpty('CONo');
             end;
           end
+          else if C.NameIs('AlterBidStatus') then
+          begin
+            if C.Order(Last, 4, True, (O.AlterBidStatus <> '')) then
+            begin
+              O.AlterBidStatus := C.ElementText;
+              if O.AlterBidStatus = '' then
+                O.MarkEmpty('AlterBidStatus');
+            end;
+          end
           else if C.NameIs('CtlgAssign') then
           begin
-            if C.Order(Last, 4, False, False) then
+            if C.Order(Last, 5, False, False) then
             begin
               ReadCtlgAssign(C, O.CtlgAssign.Add);
             end;
@@ -4364,9 +4608,16 @@ begin
               ReadOutlineText(C, O.OutlineText);
             end;
           end
+          else if C.NameIs('SubmissionComment') then
+          begin
+            if C.Order(Last, 5, True, O.HasSubmissionComment) then
+            begin
+              ReadMLText(C, O.SubmissionComment);
+            end;
+          end
           else if C.NameIs('CtlgAssign') then
           begin
-            if C.Order(Last, 5, False, False) then
+            if C.Order(Last, 6, False, False) then
             begin
               ReadCtlgAssign(C, O.CtlgAssign.Add);
             end;
@@ -5050,9 +5301,18 @@ begin
                 O.MarkEmpty('CONo');
             end;
           end
+          else if C.NameIs('AlterBidStatus') then
+          begin
+            if C.Order(Last, 2, True, (O.AlterBidStatus <> '')) then
+            begin
+              O.AlterBidStatus := C.ElementText;
+              if O.AlterBidStatus = '' then
+                O.MarkEmpty('AlterBidStatus');
+            end;
+          end
           else if C.NameIs('CtlgAssign') then
           begin
-            if C.Order(Last, 2, False, False) then
+            if C.Order(Last, 3, False, False) then
             begin
               ReadCtlgAssign(C, O.CtlgAssign.Add);
             end;
@@ -6627,12 +6887,18 @@ end;
 { True if the generated model was built from the schema of ATarget. }
 function ModelCoversTarget(const ATarget: TLandrixGaebTarget): Boolean;
 begin
-  Result := ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp83)) or
+  Result := ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp81)) or
+    ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp83)) or
     ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp84)) or
+    ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp86)) or
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) and (ATarget.Phase = gp81)) or
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) and (ATarget.Phase = gp83)) or
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) and (ATarget.Phase = gp84)) or
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) and (ATarget.Phase = gp86)) or
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp81)) or
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp83)) or
-    ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp84));
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp84)) or
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp86));
 end;
 
 function RejectMessage(ADiagnostics: TLandrixGaebDiagnostics; AFirst: Integer): string;
