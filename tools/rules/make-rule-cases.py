@@ -403,6 +403,11 @@ case("GAEB-BR-PAIR-83-84-002", "pair-invalid-1",
      2, BODY + "/BoQCtgy[1]")
 case("GAEB-BR-PAIR-83-84-003", "pair-valid-1", (REQ.replace("<NamePrj>Projekt</NamePrj>",
                                                            "<NamePrj>Projekt</NamePrj><UPFracDig>2</UPFracDig>"), bid()))
+# trailing zeros are not significant: the writer pads unit prices to the
+# three digits of the schema type
+case("GAEB-BR-PAIR-83-84-003", "pair-valid-2",
+     (REQ.replace("<NamePrj>Projekt</NamePrj>", "<NamePrj>Projekt</NamePrj><UPFracDig>2</UPFracDig>"),
+      bid(i1=item84("I1", "0010", up="2.500", it="25.00", complements=(1,)))))
 case("GAEB-BR-PAIR-83-84-003", "pair-invalid-1",
      (REQ.replace("<NamePrj>Projekt</NamePrj>", "<NamePrj>Projekt</NamePrj><UPFracDig>2</UPFracDig>"),
       bid(i1=item84("I1", "0010", up="2.505", it="25.05", complements=(1,)))), 1, I1)

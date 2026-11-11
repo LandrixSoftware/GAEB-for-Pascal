@@ -37,6 +37,8 @@ uses
   LandrixGaebXmlReader,
   LandrixGaebXmlWriteBase,
   LandrixGaebXmlWriter,
+  LandrixGaebRules,
+  LandrixGaebTestNoValues,
   LandrixGaebTestFramework;
 
 const
@@ -393,6 +395,73 @@ begin
   end;
 end;
 
+function PairFile(const ARule, ACase, AName: string): TLandrixXmlUtf8;
+begin
+  Result := ReadFileBytes(RepositoryRoot + 'tests' + PathDelim + 'data' + PathDelim + 'rules' + PathDelim +
+    ARule + PathDelim + ACase + PathDelim + AName);
+end;
+
+{ Unit prices get UPFracDig digits with the option, the digits of the
+  schema type without it; output padded to three digits passes the pair
+  rule of a request with UPFracDig 2. }
+procedure TestUPFracDig;
+const
+  Rule = 'GAEB-BR-PAIR-83-84-003';
+var
+  Request, Bid, Bid2: TLandrixGaebXmlGAEB;
+  Target83, Target84: TLandrixGaebTarget;
+  Options: TLandrixGaebXmlWriteOptions;
+  Diags: TLandrixGaebDiagnostics;
+  Out1: TLandrixXmlUtf8;
+  Errors, Warnings: Integer;
+begin
+  Target83 := LandrixGaebTarget(gv33, ge2021_05, gp83);
+  Target84 := LandrixGaebTarget(gv33, ge2021_05, gp84);
+  Diags := TLandrixGaebDiagnostics.Create;
+  Request := Read(PairFile(Rule, 'pair-valid-1', 'first.x83'));
+  Bid := Read(PairFile(Rule, 'pair-valid-1', 'second.x84'));
+  Bid2 := nil;
+  try
+    Options := LandrixGaebXmlDefaultWriteOptions;
+    Out1 := LandrixGaebXmlWriteUtf8(Bid, Target84, Options, Diags);
+    Check(Contains(Out1, '<UP>2.500</UP>'), 'without the option: digits of the schema type');
+    Bid2 := Read(Out1);
+    Diags.Clear;
+    LandrixGaebCheckPair(Request, Target83, Bid2, Target84, Diags);
+    CheckEquals(0, Diags.CountOf(Rule), 'padded zeros are not significant: ' + Diags.ToText);
+
+    Options.UPFracDig := 2;
+    Diags.Clear;
+    Out1 := LandrixGaebXmlWriteUtf8(Bid, Target84, Options, Diags);
+    CheckEquals(0, Integer(Diags.Count), 'no diagnostics: ' + Diags.ToText);
+    Check(Contains(Out1, '<UP>2.50</UP>') and Contains(Out1, '<UP>1.00</UP>'), 'UP with two digits');
+    Check(Contains(Out1, '<Qty>4.000</Qty>'), 'other decimals keep the digits of their type');
+    Options.UPFracDig := 3;
+    Out1 := LandrixGaebXmlWriteUtf8(Bid, Target84, Options, Diags);
+    Check(Contains(Out1, '<UP>2.500</UP>'), 'UP with three digits');
+    FreeAndNil(Bid);
+
+    Bid := Read(PairFile('GAEB-BR-PAIR-83-84-005', 'pair-valid-1', 'second.x84'));
+    Options.UPFracDig := 2;
+    Out1 := LandrixGaebXmlWriteUtf8(Bid, Target84, Options, Diags);
+    Check(Contains(Out1, '<UPComp1>1.50</UPComp1>') and Contains(Out1, '<UPComp2>1.00</UPComp2>'),
+      'unit price components with two digits');
+    FreeAndNil(Bid);
+
+    Bid := Read(PairFile(Rule, 'pair-invalid-1', 'second.x84'));
+    Diags.Clear;
+    Out1 := LandrixGaebXmlWriteCollect(Bid, Target84, Options, Diags, Errors, Warnings);
+    CheckEquals(1, Diags.CountOf('GAEB-WRT-002'), 'a price with three significant digits is a loss: ' +
+      Diags.ToText);
+    Check(not Contains(Out1, '<UP>2.50</UP>') and not Contains(Out1, '<UP>2.51</UP>'), 'never rounded');
+  finally
+    Bid2.Free;
+    Bid.Free;
+    Request.Free;
+    Diags.Free;
+  end;
+end;
+
 procedure Register;
 begin
   RegisterTest('XmlWriter.Basics', TestWriteBasics);
@@ -401,6 +470,7 @@ begin
   RegisterTest('XmlWriter.DecimalTooPrecise', TestDecimalTooPrecise);
   RegisterTest('XmlWriter.Modes', TestModes);
   RegisterTest('XmlWriter.EmptyValuesSurvive', TestEmptyValuesSurvive);
+  RegisterTest('XmlWriter.UPFracDig', TestUPFracDig);
   RegisterTest('Local.Write', TestLocalWrite);
 end;
 

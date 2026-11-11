@@ -101,6 +101,17 @@ type
       (LandrixGaebXmlCheck, Stufe 2); ihre Befunde sind Fehler (im Modus
       gwmBestEffort gemeldet ohne Abbruch). }
     Check: Boolean;
+    { Fraction digits of unit prices (UP, UPComp1 to UPComp6), 2 or 3:
+      UPFracDig of the request (PrjInfo of the X83), which the bid itself
+      does not carry. A price with more significant digits is a loss
+      (GAEB-WRT-002), never rounded. -1 (default): the digits of the
+      schema type. Ignored with PreserveScale.
+      DE: Nachkommastellen der Einheitspreise (UP, UPComp1 bis UPComp6),
+      2 oder 3: UPFracDig der Anfrage (PrjInfo des X83), das das Angebot
+      selbst nicht traegt. Ein Preis mit mehr werttragenden Stellen ist
+      ein Verlust (GAEB-WRT-002), nie gerundet. -1 (Standard): die
+      Stellen des Schematyps. Bei PreserveScale ohne Wirkung. }
+    UPFracDig: Integer;
   end;
 
   { One open element of a write: its name, its index among the siblings of
@@ -230,6 +241,16 @@ begin
   Result.Indent := True;
   Result.CrLf := True;
   Result.Check := True;
+  Result.UPFracDig := -1;
+end;
+
+{ True for the elements of unit prices (UP, UPComp1 to UPComp6).
+  DE: True fuer die Elemente der Einheitspreise (UP, UPComp1 bis
+  UPComp6). }
+function IsUnitPrice(const AName: TLandrixXmlUtf8): Boolean;
+begin
+  Result := (AName = 'UP') or ((Length(AName) = 7) and (Copy(AName, 1, 6) = 'UPComp') and
+    (AName[7] >= '1') and (AName[7] <= '6'));
 end;
 
 { TLandrixGaebXmlWriteContext }
@@ -366,6 +387,8 @@ begin
   if not Allowed(ASlot, AName, False) then
     Exit;
   Digits := LandrixGaebXmlSlots[ASlot].Fraction;
+  if (FOptions.UPFracDig >= 0) and (FOptions.UPFracDig < Digits) and IsUnitPrice(AName) then
+    Digits := FOptions.UPFracDig;
   if FOptions.PreserveScale or (Digits < 0) then
     S := AValue.Text
   else if not AValue.TryTextWithScale(Digits, S) then

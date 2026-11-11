@@ -198,7 +198,7 @@ const
     (ID: 'GAEB-BR-PAIR-83-84-002'; Title: 'Categories of the bid are the categories of the request (by OZ)';
       Severity: gsError; Phases: [gp84]; Pair: True;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.19'),
-    (ID: 'GAEB-BR-PAIR-83-84-003'; Title: 'Unit prices of the bid have at most UPFracDig fraction digits';
+    (ID: 'GAEB-BR-PAIR-83-84-003'; Title: 'Unit prices of the bid have at most UPFracDig significant fraction digits';
       Severity: gsError; Phases: [gp84]; Pair: True;
       Source: 'schema tgUPFracDig (PrjInfo of X83)'),
     (ID: 'GAEB-BR-PAIR-83-84-004'; Title: 'Total of an offered item is the quantity of the request times the unit price, rounded';
@@ -1533,10 +1533,16 @@ var
       Result := 'GAEB-BR-PAIR-83-84-001';
   end;
 
+  { Significant digits count: '12.500' has two (the writer pads unit
+    prices to the three digits of the schema type).
+    DE: Es zaehlen werttragende Stellen: '12.500' hat zwei (der Schreiber
+    fuellt Einheitspreise auf die drei Stellen des Schematyps auf). }
   procedure CheckDigits(const AValue: TLandrixGaebDecimal; ANode: TRuleNode);
+  var
+    Text: TLandrixXmlUtf8;
   begin
-    if (Digits >= 0) and AValue.HasValue and (LandrixXmlDecimalFractionDigits(XDec(AValue)) > Digits) then
-      FSecond.Report('GAEB-BR-PAIR-83-84-003', ANode.Path, 'unit price with more fraction digits than UPFracDig');
+    if (Digits >= 0) and AValue.HasValue and not AValue.TryTextWithScale(Digits, Text) then
+      FSecond.Report('GAEB-BR-PAIR-83-84-003', ANode.Path, 'unit price with more significant fraction digits than UPFracDig');
   end;
 
   procedure CheckComp(const AValue: TLandrixGaebDecimal; ANumber: Integer; ANode: TRuleNode);
@@ -1571,7 +1577,15 @@ begin
     end;
     Digits := -1;
     if FFirstDoc.HasPrjInfo then
+    begin
       Digits := IntOf(FFirstDoc.PrjInfo.UPFracDig, -1);
+      { only the values of the schema (2, 3); others are found by the check
+        (stage 2) and would make TryTextWithScale build huge strings
+        DE: nur die Werte des Schemas (2, 3); andere findet die Pruefung
+        (Stufe 2), sie liessen TryTextWithScale riesige Texte bauen }
+      if (Digits < 2) or (Digits > 3) then
+        Digits := -1;
+    end;
     NoComps := -1;
     if FFirstDoc.HasAward and FFirstDoc.Award.HasBoQ and FFirstDoc.Award.BoQ.HasBoQInfo then
       NoComps := IntOf(FFirstDoc.Award.BoQ.BoQInfo.NoUPComps, -1);
