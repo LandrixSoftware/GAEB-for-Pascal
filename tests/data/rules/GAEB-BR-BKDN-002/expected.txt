@@ -1,2 +1,8 @@
 invalid-1.x83 1 /GAEB[1]/Award[1]/BoQ[1]/BoQInfo[1]
 invalid-2.x83 1 /GAEB[1]/Award[1]/BoQ[1]/BoQInfo[1]
+invalid-1.x81 1 /GAEB[1]/Award[1]/BoQ[1]/BoQInfo[1]
+invalid-2.x81 1 /GAEB[1]/Award[1]/BoQ[1]/BoQInfo[1]
+invalid-1.x84 1 /GAEB[1]/Award[1]/BoQ[1]/BoQInfo[1]
+invalid-2.x84 1 /GAEB[1]/Award[1]/BoQ[1]/BoQInfo[1]
+invalid-1.x86 1 /GAEB[1]/Award[1]/BoQ[1]/BoQInfo[1]
+invalid-2.x86 1 /GAEB[1]/Award[1]/BoQ[1]/BoQInfo[1]

@@ -16,8 +16,10 @@ Usage:
   python tools/rules/make-rule-cases.py --check   exit 1 if a file differs
 """
 
+import importlib.util
 import io
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -476,14 +478,169 @@ case("GAEB-BR-PAIR-83-84-008", "pair-invalid-2", (REQ_ALT, bid_alt("100.00", "15
 SCHEMA_GUARDED = {"GAEB-BR-QTY-001", "GAEB-BR-QTY-003"}
 
 
+# ---- the same cases for the other phases of a rule ----
+#
+# Each rule needs a valid and an invalid case for every phase of the catalog
+# (source/LandrixGaebRules.pas). Missing ones are derived from the cases of
+# X83 (structure and texts) or X84 (prices): namespace and DP change, and the
+# elements a phase requires (OWN, CTR, LblBoQ, OutlCompl, LblTx) or does not
+# know (QU, Description, ... in X84) are added or dropped. A derived document
+# must pass tools/schema/check-instance.py, else the generator stops.
+
+ADDRESS = "<Address><Name1>Name</Name1><Street>Weg 1</Street><PCode>12345</PCode><City>Ort</City></Address>"
+CATALOG = os.path.join(ROOT, "source", "LandrixGaebRules.pas")
+
+
+def catalog_phases():
+    text = io.open(CATALOG, encoding="ascii").read()
+    result = {}
+    for m in re.finditer(r"\(ID: '([^']+)';.*?Phases: \[([^\]]*)\]", text, re.S):
+        result[m.group(1)] = [x.strip()[2:] for x in m.group(2).split(",") if x.strip()]
+    return result
+
+
+def derive(content, src, dst):
+    s = content.replace("/DA%s/3.3" % src, "/DA%s/3.3" % dst).replace("<DP>%s</DP>" % src, "<DP>%s</DP>" % dst)
+    if src == "84":
+        # the bill of a request: labels of the bill and of categories
+        s = s.replace("<BoQInfo><Name>LV</Name>", "<BoQInfo><Name>LV</Name><LblBoQ>Test</LblBoQ>"
+                      "<OutlCompl>AllTxt</OutlCompl>")
+        s = re.sub(r'(<BoQCtgy ID="[^"]+" RNoPart="[^"]+">)(?!<LblTx>)', r"\1<LblTx><p><span>Titel</span></p></LblTx>", s)
+    if dst == "84":
+        s = re.sub(r"<QU>[^<]*</QU>", "", s)
+        s = re.sub(r"<LblTx>.*?</LblTx>", "", s)
+        s = re.sub(r"<Description>.*?</Description>", "", s)
+        s = re.sub(r"<PerfLbl>[^<]*</PerfLbl>", "", s)
+        # an item of a bid has no references, kinds or quantity flags
+        s = re.sub(r'<Ref(?:RNo|PerfNo) IDRef="[^"]*"/>', "", s)
+        s = re.sub(r"<(RefDescr|LumpSumItem|QtyTBD)>[^<]*</\1>", "", s)
+        s = s.replace("<LblBoQ>Test</LblBoQ>", "").replace("<OutlCompl>AllTxt</OutlCompl>", "")
+        s = s.replace("<DP>84</DP>", "<DP>84</DP><CTR>%s</CTR>" % ADDRESS)
+    if src == "83" and dst in ("84", "86"):
+        # categories of a bid or an award carry totals
+        s = s.replace("</BoQBody></BoQCtgy>", "</BoQBody><Totals><Total>0.00</Total></Totals></BoQCtgy>")
+    if dst == "86":
+        # a markup item of an award carries its amounts
+        s = re.sub(r"(</MarkupType>(?:<MarkupSubQty>.*?</MarkupSubQty>)*)(<Description>)",
+                   r"\1<ITMarkup>0.00</ITMarkup><Markup>0</Markup>\2", s)
+        if "<CTR>" in s:
+            s = s.replace("<DP>86</DP>", "<DP>86</DP><OWN>%s</OWN>" % ADDRESS)
+        else:
+            s = s.replace("<DP>86</DP>", "<DP>86</DP><OWN>%s</OWN><CTR>%s</CTR>" % (ADDRESS, ADDRESS))
+    return s
+
+
+def add_derived():
+    spec = importlib.util.spec_from_file_location("check_instance",
+                                                  os.path.join(ROOT, "tools", "schema", "check-instance.py"))
+    checker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(checker)
+    contexts = checker.load_contexts()
+    phases = catalog_phases()
+    failed = []
+    for rule, cases in sorted(CASES.items()):
+        wanted = phases.get(rule, [])
+        def kind(name):
+            return "invalid" if name.startswith("invalid") else "valid"
+        have = set((name[-2:], kind(name)) for name, content, count, path in cases
+                   if not isinstance(content, tuple))
+        phases_with_cases = set(ph for ph, k in have)
+        for dst in wanted:
+            missing = set(k for k in ("valid", "invalid") if (dst, k) not in have)
+            if not missing:
+                continue
+            # X84 from X83; X81 and X86 from X83 if there is one, else from X84
+            src = "83" if dst == "84" or "83" in phases_with_cases else "84"
+            if src not in phases_with_cases:
+                continue
+            for name, content, count, path in list(cases):
+                if isinstance(content, tuple) or name[-2:] != src or kind(name) not in missing:
+                    continue
+                derived = derive(content, src, dst)
+                errors, _ = checker.check_file(contexts, io.BytesIO(derived.encode("ascii")))
+                if errors:
+                    failed.append("%s/%s -> x%s: %s" % (rule, name, dst, errors[0] if isinstance(errors, list)
+                                                       else errors))
+                    continue
+                cases.append((name[:-2] + dst, derived, count, path))
+    return failed
+
+
+# an item that does not apply (NotAppl, award) keeps its unit price, its
+# total is 0 (BVBS test files)
+case("GAEB-BR-SUM-001", "valid-3.x86",
+     derive(std84(item84("I1", "0010", qty="10", up="2.50", it="0.00"), total="0.00"), "84", "86")
+     .replace('<Item ID="I1" RNoPart="0010">', '<Item ID="I1" RNoPart="0010"><NotAppl>Yes</NotAppl>'))
+
+
+# alternatives and eventual items without total are no totals either
+for ph in ("81", "86"):
+    case("GAEB-BR-SUM-001", "valid-4.x" + ph,
+         derive(std84(item84("I1", "0010", qty="10", up="2.50", it="0.00"), total="0.00"), "84", ph)
+         .replace('<Item ID="I1" RNoPart="0010">', '<Item ID="I1" RNoPart="0010"><ALNGroupNo>1</ALNGroupNo>'
+                  '<ALNSerNo>1</ALNSerNo>'))
+    case("GAEB-BR-SUM-001", "valid-5.x" + ph,
+         derive(std84(item84("I1", "0010", qty="10", up="2.50", it="0.00"), total="0.00"), "84", ph)
+         .replace('<Item ID="I1" RNoPart="0010">', '<Item ID="I1" RNoPart="0010"><Provis>WithoutTotal</Provis>'))
+
+
+# SUM-003: the totals of an X81 or X86 against its own items (the kinds are
+# in the document itself)
+def bill(*items, **kw):
+    return std84(*items, total=kw.get("total", "29.00"))
+
+
+B2 = (item84("I1", "0010", qty="10", up="2.50", it="25.00"), item84("I2", "0020", qty="4", up="1.00", it="4.00"))
+for ph in ("81", "86"):
+    case("GAEB-BR-SUM-003", "valid-1.x" + ph, derive(bill(*B2), "84", ph))
+    case("GAEB-BR-SUM-003", "invalid-1.x" + ph, derive(bill(*B2, total="30.00"), "84", ph), 1,
+         BODY + "/BoQCtgy[1]/Totals[1]")
+# an alternative item does not count
+case("GAEB-BR-SUM-003", "valid-2.x86",
+     derive(bill(*B2, total="25.00"), "84", "86")
+     .replace('<Item ID="I2" RNoPart="0020">', '<Item ID="I2" RNoPart="0020"><ALNGroupNo>1</ALNGroupNo>'
+              '<ALNSerNo>1</ALNSerNo>'))
+# an item that does not apply does not count
+case("GAEB-BR-SUM-003", "valid-3.x86",
+     derive(bill(*B2, total="25.00"), "84", "86")
+     .replace('<Item ID="I2" RNoPart="0020">', '<Item ID="I2" RNoPart="0020"><NotAppl>Yes</NotAppl>'))
+# Accepted: no rule for the totals, the category is not computed
+case("GAEB-BR-SUM-003", "valid-4.x86",
+     derive(bill(*B2, total="25.00"), "84", "86")
+     .replace('<Item ID="I2" RNoPart="0020">', '<Item ID="I2" RNoPart="0020"><ALNGroupNo>1</ALNGroupNo>'
+              '<ALNSerNo>1</ALNSerNo><Accepted>AltAccept</Accepted>'))
+
+# PAIR-84-86 (warnings): the award against the bid
+BID = bill(*B2)
+AWARD = derive(BID, "84", "86")
+case("GAEB-BR-PAIR-84-86-001", "pair-valid-1", (BID, AWARD))
+case("GAEB-BR-PAIR-84-86-001", "pair-invalid-1", (BID, derive(bill(B2[0], total="25.00"), "84", "86")), 1, I2)
+case("GAEB-BR-PAIR-84-86-002", "pair-valid-1", (BID, AWARD))
+case("GAEB-BR-PAIR-84-86-002", "pair-invalid-1",
+     (BID, derive(bill(item84("I1", "0010", qty="10", up="2.40", it="24.00"), B2[1], total="28.00"), "84", "86")),
+     1, I1)
+case("GAEB-BR-PAIR-84-86-003", "pair-valid-1", (BID, AWARD))
+case("GAEB-BR-PAIR-84-86-003", "pair-invalid-1",
+     (BID, derive(bill(item84("I1", "0010", qty="12", up="2.50", it="30.00"), B2[1], total="34.00"), "84", "86")),
+     1, I1)
+
+
+def pair_names(rule):
+    """File names of the two documents of a pair case."""
+    if "-PAIR-84-86-" in rule:
+        return "first.x84", "second.x86"
+    return "first.x83", "second.x84"
+
+
 def files():
     result = {}
     for rule, cases in sorted(CASES.items()):
         expected = []
         for name, content, count, path in cases:
             if isinstance(content, tuple):
-                result[os.path.join(rule, name, "first.x83")] = content[0]
-                result[os.path.join(rule, name, "second.x84")] = content[1]
+                first, second = pair_names(rule)
+                result[os.path.join(rule, name, first)] = content[0]
+                result[os.path.join(rule, name, second)] = content[1]
             else:
                 result[os.path.join(rule, name)] = content
             if count is not None:
@@ -495,6 +652,11 @@ def files():
 def main(argv):
     check = "--check" in argv[1:]
     status = 0
+    failed = add_derived()
+    if failed:
+        for f in failed:
+            sys.stderr.write("make-rule-cases: derived case not schema-valid: %s" % f + chr(10))
+        return 1
     for rel, content in sorted(files().items()):
         path = os.path.join(OUT, rel)
         data = content.encode("ascii")

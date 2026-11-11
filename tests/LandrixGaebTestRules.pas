@@ -31,7 +31,7 @@ implementation
 uses
   SysUtils,
   Classes,
-
+  LandrixXmlBase,
   LandrixGaebTypes,
   LandrixGaebDiagnostics,
   LandrixGaebDetect,
@@ -138,23 +138,39 @@ begin
   end;
 end;
 
+{ The file of a pair case that starts with APrefix ('first.', 'second.'). }
+function PairFile(const ADir, APrefix: string): string;
+var
+  SR: TSearchRec;
+begin
+  Result := '';
+  if FindFirst(ADir + APrefix + '*', faAnyFile, SR) = 0 then
+  try
+    Result := ADir + SR.Name;
+  finally
+    FindClose(SR);
+  end;
+end;
+
 procedure RunPair(const ARuleId, ADir, AName: string; AExpected: Integer; const APath: string);
 var
   A, B: TLandrixGaebXmlGAEB;
   TA, TB: TLandrixGaebTarget;
   Diags: TLandrixGaebDiagnostics;
   N: Integer;
-  First: string;
+  First, FirstFile, SecondFile: string;
 begin
   Diags := TLandrixGaebDiagnostics.Create;
   A := nil;
   B := nil;
   try
-    A := ReadCase(ADir + AName + PathDelim + 'first.x83', TA);
-    B := ReadCase(ADir + AName + PathDelim + 'second.x84', TB);
+    FirstFile := PairFile(ADir + AName + PathDelim, 'first.');
+    SecondFile := PairFile(ADir + AName + PathDelim, 'second.');
+    A := ReadCase(FirstFile, TA);
+    B := ReadCase(SecondFile, TB);
     LandrixGaebCheckPair(A, TA, B, TB, Diags);
-    CheckNoFileValues(ReadFileBytes(ADir + AName + PathDelim + 'first.x83'), Diags, ARuleId + '/' + AName);
-    CheckNoFileValues(ReadFileBytes(ADir + AName + PathDelim + 'second.x84'), Diags, ARuleId + '/' + AName);
+    CheckNoFileValues(ReadFileBytes(FirstFile), Diags, ARuleId + '/' + AName);
+    CheckNoFileValues(ReadFileBytes(SecondFile), Diags, ARuleId + '/' + AName);
     N := CountRule(Diags, ARuleId, First);
     CheckEquals(AExpected, N, ARuleId + '/' + AName + ': ' + Diags.ToText);
     if AExpected > 0 then
@@ -166,20 +182,45 @@ begin
   end;
 end;
 
+{ The phase a case belongs to: for a pair the phase of the rule (that of
+  the second document), else the extension of the file.
+  DE: Phase eines Falls: bei einem Paar die Phase der Regel (die des
+  zweiten Dokuments), sonst die Dateiendung. }
+function CasePhase(const AName: string; APhases: TLandrixGaebPhases; out APhase: TLandrixGaebPhase): Boolean;
+var
+  P: TLandrixGaebPhase;
+begin
+  Result := False;
+  APhase := gpUnknown;
+  for P := Low(TLandrixGaebPhase) to High(TLandrixGaebPhase) do
+    if (P in APhases) and ((Pos('pair-', AName) = 1) or
+      (Copy(AName, Length(AName) - 1, 2) = LandrixXmlUtf8ToString(LandrixGaebPhaseToDP(P)))) then
+    begin
+      APhase := P;
+      Result := True;
+    end;
+end;
+
 procedure TestCases;
 var
-  I, J, Count, Valid, Invalid: Integer;
-  Dir, Name, Rest, Path: string;
+  I, J, Count: Integer;
+  Dir, Name, Rest, Path, Rule: string;
   Expected: TStringList;
   SR: TSearchRec;
+  P: TLandrixGaebPhase;
+  Valid, Invalid: array[TLandrixGaebPhase] of Integer;
 begin
   Expected := TStringList.Create;
   try
     for I := 0 to LandrixGaebRuleCount - 1 do
     begin
-      Dir := RulesDir + LandrixGaebRuleCatalog[I].ID + PathDelim;
-      Valid := 0;
-      Invalid := 0;
+      Rule := LandrixGaebRuleCatalog[I].ID;
+      Dir := RulesDir + Rule + PathDelim;
+      for P := Low(TLandrixGaebPhase) to High(TLandrixGaebPhase) do
+      begin
+        Valid[P] := 0;
+        Invalid[P] := 0;
+      end;
       Expected.Clear;
       if FileExists(Dir + 'expected.txt') then
         Expected.LoadFromFile(Dir + 'expected.txt');
@@ -198,13 +239,15 @@ begin
               Count := StrToInt(Copy(Rest, 1, Pos(' ', Rest) - 1));
               Path := Copy(Rest, Pos(' ', Rest) + 1, MaxInt);
             end;
+          Check(CasePhase(Name, LandrixGaebRuleCatalog[I].Phases, P), Rule + '/' + Name +
+            ' belongs to a phase of the rule');
           if (Pos('invalid-', Name) > 0) then
           begin
-            Check(Count > 0, LandrixGaebRuleCatalog[I].ID + '/' + Name + ' listed in expected.txt');
-            Inc(Invalid);
+            Check(Count > 0, Rule + '/' + Name + ' listed in expected.txt');
+            Inc(Invalid[P]);
           end
           else
-            Inc(Valid);
+            Inc(Valid[P]);
           if Pos('pair-', Name) = 1 then
             RunPair(LandrixGaebRuleCatalog[I].ID, Dir, Name, Count, Path)
           else
@@ -213,9 +256,14 @@ begin
       finally
         FindClose(SR);
       end;
-      Check(Valid > 0, LandrixGaebRuleCatalog[I].ID + ' has a valid case');
-      Check((Invalid > 0) or IsSchemaGuarded(LandrixGaebRuleCatalog[I].ID),
-        LandrixGaebRuleCatalog[I].ID + ' has an invalid case');
+      { every phase of the rule has a valid and an invalid case }
+      for P := Low(TLandrixGaebPhase) to High(TLandrixGaebPhase) do
+        if P in LandrixGaebRuleCatalog[I].Phases then
+        begin
+          Check(Valid[P] > 0, Rule + ' has a valid case for X' + LandrixXmlUtf8ToString(LandrixGaebPhaseToDP(P)));
+          Check((Invalid[P] > 0) or IsSchemaGuarded(Rule),
+            Rule + ' has an invalid case for X' + LandrixXmlUtf8ToString(LandrixGaebPhaseToDP(P)));
+        end;
     end;
   finally
     Expected.Free;
@@ -223,29 +271,38 @@ begin
 end;
 
 { The schema keeps QtyTBD apart from Qty and QtySplit; a model can still
-  hold them together. }
+  hold them together. QTY-001 in every phase of the rule, QTY-003 only in
+  X83. }
 procedure TestSchemaGuarded;
+const
+  Exts: array[0..2] of string = ('x81', 'x83', 'x86');
 var
   G: TLandrixGaebXmlGAEB;
   Target: TLandrixGaebTarget;
   Diags: TLandrixGaebDiagnostics;
   Item: TLandrixGaebXmlItem;
   Path: string;
+  I: Integer;
 begin
-  Diags := TLandrixGaebDiagnostics.Create;
-  G := ReadCase(RulesDir + 'GAEB-BR-QTY-001' + PathDelim + 'valid-1.x83', Target);
-  try
-    Item := (G.Award.BoQ.BoQBody.Children[0] as TLandrixGaebXmlBoQCtgy).BoQBody.Itemlist.Children[0]
-      as TLandrixGaebXmlItem;
-    Check(Item.QtyTBD = 'Yes', 'case holds QtyTBD');
-    Item.Qty.SetValue(5, 0);
-    Item.QtySplit.Add.Qty.SetValue(5, 0);
-    LandrixGaebCheckRules(G, Target, Diags);
-    CheckEquals(1, CountRule(Diags, 'GAEB-BR-QTY-001', Path), 'QtySplit with QtyTBD: ' + Diags.ToText);
-    CheckEquals(1, CountRule(Diags, 'GAEB-BR-QTY-003', Path), 'Qty with QtyTBD');
-  finally
-    G.Free;
-    Diags.Free;
+  for I := 0 to High(Exts) do
+  begin
+    Diags := TLandrixGaebDiagnostics.Create;
+    G := ReadCase(RulesDir + 'GAEB-BR-QTY-001' + PathDelim + 'valid-1.' + Exts[I], Target);
+    try
+      Item := (G.Award.BoQ.BoQBody.Children[0] as TLandrixGaebXmlBoQCtgy).BoQBody.Itemlist.Children[0]
+        as TLandrixGaebXmlItem;
+      Check(Item.QtyTBD = 'Yes', Exts[I] + ' case holds QtyTBD');
+      Item.Qty.SetValue(5, 0);
+      Item.QtySplit.Add.Qty.SetValue(5, 0);
+      LandrixGaebCheckRules(G, Target, Diags);
+      CheckEquals(1, CountRule(Diags, 'GAEB-BR-QTY-001', Path), Exts[I] + ': QtySplit with QtyTBD: ' +
+        Diags.ToText);
+      CheckEquals(Ord(Target.Phase = gp83), CountRule(Diags, 'GAEB-BR-QTY-003', Path),
+        Exts[I] + ': Qty with QtyTBD (X83 only)');
+    finally
+      G.Free;
+      Diags.Free;
+    end;
   end;
 end;
 
@@ -265,7 +322,7 @@ begin
         Raised := True;
     end;
     Check(Raised, 'no pair rules for 84 -> 83');
-    Check(LandrixGaebCheckRules(G, LandrixGaebTarget(gv33, ge2021_05, gp86), nil),
+    Check(LandrixGaebCheckRules(G, LandrixGaebTarget(gv33, ge2021_05, gp82), nil),
       'phase without rules');
   finally
     G.Free;
@@ -370,23 +427,55 @@ begin
   end;
 end;
 
-{ X83 and X84 in the same folder whose items match (no finding of
-  PAIR-83-84-001/002) are checked as pair. Such files need not be
-  counterparts (a later version of the request has the same OZ), so the
-  findings are only counted and printed, never asserted. }
-procedure PairDir(const Dir: string; var APairs: Integer; ARules: TStringList);
+{ Checks every file of AFirst against every file of ASecond as pair; a pair
+  whose items match (no finding of AMatchA/AMatchB) counts, its findings go
+  to ARules. }
+procedure TryPairs(AFirst, ASecond: TStringList; AFirstPhase, ASecondPhase: TLandrixGaebPhase;
+  const AMatchA, AMatchB: string; var APairs: Integer; ARules: TStringList);
 var
-  SR: TSearchRec;
-  X83, X84: TStringList;
   I, J: Integer;
   Det: TLandrixGaebDetection;
   A, B: TLandrixGaebXmlGAEB;
   Diags: TLandrixGaebDiagnostics;
   K: TLandrixGaebListIndex;
-  Matched: Boolean;
+begin
+  for I := 0 to AFirst.Count - 1 do
+    for J := 0 to ASecond.Count - 1 do
+    begin
+      Diags := TLandrixGaebDiagnostics.Create;
+      A := LandrixGaebXmlReadFile(AFirst[I], nil, 0, Det);
+      B := nil;
+      try
+        B := LandrixGaebXmlReadFile(ASecond[J], nil, 0, Det);
+        LandrixGaebCheckPair(A, LandrixGaebTarget(gv33, ge2021_05, AFirstPhase), B,
+          LandrixGaebTarget(gv33, ge2021_05, ASecondPhase), Diags);
+        if (Diags.CountOf(AMatchA) = 0) and (Diags.CountOf(AMatchB) = 0) then
+        begin
+          Inc(APairs);
+          for K := 0 to Diags.Count - 1 do
+            ARules.Add(Diags[K].RuleId);
+        end;
+      finally
+        B.Free;
+        A.Free;
+        Diags.Free;
+      end;
+    end;
+end;
+
+{ X83/X84 and X84/X86 in the same folder whose items match are checked as
+  pair. Such files need not be counterparts (a later version of the request
+  has the same OZ), so the findings are only counted and printed, never
+  asserted. }
+procedure PairDir(const Dir: string; var APairs8384, APairs8486: Integer; ARules: TStringList);
+var
+  SR: TSearchRec;
+  X83, X84, X86: TStringList;
+  Det: TLandrixGaebDetection;
 begin
   X83 := TStringList.Create;
   X84 := TStringList.Create;
+  X86 := TStringList.Create;
   try
     if FindFirst(Dir + '*', faAnyFile, SR) = 0 then
     try
@@ -395,7 +484,7 @@ begin
           Continue;
         if (SR.Attr and faDirectory) <> 0 then
         begin
-          PairDir(Dir + SR.Name + PathDelim, APairs, ARules);
+          PairDir(Dir + SR.Name + PathDelim, APairs8384, APairs8486, ARules);
           Continue;
         end;
         Det := LandrixGaebDetectFile(Dir + SR.Name, nil, 0);
@@ -405,36 +494,17 @@ begin
           if Det.Target.Phase = gp83 then
             X83.Add(Dir + SR.Name)
           else if Det.Target.Phase = gp84 then
-            X84.Add(Dir + SR.Name);
+            X84.Add(Dir + SR.Name)
+          else if Det.Target.Phase = gp86 then
+            X86.Add(Dir + SR.Name);
       until FindNext(SR) <> 0;
     finally
       FindClose(SR);
     end;
-    for I := 0 to X83.Count - 1 do
-      for J := 0 to X84.Count - 1 do
-      begin
-        Diags := TLandrixGaebDiagnostics.Create;
-        A := LandrixGaebXmlReadFile(X83[I], nil, 0, Det);
-        B := nil;
-        try
-          B := LandrixGaebXmlReadFile(X84[J], nil, 0, Det);
-          LandrixGaebCheckPair(A, LandrixGaebTarget(gv33, ge2021_05, gp83), B,
-            LandrixGaebTarget(gv33, ge2021_05, gp84), Diags);
-          Matched := (Diags.CountOf('GAEB-BR-PAIR-83-84-001') = 0) and
-            (Diags.CountOf('GAEB-BR-PAIR-83-84-002') = 0);
-          if Matched then
-          begin
-            Inc(APairs);
-            for K := 0 to Diags.Count - 1 do
-              ARules.Add(Diags[K].RuleId);
-          end;
-        finally
-          B.Free;
-          A.Free;
-          Diags.Free;
-        end;
-      end;
+    TryPairs(X83, X84, gp83, gp84, 'GAEB-BR-PAIR-83-84-001', 'GAEB-BR-PAIR-83-84-002', APairs8384, ARules);
+    TryPairs(X84, X86, gp84, gp86, 'GAEB-BR-PAIR-84-86-001', 'GAEB-BR-PAIR-84-86-001', APairs8486, ARules);
   finally
+    X86.Free;
     X84.Free;
     X83.Free;
   end;
@@ -443,7 +513,7 @@ end;
 procedure TestLocalPairs;
 var
   Local, Summary: string;
-  Pairs, I, N: Integer;
+  Pairs8384, Pairs8486, I, N: Integer;
   Rules: TStringList;
 begin
   Local := RepositoryRoot + 'tests' + PathDelim + 'data' + PathDelim + 'local' + PathDelim;
@@ -452,12 +522,13 @@ begin
     Skip('tests/data/local not present');
     Exit;
   end;
-  Pairs := 0;
+  Pairs8384 := 0;
+  Pairs8486 := 0;
   Rules := TStringList.Create;
   try
     Rules.Sorted := True;
     Rules.Duplicates := dupAccept;
-    PairDir(Local, Pairs, Rules);
+    PairDir(Local, Pairs8384, Pairs8486, Rules);
     Summary := '';
     I := 0;
     while I < Rules.Count do
@@ -468,7 +539,8 @@ begin
       Summary := Summary + ' ' + Rules[I] + 'x' + IntToStr(N);
       Inc(I, N);
     end;
-    WriteLn('  Local.Pairs: ', Pairs, ' matching X83/X84 pair(s),', Summary);
+    WriteLn('  Local.Pairs: ', Pairs8384, ' matching X83/X84 pair(s), ', Pairs8486, ' matching X84/X86 pair(s),',
+      Summary);
   finally
     Rules.Free;
   end;
