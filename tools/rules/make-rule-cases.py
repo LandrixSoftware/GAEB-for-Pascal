@@ -158,7 +158,7 @@ def upcomps(n, labels):
 # ---- X84 ----
 
 def item84(id_, rno, up="10.00", it=None, qty=None, comps=(), disc=None, notoffered=False,
-           complements=None):
+           complements=None, sub_up=None, sub_comps=()):
     s = '<Item ID="%s" RNoPart="%s">' % (id_, rno)
     if notoffered:
         s += "<NotOffered>Yes</NotOffered>"
@@ -178,6 +178,11 @@ def item84(id_, rno, up="10.00", it=None, qty=None, comps=(), disc=None, notoffe
             s += ('<TextComplement MarkLbl="%s" Kind="Bidder"><ComplBody><p><span>Erzeugnis X</span></p>'
                   '</ComplBody></TextComplement>' % n)
         s += "</DetailTxt></CompleteText></Description>"
+    if sub_up is not None:
+        s += "<SubDescr><SubDNo>1</SubDNo><UP>%s</UP>" % sub_up
+        for i, c in enumerate(sub_comps):
+            s += "<UPComp%d>%s</UPComp%d>" % (i + 1, c, i + 1)
+        s += "</SubDescr>"
     return s + "</Item>"
 
 
@@ -413,6 +418,13 @@ case("GAEB-BR-PAIR-83-84-003", "pair-valid-2",
 case("GAEB-BR-PAIR-83-84-003", "pair-invalid-1",
      (REQ.replace("<NamePrj>Projekt</NamePrj>", "<NamePrj>Projekt</NamePrj><UPFracDig>2</UPFracDig>"),
       bid(i1=item84("I1", "0010", up="2.505", it="25.05", complements=(1,)))), 1, I1)
+# unit prices of sub descriptions count as well
+case("GAEB-BR-PAIR-83-84-003", "pair-valid-3",
+     (REQ.replace("<NamePrj>Projekt</NamePrj>", "<NamePrj>Projekt</NamePrj><UPFracDig>2</UPFracDig>"),
+      bid(i1=item84("I1", "0010", up="2.50", it="25.00", complements=(1,), sub_up="1.50"))))
+case("GAEB-BR-PAIR-83-84-003", "pair-invalid-2",
+     (REQ.replace("<NamePrj>Projekt</NamePrj>", "<NamePrj>Projekt</NamePrj><UPFracDig>2</UPFracDig>"),
+      bid(i1=item84("I1", "0010", up="2.50", it="25.00", complements=(1,), sub_up="1.505"))), 1, I1 + "/SubDescr[1]")
 case("GAEB-BR-PAIR-83-84-004", "pair-valid-1", (REQ, bid()))
 # a lump sum item without quantity counts with quantity 1
 REQ_LUMP = std83(item83("I1", "0010", qty=None, lump=True))
@@ -428,6 +440,16 @@ case("GAEB-BR-PAIR-83-84-005", "pair-invalid-1",
      (REQ.replace("<OutlCompl>AllTxt</OutlCompl>" + bkdn(), "<OutlCompl>AllTxt</OutlCompl>" + bkdn() + upcomps(2, 2)),
       bid(i1=item84("I1", "0010", up="2.50", comps=("1.00", "1.00", "0.50"), it="25.00", complements=(1,)))),
      1, I1)
+# components of sub descriptions count as well
+case("GAEB-BR-PAIR-83-84-005", "pair-valid-2",
+     (REQ.replace("<OutlCompl>AllTxt</OutlCompl>" + bkdn(), "<OutlCompl>AllTxt</OutlCompl>" + bkdn() + upcomps(2, 2)),
+      bid(i1=item84("I1", "0010", up="2.50", comps=("1.50", "1.00"), it="25.00", complements=(1,),
+                    sub_up="1.50", sub_comps=("1.00", "0.50")))))
+case("GAEB-BR-PAIR-83-84-005", "pair-invalid-2",
+     (REQ.replace("<OutlCompl>AllTxt</OutlCompl>" + bkdn(), "<OutlCompl>AllTxt</OutlCompl>" + bkdn() + upcomps(2, 2)),
+      bid(i1=item84("I1", "0010", up="2.50", comps=("1.50", "1.00"), it="25.00", complements=(1,),
+                    sub_up="1.50", sub_comps=("1.00", "0.25", "0.25")))),
+     1, I1 + "/SubDescr[1]")
 case("GAEB-BR-PAIR-83-84-006", "pair-valid-1", (REQ, bid()))
 case("GAEB-BR-PAIR-83-84-006", "pair-invalid-1",
      (REQ, bid(i1=item84("I1", "0010", qty="10", up="2.50", it="25.00", complements=(1,)))), 1, I1)

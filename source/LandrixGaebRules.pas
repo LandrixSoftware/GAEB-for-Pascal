@@ -1614,19 +1614,52 @@ var
     prices to the three digits of the schema type).
     DE: Es zaehlen werttragende Stellen: '12.500' hat zwei (der Schreiber
     fuellt Einheitspreise auf die drei Stellen des Schematyps auf). }
-  procedure CheckDigits(const AValue: TLandrixGaebDecimal; ANode: TRuleNode);
+  procedure CheckDigits(const AValue: TLandrixGaebDecimal; const APath: TLandrixXmlUtf8);
   var
     Text: TLandrixXmlUtf8;
   begin
     if (Digits >= 0) and AValue.HasValue and not AValue.TryTextWithScale(Digits, Text) then
-      FSecond.Report('GAEB-BR-PAIR-83-84-003', ANode.Path, 'unit price with more significant fraction digits than UPFracDig');
+      FSecond.Report('GAEB-BR-PAIR-83-84-003', APath, 'unit price with more significant fraction digits than UPFracDig');
   end;
 
-  procedure CheckComp(const AValue: TLandrixGaebDecimal; ANumber: Integer; ANode: TRuleNode);
+  procedure CheckComp(const AValue: TLandrixGaebDecimal; ANumber: Integer; const APath: TLandrixXmlUtf8);
   begin
-    CheckDigits(AValue, ANode);
+    CheckDigits(AValue, APath);
     if (NoComps >= 0) and (ANumber > NoComps) and AValue.HasValue then
-      FSecond.Report('GAEB-BR-PAIR-83-84-005', ANode.Path, 'unit price component beyond NoUPComps of the request');
+      FSecond.Report('GAEB-BR-PAIR-83-84-005', APath, 'unit price component beyond NoUPComps of the request');
+  end;
+
+  { PAIR-83-84-003 and -005 for the prices of the item and of its sub
+    descriptions, which carry the same elements.
+    DE: PAIR-83-84-003 und -005 fuer die Preise der Position und ihrer
+    Unterbeschreibungen, die dieselben Elemente tragen. }
+  procedure CheckPrices(AItem: TLandrixGaebXmlItem; const APath: TLandrixXmlUtf8);
+  var
+    K: TLandrixGaebListIndex;
+    Sub: TLandrixGaebXmlSubDescr;
+    SubPath: TLandrixXmlUtf8;
+  begin
+    CheckDigits(AItem.UP, APath);
+    CheckComp(AItem.UPComp1, 1, APath);
+    CheckComp(AItem.UPComp2, 2, APath);
+    CheckComp(AItem.UPComp3, 3, APath);
+    CheckComp(AItem.UPComp4, 4, APath);
+    CheckComp(AItem.UPComp5, 5, APath);
+    CheckComp(AItem.UPComp6, 6, APath);
+    if not AItem.HasSubDescr then
+      Exit;
+    for K := 0 to AItem.SubDescr.Count - 1 do
+    begin
+      Sub := AItem.SubDescr[K];
+      SubPath := APath + '/SubDescr[' + IntToUtf8(Integer(K) + 1) + ']';
+      CheckDigits(Sub.UP, SubPath);
+      CheckComp(Sub.UPComp1, 1, SubPath);
+      CheckComp(Sub.UPComp2, 2, SubPath);
+      CheckComp(Sub.UPComp3, 3, SubPath);
+      CheckComp(Sub.UPComp4, 4, SubPath);
+      CheckComp(Sub.UPComp5, 5, SubPath);
+      CheckComp(Sub.UPComp6, 6, SubPath);
+    end;
   end;
 
 begin
@@ -1676,13 +1709,7 @@ begin
         Continue;
       A := TLandrixGaebXmlItem(M.Node);
       B := TLandrixGaebXmlItem(R.Node);
-      CheckDigits(B.UP, R);
-      CheckComp(B.UPComp1, 1, R);
-      CheckComp(B.UPComp2, 2, R);
-      CheckComp(B.UPComp3, 3, R);
-      CheckComp(B.UPComp4, 4, R);
-      CheckComp(B.UPComp5, 5, R);
-      CheckComp(B.UPComp6, 6, R);
+      CheckPrices(B, R.Path);
       if B.Qty.HasValue and (A.QtyTBD <> 'Yes') then
         FSecond.Report('GAEB-BR-PAIR-83-84-006', R.Path, 'quantity for an item without QtyTBD in the request');
       { alternatives and eventual items without total carry an IT that is
