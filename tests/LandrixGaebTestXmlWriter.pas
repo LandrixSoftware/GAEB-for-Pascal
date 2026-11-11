@@ -227,13 +227,13 @@ begin
       'loss reported with element path and index');
     Raised := False;
     try
-      LandrixGaebXmlWriteUtf8(G, LandrixGaebTarget(gv33, ge2021_05, gp82),
+      LandrixGaebXmlWriteUtf8(G, LandrixGaebTarget(gv33, ge2021_05, gp89),
         LandrixGaebXmlDefaultWriteOptions, nil);
     except
       on ELandrixGaebError do
         Raised := True;
     end;
-    Check(Raised, 'X82 has no profile yet');
+    Check(Raised, 'X89 has no profile');
   finally
     G.Free;
     Diags.Free;
@@ -311,7 +311,7 @@ var
   Out1, Out2: TLandrixXmlUtf8;
 begin
   Det := LandrixGaebDetectFile(FileName, nil, 0);
-  if (Det.Format <> gfXml) or not Det.Accepted or not (Det.Target.Phase in [gp81, gp83, gp84, gp86]) or
+  if (Det.Format <> gfXml) or not Det.Accepted or not (Det.Target.Phase in [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]) or
     not ((Det.Target.Version = gv32) or (Det.Target.Version = gv33)) or
     not LandrixGaebTargetIsSupported(Det.Target, True) then
     Exit;

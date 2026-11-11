@@ -77,6 +77,8 @@ type
   TLandrixGaebXmlComplBodyInt = class;
   TLandrixGaebXmlCompleteText = class;
   TLandrixGaebXmlContrValCode = class;
+  TLandrixGaebXmlCostApproach = class;
+  TLandrixGaebXmlCostType = class;
   TLandrixGaebXmlCPVCode = class;
   TLandrixGaebXmlCtlg = class;
   TLandrixGaebXmlCtlgAssign = class;
@@ -253,6 +255,36 @@ type
     function IsEmpty: Boolean;
     { The items. DE: Die Eintraege. }
     property Items[Index: TLandrixGaebListIndex]: TLandrixGaebXmlCOInfo read GetItem; default;
+  end;
+
+  { List of TLandrixGaebXmlCostApproach (owns its items). DE: Liste von TLandrixGaebXmlCostApproach
+    (besitzt ihre Eintraege). }
+  TLandrixGaebXmlCostApproachList = class(TObjectList)
+  protected
+    function GetItem(Index: TLandrixGaebListIndex): TLandrixGaebXmlCostApproach;
+  public
+    { Appends a new item and returns it. DE: Haengt einen neuen Eintrag an
+      und liefert ihn. }
+    function Add: TLandrixGaebXmlCostApproach;
+    { True if no item is present. DE: True, wenn kein Eintrag vorhanden ist. }
+    function IsEmpty: Boolean;
+    { The items. DE: Die Eintraege. }
+    property Items[Index: TLandrixGaebListIndex]: TLandrixGaebXmlCostApproach read GetItem; default;
+  end;
+
+  { List of TLandrixGaebXmlCostType (owns its items). DE: Liste von TLandrixGaebXmlCostType
+    (besitzt ihre Eintraege). }
+  TLandrixGaebXmlCostTypeList = class(TObjectList)
+  protected
+    function GetItem(Index: TLandrixGaebListIndex): TLandrixGaebXmlCostType;
+  public
+    { Appends a new item and returns it. DE: Haengt einen neuen Eintrag an
+      und liefert ihn. }
+    function Add: TLandrixGaebXmlCostType;
+    { True if no item is present. DE: True, wenn kein Eintrag vorhanden ist. }
+    function IsEmpty: Boolean;
+    { The items. DE: Die Eintraege. }
+    property Items[Index: TLandrixGaebListIndex]: TLandrixGaebXmlCostType read GetItem; default;
   end;
 
   { List of TLandrixGaebXmlCPVCode (owns its items). DE: Liste von TLandrixGaebXmlCPVCode (besitzt
@@ -1050,6 +1082,7 @@ type
     FCtlgAssign: TLandrixGaebXmlCtlgAssignList;
     FTotals: TLandrixGaebXmlTotals;
     FCtlg: TLandrixGaebXmlCtlgList;
+    FCostType: TLandrixGaebXmlCostTypeList;
     FQtyDetermInfo: TLandrixGaebXmlQtyDetermInfo;
     function GetCPVCode: TLandrixGaebXmlCPVCodeList;
     function GetBoQBkdn: TLandrixGaebXmlBoQBkdnList;
@@ -1062,6 +1095,7 @@ type
     function GetCtlgAssign: TLandrixGaebXmlCtlgAssignList;
     function GetTotals: TLandrixGaebXmlTotals;
     function GetCtlg: TLandrixGaebXmlCtlgList;
+    function GetCostType: TLandrixGaebXmlCostTypeList;
     function GetQtyDetermInfo: TLandrixGaebXmlQtyDetermInfo;
   public
     { Element Name (tgNormalizedString20). DE: Element Name (tgNormalizedString20). }
@@ -1149,6 +1183,12 @@ type
     { True if Ctlg is present; creates nothing. DE: True, wenn Ctlg vorhanden ist; legt nichts an.
       }
     function HasCtlg: Boolean;
+    { Element CostType (tgCostType), repeated; created on first access. DE: Element CostType
+      (tgCostType), wiederholt; beim ersten Zugriff angelegt. }
+    property CostType: TLandrixGaebXmlCostTypeList read GetCostType;
+    { True if CostType is present; creates nothing. DE: True, wenn CostType vorhanden ist; legt
+      nichts an. }
+    function HasCostType: Boolean;
     { Element QtyDetermInfo (tgQtyDetermInfo); created on first access, never nil. DE: Element
       QtyDetermInfo (tgQtyDetermInfo); beim ersten Zugriff angelegt, nie nil. }
     property QtyDetermInfo: TLandrixGaebXmlQtyDetermInfo read GetQtyDetermInfo;
@@ -1348,6 +1388,50 @@ type
     destructor Destroy; override;
     function IsEmpty: Boolean; override;
     procedure Clear; override;
+  end;
+
+  { Schema type tgCostApproach. DE: Schematyp tgCostApproach. }
+  TLandrixGaebXmlCostApproach = class(TLandrixGaebXmlNode)
+  public
+    { Element CostApproachQty (tgDecimal_13_3). DE: Element CostApproachQty (tgDecimal_13_3). }
+    CostApproachQty: TLandrixGaebDecimal;
+    { Element CostApproachQU (tgNormalizedString4). DE: Element CostApproachQU
+      (tgNormalizedString4). }
+    CostApproachQU: TLandrixGaebString;
+    { Element Performance (tgDecimal_13_3). DE: Element Performance (tgDecimal_13_3). }
+    Performance: TLandrixGaebDecimal;
+    { Element Value (tgDecimal_13_3). DE: Element Value (tgDecimal_13_3). }
+    Value: TLandrixGaebDecimal;
+    { Attribute Key (tgNormalizedString, required). DE: Attribut Key (tgNormalizedString, Pflicht).
+      }
+    Key: TLandrixGaebString;
+    destructor Destroy; override;
+    function IsEmpty: Boolean; override;
+    procedure Clear; override;
+  end;
+
+  { Schema type tgCostType. DE: Schematyp tgCostType. }
+  TLandrixGaebXmlCostType = class(TLandrixGaebXmlNode)
+  private
+    FCostDescription: TLandrixGaebXmlPMLText;
+    function GetCostDescription: TLandrixGaebXmlPMLText;
+  public
+    { Element CostTypeUnit (tgNormalizedString4). DE: Element CostTypeUnit (tgNormalizedString4). }
+    CostTypeUnit: TLandrixGaebString;
+    { Element Markup (tgDecimal_9_6). DE: Element Markup (tgDecimal_9_6). }
+    Markup: TLandrixGaebDecimal;
+    { Attribute Key (tgNormalizedString, required). DE: Attribut Key (tgNormalizedString, Pflicht).
+      }
+    Key: TLandrixGaebString;
+    destructor Destroy; override;
+    function IsEmpty: Boolean; override;
+    procedure Clear; override;
+    { Element CostDescription (tgpMLText); created on first access, never nil. DE: Element
+      CostDescription (tgpMLText); beim ersten Zugriff angelegt, nie nil. }
+    property CostDescription: TLandrixGaebXmlPMLText read GetCostDescription;
+    { True if CostDescription is present; creates nothing. DE: True, wenn CostDescription vorhanden
+      ist; legt nichts an. }
+    function HasCostDescription: Boolean;
   end;
 
   { Schema type tgCPVCode. DE: Schematyp tgCPVCode. }
@@ -1799,6 +1883,7 @@ type
     FBidComm: TLandrixGaebXmlMLTextList;
     FSubDescr: TLandrixGaebXmlSubDescrList;
     FProduct: TLandrixGaebXmlProduct;
+    FCostApproach: TLandrixGaebXmlCostApproachList;
     FQtyDeterm: TLandrixGaebXmlQtyDeterm;
     function GetRefRNo: TLandrixGaebXmlRefItem;
     function GetRefPerfNo: TLandrixGaebXmlRefItem;
@@ -1809,6 +1894,7 @@ type
     function GetBidComm: TLandrixGaebXmlMLTextList;
     function GetSubDescr: TLandrixGaebXmlSubDescrList;
     function GetProduct: TLandrixGaebXmlProduct;
+    function GetCostApproach: TLandrixGaebXmlCostApproachList;
     function GetQtyDeterm: TLandrixGaebXmlQtyDeterm;
   public
     { Element ALNGroupNo (tgALNGroupNo). DE: Element ALNGroupNo (tgALNGroupNo). }
@@ -1962,6 +2048,12 @@ type
     { True if Product is present; creates nothing. DE: True, wenn Product vorhanden ist; legt
       nichts an. }
     function HasProduct: Boolean;
+    { Element CostApproach (tgCostApproach), repeated; created on first access. DE: Element
+      CostApproach (tgCostApproach), wiederholt; beim ersten Zugriff angelegt. }
+    property CostApproach: TLandrixGaebXmlCostApproachList read GetCostApproach;
+    { True if CostApproach is present; creates nothing. DE: True, wenn CostApproach vorhanden ist;
+      legt nichts an. }
+    function HasCostApproach: Boolean;
     { Element QtyDeterm (tgQtyDeterm); created on first access, never nil. DE: Element QtyDeterm
       (tgQtyDeterm); beim ersten Zugriff angelegt, nie nil. }
     property QtyDeterm: TLandrixGaebXmlQtyDeterm read GetQtyDeterm;
@@ -3820,6 +3912,54 @@ begin
   Result := True;
 end;
 
+{ TLandrixGaebXmlCostApproachList }
+
+function TLandrixGaebXmlCostApproachList.GetItem(Index: TLandrixGaebListIndex): TLandrixGaebXmlCostApproach;
+begin
+  Result := TLandrixGaebXmlCostApproach(inherited Items[Index]);
+end;
+
+function TLandrixGaebXmlCostApproachList.Add: TLandrixGaebXmlCostApproach;
+begin
+  Result := TLandrixGaebXmlCostApproach.Create;
+  inherited Add(Result);
+end;
+
+function TLandrixGaebXmlCostApproachList.IsEmpty: Boolean;
+var
+  I: TLandrixGaebListIndex;
+begin
+  Result := False;
+  for I := 0 to Count - 1 do
+    if Items[I].IsPresent then
+      Exit;
+  Result := True;
+end;
+
+{ TLandrixGaebXmlCostTypeList }
+
+function TLandrixGaebXmlCostTypeList.GetItem(Index: TLandrixGaebListIndex): TLandrixGaebXmlCostType;
+begin
+  Result := TLandrixGaebXmlCostType(inherited Items[Index]);
+end;
+
+function TLandrixGaebXmlCostTypeList.Add: TLandrixGaebXmlCostType;
+begin
+  Result := TLandrixGaebXmlCostType.Create;
+  inherited Add(Result);
+end;
+
+function TLandrixGaebXmlCostTypeList.IsEmpty: Boolean;
+var
+  I: TLandrixGaebListIndex;
+begin
+  Result := False;
+  for I := 0 to Count - 1 do
+    if Items[I].IsPresent then
+      Exit;
+  Result := True;
+end;
+
 { TLandrixGaebXmlCPVCodeList }
 
 function TLandrixGaebXmlCPVCodeList.GetItem(Index: TLandrixGaebListIndex): TLandrixGaebXmlCPVCode;
@@ -5320,6 +5460,18 @@ begin
   Result := (FCtlg <> nil) and not FCtlg.IsEmpty;
 end;
 
+function TLandrixGaebXmlBoQInfo.GetCostType: TLandrixGaebXmlCostTypeList;
+begin
+  if FCostType = nil then
+    FCostType := TLandrixGaebXmlCostTypeList.Create;
+  Result := FCostType;
+end;
+
+function TLandrixGaebXmlBoQInfo.HasCostType: Boolean;
+begin
+  Result := (FCostType <> nil) and not FCostType.IsEmpty;
+end;
+
 function TLandrixGaebXmlBoQInfo.GetQtyDetermInfo: TLandrixGaebXmlQtyDetermInfo;
 begin
   if FQtyDetermInfo = nil then
@@ -5348,6 +5500,7 @@ begin
   FCtlgAssign.Free;
   FTotals.Free;
   FCtlg.Free;
+  FCostType.Free;
   FQtyDetermInfo.Free;
   inherited Destroy;
 end;
@@ -5374,6 +5527,7 @@ begin
     not HasCtlgAssign and
     not HasTotals and
     not HasCtlg and
+    not HasCostType and
     not HasQtyDetermInfo;
 end;
 
@@ -5399,6 +5553,7 @@ begin
   FreeAndNil(FCtlgAssign);
   FreeAndNil(FTotals);
   FreeAndNil(FCtlg);
+  FreeAndNil(FCostType);
   FreeAndNil(FQtyDetermInfo);
 end;
 
@@ -5748,6 +5903,74 @@ begin
   inherited Clear;
   Percent.Clear;
   Number := '';
+end;
+
+{ TLandrixGaebXmlCostApproach }
+
+destructor TLandrixGaebXmlCostApproach.Destroy;
+begin
+  inherited Destroy;
+end;
+
+function TLandrixGaebXmlCostApproach.IsEmpty: Boolean;
+begin
+  Result := inherited IsEmpty and
+    not CostApproachQty.HasValue and
+    (CostApproachQU = '') and
+    not Performance.HasValue and
+    not Value.HasValue and
+    (Key = '');
+end;
+
+procedure TLandrixGaebXmlCostApproach.Clear;
+begin
+  inherited Clear;
+  CostApproachQty.Clear;
+  CostApproachQU := '';
+  Performance.Clear;
+  Value.Clear;
+  Key := '';
+end;
+
+{ TLandrixGaebXmlCostType }
+
+function TLandrixGaebXmlCostType.GetCostDescription: TLandrixGaebXmlPMLText;
+begin
+  if FCostDescription = nil then
+  begin
+    FCostDescription := TLandrixGaebXmlPMLText.Create;
+    FCostDescription.ElementName := 'CostDescription';
+  end;
+  Result := FCostDescription;
+end;
+
+function TLandrixGaebXmlCostType.HasCostDescription: Boolean;
+begin
+  Result := (FCostDescription <> nil) and FCostDescription.IsPresent;
+end;
+
+destructor TLandrixGaebXmlCostType.Destroy;
+begin
+  FCostDescription.Free;
+  inherited Destroy;
+end;
+
+function TLandrixGaebXmlCostType.IsEmpty: Boolean;
+begin
+  Result := inherited IsEmpty and
+    (CostTypeUnit = '') and
+    not Markup.HasValue and
+    (Key = '') and
+    not HasCostDescription;
+end;
+
+procedure TLandrixGaebXmlCostType.Clear;
+begin
+  inherited Clear;
+  CostTypeUnit := '';
+  Markup.Clear;
+  Key := '';
+  FreeAndNil(FCostDescription);
 end;
 
 { TLandrixGaebXmlCPVCode }
@@ -6689,6 +6912,18 @@ begin
   Result := (FProduct <> nil) and FProduct.IsPresent;
 end;
 
+function TLandrixGaebXmlItem.GetCostApproach: TLandrixGaebXmlCostApproachList;
+begin
+  if FCostApproach = nil then
+    FCostApproach := TLandrixGaebXmlCostApproachList.Create;
+  Result := FCostApproach;
+end;
+
+function TLandrixGaebXmlItem.HasCostApproach: Boolean;
+begin
+  Result := (FCostApproach <> nil) and not FCostApproach.IsEmpty;
+end;
+
 function TLandrixGaebXmlItem.GetQtyDeterm: TLandrixGaebXmlQtyDeterm;
 begin
   if FQtyDeterm = nil then
@@ -6715,6 +6950,7 @@ begin
   FBidComm.Free;
   FSubDescr.Free;
   FProduct.Free;
+  FCostApproach.Free;
   FQtyDeterm.Free;
   inherited Destroy;
 end;
@@ -6778,6 +7014,7 @@ begin
     not HasBidComm and
     not HasSubDescr and
     not HasProduct and
+    not HasCostApproach and
     not HasQtyDeterm;
 end;
 
@@ -6840,6 +7077,7 @@ begin
   FreeAndNil(FBidComm);
   FreeAndNil(FSubDescr);
   FreeAndNil(FProduct);
+  FreeAndNil(FCostApproach);
   FreeAndNil(FQtyDeterm);
 end;
 

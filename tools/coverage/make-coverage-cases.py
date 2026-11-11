@@ -40,7 +40,7 @@ SCHEMA_OUT = os.path.join(ROOT, "tools", "schema", "out")
 OUT = os.path.join(ROOT, "tests", "data", "coverage")
 
 CONTEXTS = ["%s-%s" % (e, p) for e in ("3.2-2013-10", "3.3-2019-11", "3.3-2021-05")
-            for p in ("81", "83", "84", "86")]
+            for p in ("80", "81", "82", "83", "84", "85", "86", "87")]
 
 # deepest nesting of elements; below it only required content
 MAX_DEPTH = 24

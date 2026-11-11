@@ -140,6 +140,10 @@ procedure WriteCompleteText(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlCo
   ARow: Integer); forward;
 procedure WriteContrValCode(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlContrValCode; const AName: TLandrixXmlUtf8;
   ARow: Integer); forward;
+procedure WriteCostApproach(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlCostApproach; const AName: TLandrixXmlUtf8;
+  ARow: Integer); forward;
+procedure WriteCostType(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlCostType; const AName: TLandrixXmlUtf8;
+  ARow: Integer); forward;
 procedure WriteCPVCode(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlCPVCode; const AName: TLandrixXmlUtf8;
   ARow: Integer); forward;
 procedure WriteCtlg(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlCtlg; const AName: TLandrixXmlUtf8;
@@ -782,8 +786,12 @@ begin
     for I := 0 to O.Ctlg.Count - 1 do
       if O.Ctlg[I].IsPresent and W.Allowed(ARow + 18, 'Ctlg', False) then
         WriteCtlg(W, O.Ctlg[I], 'Ctlg', W.ChildRow(ARow + 18));
-  if O.HasQtyDetermInfo and W.Allowed(ARow + 19, 'QtyDetermInfo', False) then
-    WriteQtyDetermInfo(W, O.QtyDetermInfo, 'QtyDetermInfo', W.ChildRow(ARow + 19));
+  if O.HasCostType then
+    for I := 0 to O.CostType.Count - 1 do
+      if O.CostType[I].IsPresent and W.Allowed(ARow + 19, 'CostType', False) then
+        WriteCostType(W, O.CostType[I], 'CostType', W.ChildRow(ARow + 19));
+  if O.HasQtyDetermInfo and W.Allowed(ARow + 20, 'QtyDetermInfo', False) then
+    WriteQtyDetermInfo(W, O.QtyDetermInfo, 'QtyDetermInfo', W.ChildRow(ARow + 20));
   W.EndElement;
 end;
 
@@ -959,6 +967,46 @@ begin
     W.ValueText(ARow + 1, 'Number', O.Number)
   else if O.IsMarkedEmpty('Number') then
     W.ValueText(ARow + 1, 'Number', '');
+  W.EndElement;
+end;
+
+procedure WriteCostApproach(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlCostApproach; const AName: TLandrixXmlUtf8;
+  ARow: Integer);
+begin
+  W.StartElement(AName, False);
+  if O.Key <> '' then
+    W.AttrText(ARow + 0, 'Key', O.Key)
+  else if O.IsMarkedEmpty('@Key') then
+    W.AttrText(ARow + 0, 'Key', '');
+  if O.CostApproachQty.HasValue then
+    W.ValueDecimal(ARow + 1, 'CostApproachQty', O.CostApproachQty);
+  if O.CostApproachQU <> '' then
+    W.ValueText(ARow + 2, 'CostApproachQU', O.CostApproachQU)
+  else if O.IsMarkedEmpty('CostApproachQU') then
+    W.ValueText(ARow + 2, 'CostApproachQU', '');
+  if O.Performance.HasValue then
+    W.ValueDecimal(ARow + 3, 'Performance', O.Performance);
+  if O.Value.HasValue then
+    W.ValueDecimal(ARow + 4, 'Value', O.Value);
+  W.EndElement;
+end;
+
+procedure WriteCostType(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlCostType; const AName: TLandrixXmlUtf8;
+  ARow: Integer);
+begin
+  W.StartElement(AName, False);
+  if O.Key <> '' then
+    W.AttrText(ARow + 0, 'Key', O.Key)
+  else if O.IsMarkedEmpty('@Key') then
+    W.AttrText(ARow + 0, 'Key', '');
+  if O.HasCostDescription and W.Allowed(ARow + 1, 'CostDescription', False) then
+    WritePMLText(W, O.CostDescription, 'CostDescription', W.ChildRow(ARow + 1));
+  if O.CostTypeUnit <> '' then
+    W.ValueText(ARow + 2, 'CostTypeUnit', O.CostTypeUnit)
+  else if O.IsMarkedEmpty('CostTypeUnit') then
+    W.ValueText(ARow + 2, 'CostTypeUnit', '');
+  if O.Markup.HasValue then
+    W.ValueDecimal(ARow + 3, 'Markup', O.Markup);
   W.EndElement;
 end;
 
@@ -1619,8 +1667,12 @@ begin
     W.ValueText(ARow + 55, 'AlterBidStatus', O.AlterBidStatus)
   else if O.IsMarkedEmpty('AlterBidStatus') then
     W.ValueText(ARow + 55, 'AlterBidStatus', '');
-  if O.HasQtyDeterm and W.Allowed(ARow + 56, 'QtyDeterm', False) then
-    WriteQtyDeterm(W, O.QtyDeterm, 'QtyDeterm', W.ChildRow(ARow + 56));
+  if O.HasCostApproach then
+    for I := 0 to O.CostApproach.Count - 1 do
+      if O.CostApproach[I].IsPresent and W.Allowed(ARow + 56, 'CostApproach', False) then
+        WriteCostApproach(W, O.CostApproach[I], 'CostApproach', W.ChildRow(ARow + 56));
+  if O.HasQtyDeterm and W.Allowed(ARow + 57, 'QtyDeterm', False) then
+    WriteQtyDeterm(W, O.QtyDeterm, 'QtyDeterm', W.ChildRow(ARow + 57));
   W.EndElement;
 end;
 

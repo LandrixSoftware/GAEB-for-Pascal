@@ -102,6 +102,8 @@ procedure ReadComplBodyDec(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlComp
 procedure ReadComplBodyInt(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlComplBodyInt); forward;
 procedure ReadCompleteText(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlCompleteText); forward;
 procedure ReadContrValCode(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlContrValCode); forward;
+procedure ReadCostApproach(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlCostApproach); forward;
+procedure ReadCostType(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlCostType); forward;
 procedure ReadCPVCode(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlCPVCode); forward;
 procedure ReadCtlg(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlCtlg); forward;
 procedure ReadCtlgAssign(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlCtlgAssign); forward;
@@ -1355,9 +1357,16 @@ begin
               ReadCtlg(C, O.Ctlg.Add);
             end;
           end
+          else if C.NameIs('CostType') then
+          begin
+            if C.Order(Last, 19, False, False) then
+            begin
+              ReadCostType(C, O.CostType.Add);
+            end;
+          end
           else if C.NameIs('QtyDetermInfo') then
           begin
-            if C.Order(Last, 19, True, O.HasQtyDetermInfo) then
+            if C.Order(Last, 20, True, O.HasQtyDetermInfo) then
             begin
               ReadQtyDetermInfo(C, O.QtyDetermInfo);
             end;
@@ -1788,6 +1797,119 @@ begin
               O.Number := C.ElementText;
               if O.Number = '' then
                 O.MarkEmpty('Number');
+            end;
+          end
+          else
+            C.UnknownElement;
+      xttText, xttCData:
+        if not C.Reader.IsWhitespace then
+          C.TextInElementContent(nil);
+    else
+      ;
+    end;
+end;
+
+procedure ReadCostApproach(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlCostApproach);
+var
+  I, D, Last: Integer;
+begin
+  C.Enter(O);
+  for I := 0 to C.Reader.AttributeCount - 1 do
+    if C.IsPlainAttribute(I) then
+      if C.AttributeIs(I, 'Key') then
+      begin
+        O.Key := C.AttributeText(I);
+        if O.Key = '' then
+          O.MarkEmpty('@Key');
+      end
+      else C.UnknownAttribute(I);
+  D := C.Reader.Depth;
+  Last := -1;
+  while C.Next(D) do
+    case C.Reader.TokenType of
+      xttStartElement:
+        if C.IsGaeb then
+          if C.NameIs('CostApproachQty') then
+          begin
+            if C.Order(Last, 0, True, O.CostApproachQty.HasValue) then
+            begin
+              C.ElementDecimal(O.CostApproachQty);
+            end;
+          end
+          else if C.NameIs('CostApproachQU') then
+          begin
+            if C.Order(Last, 1, True, (O.CostApproachQU <> '')) then
+            begin
+              O.CostApproachQU := C.ElementText;
+              if O.CostApproachQU = '' then
+                O.MarkEmpty('CostApproachQU');
+            end;
+          end
+          else if C.NameIs('Performance') then
+          begin
+            if C.Order(Last, 2, True, O.Performance.HasValue) then
+            begin
+              C.ElementDecimal(O.Performance);
+            end;
+          end
+          else if C.NameIs('Value') then
+          begin
+            if C.Order(Last, 3, True, O.Value.HasValue) then
+            begin
+              C.ElementDecimal(O.Value);
+            end;
+          end
+          else
+            C.UnknownElement;
+      xttText, xttCData:
+        if not C.Reader.IsWhitespace then
+          C.TextInElementContent(nil);
+    else
+      ;
+    end;
+end;
+
+procedure ReadCostType(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlCostType);
+var
+  I, D, Last: Integer;
+begin
+  C.Enter(O);
+  for I := 0 to C.Reader.AttributeCount - 1 do
+    if C.IsPlainAttribute(I) then
+      if C.AttributeIs(I, 'Key') then
+      begin
+        O.Key := C.AttributeText(I);
+        if O.Key = '' then
+          O.MarkEmpty('@Key');
+      end
+      else C.UnknownAttribute(I);
+  D := C.Reader.Depth;
+  Last := -1;
+  while C.Next(D) do
+    case C.Reader.TokenType of
+      xttStartElement:
+        if C.IsGaeb then
+          if C.NameIs('CostDescription') then
+          begin
+            if C.Order(Last, 0, True, O.HasCostDescription) then
+            begin
+              ReadPMLText(C, O.CostDescription);
+            end;
+          end
+          else if C.NameIs('CostTypeUnit') then
+          begin
+            if C.Order(Last, 1, True, (O.CostTypeUnit <> '')) then
+            begin
+              O.CostTypeUnit := C.ElementText;
+              if O.CostTypeUnit = '' then
+                O.MarkEmpty('CostTypeUnit');
+            end;
+          end
+          else if C.NameIs('Markup') then
+          begin
+            if C.Order(Last, 2, True, O.Markup.HasValue) then
+            begin
+              C.ElementDecimal(O.Markup);
             end;
           end
           else
@@ -3225,9 +3347,16 @@ begin
                 O.MarkEmpty('AlterBidStatus');
             end;
           end
+          else if C.NameIs('CostApproach') then
+          begin
+            if C.Order(Last, 53, False, False) then
+            begin
+              ReadCostApproach(C, O.CostApproach.Add);
+            end;
+          end
           else if C.NameIs('QtyDeterm') then
           begin
-            if C.Order(Last, 53, True, O.HasQtyDeterm) then
+            if C.Order(Last, 54, True, O.HasQtyDeterm) then
             begin
               ReadQtyDeterm(C, O.QtyDeterm);
             end;
@@ -6887,18 +7016,30 @@ end;
 { True if the generated model was built from the schema of ATarget. }
 function ModelCoversTarget(const ATarget: TLandrixGaebTarget): Boolean;
 begin
-  Result := ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp81)) or
+  Result := ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp80)) or
+    ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp81)) or
+    ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp82)) or
     ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp83)) or
     ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp84)) or
+    ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp85)) or
     ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp86)) or
+    ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp87)) or
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) and (ATarget.Phase = gp80)) or
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) and (ATarget.Phase = gp81)) or
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) and (ATarget.Phase = gp82)) or
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) and (ATarget.Phase = gp83)) or
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) and (ATarget.Phase = gp84)) or
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) and (ATarget.Phase = gp85)) or
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) and (ATarget.Phase = gp86)) or
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) and (ATarget.Phase = gp87)) or
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp80)) or
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp81)) or
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp82)) or
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp83)) or
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp84)) or
-    ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp86));
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp85)) or
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp86)) or
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp87));
 end;
 
 function RejectMessage(ADiagnostics: TLandrixGaebDiagnostics; AFirst: Integer): string;

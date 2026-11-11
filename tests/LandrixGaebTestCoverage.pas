@@ -299,7 +299,7 @@ begin
       FindClose(SR);
     end;
     Names.Sort;
-    CheckEquals(36, Names.Count, 'twelve targets, one minimal and two full documents each');
+    CheckEquals(72, Names.Count, 'twenty-four targets, one minimal and two full documents each');
     for I := 0 to Names.Count - 1 do
       CheckDocument(Names[I]);
   finally

@@ -70,6 +70,8 @@ procedure CmpComplBodyDec(const P: string; A, B: TLandrixGaebXmlComplBodyDec; D:
 procedure CmpComplBodyInt(const P: string; A, B: TLandrixGaebXmlComplBodyInt; D: TStrings); forward;
 procedure CmpCompleteText(const P: string; A, B: TLandrixGaebXmlCompleteText; D: TStrings); forward;
 procedure CmpContrValCode(const P: string; A, B: TLandrixGaebXmlContrValCode; D: TStrings); forward;
+procedure CmpCostApproach(const P: string; A, B: TLandrixGaebXmlCostApproach; D: TStrings); forward;
+procedure CmpCostType(const P: string; A, B: TLandrixGaebXmlCostType; D: TStrings); forward;
 procedure CmpCtlg(const P: string; A, B: TLandrixGaebXmlCtlg; D: TStrings); forward;
 procedure CmpCtlgAssign(const P: string; A, B: TLandrixGaebXmlCtlgAssign; D: TStrings); forward;
 procedure CmpCtlgAssignQuantity(const P: string; A, B: TLandrixGaebXmlCtlgAssignQuantity; D: TStrings); forward;
@@ -221,6 +223,10 @@ begin
     CmpCompleteText(P, TLandrixGaebXmlCompleteText(A), TLandrixGaebXmlCompleteText(B), D)
   else if A is TLandrixGaebXmlContrValCode then
     CmpContrValCode(P, TLandrixGaebXmlContrValCode(A), TLandrixGaebXmlContrValCode(B), D)
+  else if A is TLandrixGaebXmlCostApproach then
+    CmpCostApproach(P, TLandrixGaebXmlCostApproach(A), TLandrixGaebXmlCostApproach(B), D)
+  else if A is TLandrixGaebXmlCostType then
+    CmpCostType(P, TLandrixGaebXmlCostType(A), TLandrixGaebXmlCostType(B), D)
   else if A is TLandrixGaebXmlCtlg then
     CmpCtlg(P, TLandrixGaebXmlCtlg(A), TLandrixGaebXmlCtlg(B), D)
   else if A is TLandrixGaebXmlCtlgAssign then
@@ -1021,6 +1027,18 @@ begin
     for I := 0 to N - 1 do
       CmpCtlg(P + '/Ctlg[' + IntToStr(I + 1) + ']', A.Ctlg[I], B.Ctlg[I], D);
   end;
+  if A.HasCostType <> B.HasCostType then
+    D.Add(P + '/CostType (presence)')
+  else if A.HasCostType then
+  begin
+    if A.CostType.Count <> B.CostType.Count then
+      D.Add(P + '/CostType (count)');
+    N := Integer(A.CostType.Count);
+    if Integer(B.CostType.Count) < N then
+      N := Integer(B.CostType.Count);
+    for I := 0 to N - 1 do
+      CmpCostType(P + '/CostType[' + IntToStr(I + 1) + ']', A.CostType[I], B.CostType[I], D);
+  end;
   if A.HasQtyDetermInfo <> B.HasQtyDetermInfo then
     D.Add(P + '/QtyDetermInfo (presence)')
   else if A.HasQtyDetermInfo then
@@ -1275,6 +1293,54 @@ begin
     D.Add(P + '/Number');
   if A.IsMarkedEmpty('Number') <> B.IsMarkedEmpty('Number') then
     D.Add(P + '/Number (empty mark)');
+end;
+
+procedure CmpCostApproach(const P: string; A, B: TLandrixGaebXmlCostApproach; D: TStrings);
+begin
+  if A.IsPresent <> B.IsPresent then
+    D.Add(P + ' (presence)');
+  if A.Key <> B.Key then
+    D.Add(P + '/@Key');
+  if A.IsMarkedEmpty('@Key') <> B.IsMarkedEmpty('@Key') then
+    D.Add(P + '/@Key (empty mark)');
+  if not A.CostApproachQty.Equals(B.CostApproachQty) then
+    D.Add(P + '/CostApproachQty');
+  if A.IsMarkedEmpty('CostApproachQty') <> B.IsMarkedEmpty('CostApproachQty') then
+    D.Add(P + '/CostApproachQty (empty mark)');
+  if A.CostApproachQU <> B.CostApproachQU then
+    D.Add(P + '/CostApproachQU');
+  if A.IsMarkedEmpty('CostApproachQU') <> B.IsMarkedEmpty('CostApproachQU') then
+    D.Add(P + '/CostApproachQU (empty mark)');
+  if not A.Performance.Equals(B.Performance) then
+    D.Add(P + '/Performance');
+  if A.IsMarkedEmpty('Performance') <> B.IsMarkedEmpty('Performance') then
+    D.Add(P + '/Performance (empty mark)');
+  if not A.Value.Equals(B.Value) then
+    D.Add(P + '/Value');
+  if A.IsMarkedEmpty('Value') <> B.IsMarkedEmpty('Value') then
+    D.Add(P + '/Value (empty mark)');
+end;
+
+procedure CmpCostType(const P: string; A, B: TLandrixGaebXmlCostType; D: TStrings);
+begin
+  if A.IsPresent <> B.IsPresent then
+    D.Add(P + ' (presence)');
+  if A.Key <> B.Key then
+    D.Add(P + '/@Key');
+  if A.IsMarkedEmpty('@Key') <> B.IsMarkedEmpty('@Key') then
+    D.Add(P + '/@Key (empty mark)');
+  if A.HasCostDescription <> B.HasCostDescription then
+    D.Add(P + '/CostDescription (presence)')
+  else if A.HasCostDescription then
+    CmpPMLText(P + '/CostDescription', A.CostDescription, B.CostDescription, D);
+  if A.CostTypeUnit <> B.CostTypeUnit then
+    D.Add(P + '/CostTypeUnit');
+  if A.IsMarkedEmpty('CostTypeUnit') <> B.IsMarkedEmpty('CostTypeUnit') then
+    D.Add(P + '/CostTypeUnit (empty mark)');
+  if not A.Markup.Equals(B.Markup) then
+    D.Add(P + '/Markup');
+  if A.IsMarkedEmpty('Markup') <> B.IsMarkedEmpty('Markup') then
+    D.Add(P + '/Markup (empty mark)');
 end;
 
 procedure CmpCtlg(const P: string; A, B: TLandrixGaebXmlCtlg; D: TStrings);
@@ -1811,6 +1877,18 @@ begin
     D.Add(P + '/AlterBidStatus');
   if A.IsMarkedEmpty('AlterBidStatus') <> B.IsMarkedEmpty('AlterBidStatus') then
     D.Add(P + '/AlterBidStatus (empty mark)');
+  if A.HasCostApproach <> B.HasCostApproach then
+    D.Add(P + '/CostApproach (presence)')
+  else if A.HasCostApproach then
+  begin
+    if A.CostApproach.Count <> B.CostApproach.Count then
+      D.Add(P + '/CostApproach (count)');
+    N := Integer(A.CostApproach.Count);
+    if Integer(B.CostApproach.Count) < N then
+      N := Integer(B.CostApproach.Count);
+    for I := 0 to N - 1 do
+      CmpCostApproach(P + '/CostApproach[' + IntToStr(I + 1) + ']', A.CostApproach[I], B.CostApproach[I], D);
+  end;
   if A.HasQtyDeterm <> B.HasQtyDeterm then
     D.Add(P + '/QtyDeterm (presence)')
   else if A.HasQtyDeterm then

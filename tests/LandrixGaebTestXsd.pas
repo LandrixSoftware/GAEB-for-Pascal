@@ -48,21 +48,21 @@ uses
   LandrixGaebTestFramework;
 
 const
-  { the published targets of the model: three editions, four phases }
-  TargetCount = 12;
+  { the published targets of the model: three editions, eight phases (80 to 87) }
+  TargetCount = 24;
 
 var
   Schemas: array[0..TargetCount - 1] of TLandrixXmlXsdSchemaSet;
 
 function TargetOf(AIndex: Integer): TLandrixGaebTarget;
 const
-  Phases: array[0..3] of TLandrixGaebPhase = (gp81, gp83, gp84, gp86);
+  Phases: array[0..7] of TLandrixGaebPhase = (gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87);
 begin
-  case AIndex div 4 of
-    0: Result := LandrixGaebTarget(gv32, ge2013_10, Phases[AIndex mod 4]);
-    1: Result := LandrixGaebTarget(gv33, ge2019_11, Phases[AIndex mod 4]);
+  case AIndex div 8 of
+    0: Result := LandrixGaebTarget(gv32, ge2013_10, Phases[AIndex mod 8]);
+    1: Result := LandrixGaebTarget(gv33, ge2019_11, Phases[AIndex mod 8]);
   else
-    Result := LandrixGaebTarget(gv33, ge2021_05, Phases[AIndex mod 4]);
+    Result := LandrixGaebTarget(gv33, ge2021_05, Phases[AIndex mod 8]);
   end;
 end;
 
@@ -514,12 +514,12 @@ begin
       begin
         G := LandrixGaebXmlReadBuffer(Pointer(Source), Integer(Length(Source)), nil, Det);
         try
-          Output := LandrixGaebXmlWriteUtf8(G, TargetOf(T + 8), LandrixGaebXmlDefaultWriteOptions, nil);
+          Output := LandrixGaebXmlWriteUtf8(G, TargetOf(T + 16), LandrixGaebXmlDefaultWriteOptions, nil);
         finally
           G.Free;
         end;
         Inc(Converted);
-        if XsdValid(Output, T + 8, XsdError) then
+        if XsdValid(Output, T + 16, XsdError) then
           Inc(ConvertedValid);
       end;
       if XsdOk and LandrixGaebTargetIsSupported(TargetOf(T), True) then

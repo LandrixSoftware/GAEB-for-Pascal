@@ -3,6 +3,19 @@
  "root": "Specification",
  "contexts": [
   {
+   "id": "3.2-2013-10-80",
+   "version": "3.2",
+   "edition": "2013-10",
+   "phase": "80",
+   "publish": true,
+   "folder": "XML-3.2/Schema",
+   "main": "GAEB_DA_XML_80_3.2_2013-10.xsd",
+   "files": {
+    "GAEB_DA_XML_80_3.2_2013-10.xsd": "8a18d58d77cae60b1fcf04c2c0045cf05d1d132f039d369c70d40a2b07728559",
+    "GAEB_DA_XML_Lib_3.2_2013-10.xsd": "f8d736e96f3f2e1ba6e97aa0492dedad1c2064fafc502a7f70466b34b67d1f77"
+   }
+  },
+  {
    "id": "3.2-2013-10-81",
    "version": "3.2",
    "edition": "2013-10",
@@ -12,6 +25,19 @@
    "main": "GAEB_DA_XML_81_3.2_2013-10.xsd",
    "files": {
     "GAEB_DA_XML_81_3.2_2013-10.xsd": "655f8a49716efd7186f6598c29b5208032060f57bc7f251c68d895ff0a7213f5",
+    "GAEB_DA_XML_Lib_3.2_2013-10.xsd": "f8d736e96f3f2e1ba6e97aa0492dedad1c2064fafc502a7f70466b34b67d1f77"
+   }
+  },
+  {
+   "id": "3.2-2013-10-82",
+   "version": "3.2",
+   "edition": "2013-10",
+   "phase": "82",
+   "publish": true,
+   "folder": "XML-3.2/Schema",
+   "main": "GAEB_DA_XML_82_3.2_2013-10.xsd",
+   "files": {
+    "GAEB_DA_XML_82_3.2_2013-10.xsd": "b4b87c159b5b7b6b58b36100415345ab2276776c3e76fcb5d41a33943f860434",
     "GAEB_DA_XML_Lib_3.2_2013-10.xsd": "f8d736e96f3f2e1ba6e97aa0492dedad1c2064fafc502a7f70466b34b67d1f77"
    }
   },
@@ -42,6 +68,19 @@
    }
   },
   {
+   "id": "3.2-2013-10-85",
+   "version": "3.2",
+   "edition": "2013-10",
+   "phase": "85",
+   "publish": true,
+   "folder": "XML-3.2/Schema",
+   "main": "GAEB_DA_XML_85_3.2_2013-10.xsd",
+   "files": {
+    "GAEB_DA_XML_85_3.2_2013-10.xsd": "59b7d168e09dd3f0eb0c5469557f3b80e6b33948a87e5f49a9f916c3f8c047fe",
+    "GAEB_DA_XML_Lib_3.2_2013-10.xsd": "f8d736e96f3f2e1ba6e97aa0492dedad1c2064fafc502a7f70466b34b67d1f77"
+   }
+  },
+  {
    "id": "3.2-2013-10-86",
    "version": "3.2",
    "edition": "2013-10",
@@ -55,6 +94,32 @@
    }
   },
   {
+   "id": "3.2-2013-10-87",
+   "version": "3.2",
+   "edition": "2013-10",
+   "phase": "87",
+   "publish": true,
+   "folder": "XML-3.2/Schema",
+   "main": "GAEB_DA_XML_87_3.2_2013-10.xsd",
+   "files": {
+    "GAEB_DA_XML_87_3.2_2013-10.xsd": "088965bb60676f77a40b8cb68fbbdb8ab4bc234fc9faf1e5059531422cd808fc",
+    "GAEB_DA_XML_Lib_3.2_2013-10.xsd": "f8d736e96f3f2e1ba6e97aa0492dedad1c2064fafc502a7f70466b34b67d1f77"
+   }
+  },
+  {
+   "id": "3.3-2019-11-80",
+   "version": "3.3",
+   "edition": "2019-11",
+   "phase": "80",
+   "publish": true,
+   "folder": "XML-3.3/Schema",
+   "main": "GAEB_DA_XML_80_3.3_2019-11.xsd",
+   "files": {
+    "GAEB_DA_XML_80_3.3_2019-11.xsd": "daf5500a018b530001e9966b57914f99e711c93da60091ffedc9c9378b9a6e28",
+    "GAEB_DA_XML_Lib_3.3_2019-11.xsd": "733d1765d220259c371b1ca3ae449ce6227596d845fe1eb28d7f0feafec0ff1e"
+   }
+  },
+  {
    "id": "3.3-2019-11-81",
    "version": "3.3",
    "edition": "2019-11",
@@ -64,6 +129,19 @@
    "main": "GAEB_DA_XML_81_3.3_2019-11.xsd",
    "files": {
     "GAEB_DA_XML_81_3.3_2019-11.xsd": "dad4030ba0977bd258ffcb6c2c95991cecd35affff52c5810aa94af59a6744a2",
+    "GAEB_DA_XML_Lib_3.3_2019-11.xsd": "733d1765d220259c371b1ca3ae449ce6227596d845fe1eb28d7f0feafec0ff1e"
+   }
+  },
+  {
+   "id": "3.3-2019-11-82",
+   "version": "3.3",
+   "edition": "2019-11",
+   "phase": "82",
+   "publish": true,
+   "folder": "XML-3.3/Schema",
+   "main": "GAEB_DA_XML_82_3.3_2019-11.xsd",
+   "files": {
+    "GAEB_DA_XML_82_3.3_2019-11.xsd": "33491988a7895d5b660b98289d74f18a6e78c2cc44ffd28be77e73b7057fb1a2",
     "GAEB_DA_XML_Lib_3.3_2019-11.xsd": "733d1765d220259c371b1ca3ae449ce6227596d845fe1eb28d7f0feafec0ff1e"
    }
   },
@@ -94,6 +172,19 @@
    }
   },
   {
+   "id": "3.3-2019-11-85",
+   "version": "3.3",
+   "edition": "2019-11",
+   "phase": "85",
+   "publish": true,
+   "folder": "XML-3.3/Schema",
+   "main": "GAEB_DA_XML_85_3.3_2019-11.xsd",
+   "files": {
+    "GAEB_DA_XML_85_3.3_2019-11.xsd": "dec455e8fd8a126f8ce58723e91a19015f791ede633c2816c1aff58c6f7249f7",
+    "GAEB_DA_XML_Lib_3.3_2019-11.xsd": "733d1765d220259c371b1ca3ae449ce6227596d845fe1eb28d7f0feafec0ff1e"
+   }
+  },
+  {
    "id": "3.3-2019-11-86",
    "version": "3.3",
    "edition": "2019-11",
@@ -107,6 +198,32 @@
    }
   },
   {
+   "id": "3.3-2019-11-87",
+   "version": "3.3",
+   "edition": "2019-11",
+   "phase": "87",
+   "publish": true,
+   "folder": "XML-3.3/Schema",
+   "main": "GAEB_DA_XML_87_3.3_2019-11.xsd",
+   "files": {
+    "GAEB_DA_XML_87_3.3_2019-11.xsd": "9ae020fcb9d80fc50207b68b381886e62fda26dee7f7d90dee4e20b5b6947476",
+    "GAEB_DA_XML_Lib_3.3_2019-11.xsd": "733d1765d220259c371b1ca3ae449ce6227596d845fe1eb28d7f0feafec0ff1e"
+   }
+  },
+  {
+   "id": "3.3-2021-05-80",
+   "version": "3.3",
+   "edition": "2021-05",
+   "phase": "80",
+   "publish": true,
+   "folder": "XML-3.3/Schema",
+   "main": "GAEB_DA_XML_80_3.3_2021-05.xsd",
+   "files": {
+    "GAEB_DA_XML_80_3.3_2021-05.xsd": "d8b1bda0a48725838aabae34333a2dfcf48edf3c05c764575e32622416bd2ff4",
+    "GAEB_DA_XML_Lib_3.3_2021-05.xsd": "a00cad3a5bfaf079de936393c0827c2387d4b9407c113359cca4b493903388ec"
+   }
+  },
+  {
    "id": "3.3-2021-05-81",
    "version": "3.3",
    "edition": "2021-05",
@@ -116,6 +233,19 @@
    "main": "GAEB_DA_XML_81_3.3_2021-05.xsd",
    "files": {
     "GAEB_DA_XML_81_3.3_2021-05.xsd": "aa24ed698088308d38f1ff7612643e55e70a847f6b5d433aa10dcd6dfe6c3ea3",
+    "GAEB_DA_XML_Lib_3.3_2021-05.xsd": "a00cad3a5bfaf079de936393c0827c2387d4b9407c113359cca4b493903388ec"
+   }
+  },
+  {
+   "id": "3.3-2021-05-82",
+   "version": "3.3",
+   "edition": "2021-05",
+   "phase": "82",
+   "publish": true,
+   "folder": "XML-3.3/Schema",
+   "main": "GAEB_DA_XML_82_3.3_2021-05.xsd",
+   "files": {
+    "GAEB_DA_XML_82_3.3_2021-05.xsd": "6fcf94f41aeac0a060d29251ca085e29aa659b1c6b2d4872a76788cc7512c52b",
     "GAEB_DA_XML_Lib_3.3_2021-05.xsd": "a00cad3a5bfaf079de936393c0827c2387d4b9407c113359cca4b493903388ec"
    }
   },
@@ -146,6 +276,19 @@
    }
   },
   {
+   "id": "3.3-2021-05-85",
+   "version": "3.3",
+   "edition": "2021-05",
+   "phase": "85",
+   "publish": true,
+   "folder": "XML-3.3/Schema",
+   "main": "GAEB_DA_XML_85_3.3_2021-05.xsd",
+   "files": {
+    "GAEB_DA_XML_85_3.3_2021-05.xsd": "ca8661aa7c1202105e3cf87385880b9d1741664d43fa92c6dc209a5cfe3d91cb",
+    "GAEB_DA_XML_Lib_3.3_2021-05.xsd": "a00cad3a5bfaf079de936393c0827c2387d4b9407c113359cca4b493903388ec"
+   }
+  },
+  {
    "id": "3.3-2021-05-86",
    "version": "3.3",
    "edition": "2021-05",
@@ -159,6 +302,32 @@
    }
   },
   {
+   "id": "3.3-2021-05-87",
+   "version": "3.3",
+   "edition": "2021-05",
+   "phase": "87",
+   "publish": true,
+   "folder": "XML-3.3/Schema",
+   "main": "GAEB_DA_XML_87_3.3_2021-05.xsd",
+   "files": {
+    "GAEB_DA_XML_87_3.3_2021-05.xsd": "1f351ad4e6e4d9db9175c51f24d22b2808adc14dbb0abd0858a3cca59389f125",
+    "GAEB_DA_XML_Lib_3.3_2021-05.xsd": "a00cad3a5bfaf079de936393c0827c2387d4b9407c113359cca4b493903388ec"
+   }
+  },
+  {
+   "id": "3.4-2026-03-80",
+   "version": "3.4",
+   "edition": "2026-03",
+   "phase": "80",
+   "publish": false,
+   "folder": "XML-3.4-2026-03-beta/Schema",
+   "main": "GAEB_DA_XML_80_3.4_2026-03.xsd",
+   "files": {
+    "GAEB_DA_XML_80_3.4_2026-03.xsd": "6975a5d1642c7daf663fb4ec47a904ea4c0fcc7b33d61cbef32ece7678429e81",
+    "GAEB_DA_XML_Lib_3.4_2026-03.xsd": "f7065795c155f81b7be7062cf7715d9f24afb453d989b1985d7cd24612040bec"
+   }
+  },
+  {
    "id": "3.4-2026-03-81",
    "version": "3.4",
    "edition": "2026-03",
@@ -168,6 +337,19 @@
    "main": "GAEB_DA_XML_81_3.4_2026-03.xsd",
    "files": {
     "GAEB_DA_XML_81_3.4_2026-03.xsd": "7be1e01d0367083766f5bd9212a74534e06f3ea40571015ae2c9c18267a75698",
+    "GAEB_DA_XML_Lib_3.4_2026-03.xsd": "f7065795c155f81b7be7062cf7715d9f24afb453d989b1985d7cd24612040bec"
+   }
+  },
+  {
+   "id": "3.4-2026-03-82",
+   "version": "3.4",
+   "edition": "2026-03",
+   "phase": "82",
+   "publish": false,
+   "folder": "XML-3.4-2026-03-beta/Schema",
+   "main": "GAEB_DA_XML_82_3.4_2026-03.xsd",
+   "files": {
+    "GAEB_DA_XML_82_3.4_2026-03.xsd": "e3f8d77e502bcd95c233ddb22a6bfea50f9a3a9c62aa0c8b1aee5f524c1cf62d",
     "GAEB_DA_XML_Lib_3.4_2026-03.xsd": "f7065795c155f81b7be7062cf7715d9f24afb453d989b1985d7cd24612040bec"
    }
   },
@@ -198,6 +380,19 @@
    }
   },
   {
+   "id": "3.4-2026-03-85",
+   "version": "3.4",
+   "edition": "2026-03",
+   "phase": "85",
+   "publish": false,
+   "folder": "XML-3.4-2026-03-beta/Schema",
+   "main": "GAEB_DA_XML_85_3.4_2026-03.xsd",
+   "files": {
+    "GAEB_DA_XML_85_3.4_2026-03.xsd": "2355c5814b3e2f7e03a5a64ecf472627bd330a334b33f719acce9bd7242de3c4",
+    "GAEB_DA_XML_Lib_3.4_2026-03.xsd": "f7065795c155f81b7be7062cf7715d9f24afb453d989b1985d7cd24612040bec"
+   }
+  },
+  {
    "id": "3.4-2026-03-86",
    "version": "3.4",
    "edition": "2026-03",
@@ -207,6 +402,19 @@
    "main": "GAEB_DA_XML_86_3.4_2026-03.xsd",
    "files": {
     "GAEB_DA_XML_86_3.4_2026-03.xsd": "2ed090a23da2ea6686fce5c5bd50d2c91f7f1ed983673e6bde5edc83ad34d8e8",
+    "GAEB_DA_XML_Lib_3.4_2026-03.xsd": "f7065795c155f81b7be7062cf7715d9f24afb453d989b1985d7cd24612040bec"
+   }
+  },
+  {
+   "id": "3.4-2026-03-87",
+   "version": "3.4",
+   "edition": "2026-03",
+   "phase": "87",
+   "publish": false,
+   "folder": "XML-3.4-2026-03-beta/Schema",
+   "main": "GAEB_DA_XML_87_3.4_2026-03.xsd",
+   "files": {
+    "GAEB_DA_XML_87_3.4_2026-03.xsd": "cde296384182cebe6cf712db8ef0162dad65e35626d7fb9a1cbb73cd9c2404ef",
     "GAEB_DA_XML_Lib_3.4_2026-03.xsd": "f7065795c155f81b7be7062cf7715d9f24afb453d989b1985d7cd24612040bec"
    }
   }
