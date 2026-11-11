@@ -503,8 +503,10 @@ SCHEMA_GUARDED = {"GAEB-BR-QTY-001", "GAEB-BR-QTY-003"}
 # ---- the same cases for the other phases of a rule ----
 #
 # Each rule needs a valid and an invalid case for every phase of the catalog
-# (source/LandrixGaebRules.pas). Missing ones are derived from the cases of
-# X83 (structure and texts) or X84 (prices): namespace and DP change, and the
+# (source/LandrixGaebRules.pas). The cases of X83 (structure and texts) or X84
+# (prices) are derived for every other phase of the rule that has no case of
+# that name (X83 and X84 with cases of both kinds keep their own): namespace
+# and DP change, and the
 # elements a phase requires (OWN, CTR, LblBoQ, OutlCompl, LblTx) or does not
 # know (QU, Description, ... in X84) are added or dropped. A derived document
 # must pass tools/schema/check-instance.py, else the generator stops.
@@ -538,6 +540,14 @@ def derive(content, src, dst):
         s = re.sub(r"<(RefDescr|LumpSumItem|QtyTBD)>[^<]*</\1>", "", s)
         s = s.replace("<LblBoQ>Test</LblBoQ>", "").replace("<OutlCompl>AllTxt</OutlCompl>", "")
         s = s.replace("<DP>84</DP>", "<DP>84</DP><CTR>%s</CTR>" % ADDRESS)
+    if src == "84" and dst == "85":
+        # every item of a variant bid has a unit
+        s = re.sub(r'(<Item ID="[^"]+"[^>]*>(?:(?!</Item>).)*?)(<UP>|<IT>|</Item>)', r"\1<QU>m</QU>\2", s)
+    if src == "83" and dst == "85":
+        # a variant bid transfers complete items only when offered new or
+        # modified (documentation 4.6.15)
+        s = re.sub(r'(<Item ID="[^"]+"[^>]*>(?:(?!</Item>).)*?)(<QtyDeterm>|</Item>)',
+                   r"\1<AlterBidStatus>New</AlterBidStatus>\2", s)
     if src == "83" and dst in ("84", "86"):
         # categories of a bid or an award carry totals
         s = s.replace("</BoQBody></BoQCtgy>", "</BoQBody><Totals><Total>0.00</Total></Totals></BoQCtgy>")
@@ -566,17 +576,19 @@ def add_derived():
             return "invalid" if name.startswith("invalid") else "valid"
         have = set((name[-2:], kind(name)) for name, content, count, path in cases
                    if not isinstance(content, tuple))
+        names = set(name for name, content, count, path in cases if not isinstance(content, tuple))
         phases_with_cases = set(ph for ph, k in have)
         for dst in wanted:
-            missing = set(k for k in ("valid", "invalid") if (dst, k) not in have)
-            if not missing:
+            # a phase with cases of both kinds of its own keeps them; else every
+            # case of the source phase that the phase does not have by name
+            if (dst, "valid") in have and (dst, "invalid") in have and dst in ("83", "84"):
                 continue
             # X84 from X83; X81 and X86 from X83 if there is one, else from X84
             src = "83" if dst == "84" or "83" in phases_with_cases else "84"
             if src not in phases_with_cases:
                 continue
             for name, content, count, path in list(cases):
-                if isinstance(content, tuple) or name[-2:] != src or kind(name) not in missing:
+                if isinstance(content, tuple) or name[-2:] != src or name[:-2] + dst in names:
                     continue
                 derived = derive(content, src, dst)
                 errors, _ = checker.check_file(contexts, io.BytesIO(derived.encode("ascii")))
@@ -595,8 +607,13 @@ case("GAEB-BR-SUM-001", "valid-3.x86",
      .replace('<Item ID="I1" RNoPart="0010">', '<Item ID="I1" RNoPart="0010"><NotAppl>Yes</NotAppl>'))
 
 
+# X85: an item offered identical (no AlterBidStatus) carries prices only
+case("GAEB-BR-ITEM-001", "valid-2.x85",
+     derive(std83(item83("I1", "0010", desc=False)), "83", "85").replace("<AlterBidStatus>New</AlterBidStatus>", ""))
+
+
 # alternatives and eventual items without total are no totals either
-for ph in ("81", "86"):
+for ph in ("80", "81", "82", "85", "86"):
     case("GAEB-BR-SUM-001", "valid-4.x" + ph,
          derive(std84(item84("I1", "0010", qty="10", up="2.50", it="0.00"), total="0.00"), "84", ph)
          .replace('<Item ID="I1" RNoPart="0010">', '<Item ID="I1" RNoPart="0010"><ALNGroupNo>1</ALNGroupNo>'
@@ -613,10 +630,21 @@ def bill(*items, **kw):
 
 
 B2 = (item84("I1", "0010", qty="10", up="2.50", it="25.00"), item84("I2", "0020", qty="4", up="1.00", it="4.00"))
-for ph in ("81", "86"):
+for ph in ("80", "81", "82", "85", "86"):
     case("GAEB-BR-SUM-003", "valid-1.x" + ph, derive(bill(*B2), "84", ph))
     case("GAEB-BR-SUM-003", "invalid-1.x" + ph, derive(bill(*B2, total="30.00"), "84", ph), 1,
          BODY + "/BoQCtgy[1]/Totals[1]")
+# X85: an item not required (AlterBidStatus N/A) does not count
+def not_required(doc):
+    i = doc.index('<Item ID="I2"')
+    j = doc.index("</Item>", i)
+    return doc[:j] + "<AlterBidStatus>N/A</AlterBidStatus>" + doc[j:]
+
+
+B2_NA = (B2[0], item84("I2", "0020", qty="4", up="1.00"))
+case("GAEB-BR-SUM-003", "valid-2.x85", not_required(derive(bill(*B2_NA, total="25.00"), "84", "85")))
+case("GAEB-BR-SUM-003", "invalid-2.x85", not_required(derive(bill(*B2_NA, total="26.00"), "84", "85")), 1,
+     BODY + "/BoQCtgy[1]/Totals[1]")
 # an alternative item does not count
 case("GAEB-BR-SUM-003", "valid-2.x86",
      derive(bill(*B2, total="25.00"), "84", "86")
@@ -671,6 +699,11 @@ def files():
     return result
 
 
+# names the generator writes; other files below tests/data/rules are kept
+GENERATED_NAME = re.compile(r"^GAEB-BR-[A-Z0-9-]+/(expected[.]txt|(valid|invalid)-[0-9]+[.]x8[0-9]|"
+                            r"pair-(valid|invalid)-[0-9]+/(first|second)[.]x8[0-9])$")
+
+
 def main(argv):
     check = "--check" in argv[1:]
     status = 0
@@ -679,7 +712,22 @@ def main(argv):
         for f in failed:
             sys.stderr.write("make-rule-cases: derived case not schema-valid: %s" % f + chr(10))
         return 1
-    for rel, content in sorted(files().items()):
+    generated = files()
+    # files of earlier runs that are no longer generated
+    for folder, dirs, names in os.walk(OUT, topdown=False):
+        for name in names:
+            path = os.path.join(folder, name)
+            rel = os.path.relpath(path, OUT)
+            if rel in generated or not GENERATED_NAME.match(rel.replace(os.sep, "/")):
+                continue
+            if check:
+                sys.stderr.write("make-rule-cases: %s is no longer generated" % rel + chr(10))
+                status = 1
+            else:
+                os.remove(path)
+        if not check and folder != OUT and not os.listdir(folder):
+            os.rmdir(folder)
+    for rel, content in sorted(generated.items()):
         path = os.path.join(OUT, rel)
         data = content.encode("ascii")
         if check:
@@ -690,7 +738,7 @@ def main(argv):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         io.open(path, "wb").write(data)
     if not check:
-        print("make-rule-cases: %d file(s) in tests/data/rules" % len(files()))
+        print("make-rule-cases: %d file(s) in tests/data/rules" % len(generated))
     elif status == 0:
         print("make-rule-cases: cases up to date")
     return status

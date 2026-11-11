@@ -103,97 +103,97 @@ const
     Exportprogramme erzeugen, sind Warnungen. }
   LandrixGaebRuleCatalog: array[0..LandrixGaebRuleCount - 1] of TLandrixGaebRule = (
     (ID: 'GAEB-BR-OZ-001'; Title: 'OZ unique within the bill of quantities';
-      Severity: gsError; Phases: [gp81, gp83, gp84, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.2.1'),
     (ID: 'GAEB-BR-OZ-002'; Title: 'OZ at most 14 characters including the index';
-      Severity: gsError; Phases: [gp81, gp83, gp84, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.2.1, 4.3.3'),
     (ID: 'GAEB-BR-OZ-003'; Title: 'OZ fits the breakdown of BoQBkdn (levels, lengths, index)';
-      Severity: gsError; Phases: [gp81, gp83, gp84, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.3.4'),
     (ID: 'GAEB-BR-OZ-004'; Title: 'OZ ascending in document order';
-      Severity: gsWarning; Phases: [gp81, gp83, gp84, gp86]; Pair: False;
+      Severity: gsWarning; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.2.1'),
     (ID: 'GAEB-BR-OZ-005'; Title: 'Part of an OZ shorter than its level although not numeric';
-      Severity: gsInformation; Phases: [gp81, gp83, gp84, gp86]; Pair: False;
+      Severity: gsInformation; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
       Source: 'corpus; Fachdokumentation 3.3 (2023-01), 4.3'),
     (ID: 'GAEB-BR-OZ-006'; Title: 'Part of an OZ made of zeros or underscores only';
-      Severity: gsWarning; Phases: [gp81, gp83, gp84, gp86]; Pair: False;
+      Severity: gsWarning; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.2.1'),
     (ID: 'GAEB-BR-BKDN-001'; Title: 'Lengths of all BoQBkdn parts at most 14 together';
-      Severity: gsError; Phases: [gp81, gp83, gp84, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 BoQInfo 2'),
     (ID: 'GAEB-BR-BKDN-002'; Title: 'BoQBkdn order: Lot once and first, at most five levels, Item once, Index once after Item';
-      Severity: gsError; Phases: [gp81, gp83, gp84, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 BoQInfo 3-8'),
     (ID: 'GAEB-BR-BKDN-003'; Title: 'Index of the breakdown has length 1';
-      Severity: gsError; Phases: [gp81, gp83, gp84, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 BoQBkdn 2'),
     (ID: 'GAEB-BR-BKDN-004'; Title: 'Label of a breakdown part only for BoQLevel';
-      Severity: gsWarning; Phases: [gp81, gp83, gp84, gp86]; Pair: False;
+      Severity: gsWarning; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 BoQBkdn 1'),
     (ID: 'GAEB-BR-UP-002'; Title: 'Labels of unit price components match NoUPComps';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 BoQInfo 9-10'),
     (ID: 'GAEB-BR-QTY-001'; Title: 'QtySplit not together with QtyTBD';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.11, 11.2.3 Item 5'),
     (ID: 'GAEB-BR-QTY-002'; Title: 'Quantities of QtySplit add up to the quantity of the item';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 Item 6'),
     (ID: 'GAEB-BR-QTY-003'; Title: 'Item with QtyTBD has no quantity';
       Severity: gsError; Phases: [gp83]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.11, 11.2.3 Item 3'),
     (ID: 'GAEB-BR-QTY-004'; Title: 'Quantity missing only with QtyTBD or LumpSumItem';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 Item 2'),
     (ID: 'GAEB-BR-QTY-005'; Title: 'Lump sum item not together with QtyTBD';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.5.5'),
     (ID: 'GAEB-BR-QTY-006'; Title: 'Lump sum item without quantity or with quantity 1';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.5.1'),
     (ID: 'GAEB-BR-ITEM-001'; Title: 'Item has a description';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 Item 7'),
     (ID: 'GAEB-BR-ITEM-002'; Title: 'Item with SumDescr has SubDescr';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.12, 11.2.3 Item 9'),
     (ID: 'GAEB-BR-TXT-001'; Title: 'Repetition description refers to an item that is no repetition';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.4.4'),
     (ID: 'GAEB-BR-TXT-002'; Title: 'Repetition description keeps the unit of its reference';
-      Severity: gsWarning; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsWarning; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.4.4'),
     (ID: 'GAEB-BR-TXT-003'; Title: 'Reference description precedes its repetitions';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.4.4'),
     (ID: 'GAEB-BR-TXT-004'; Title: 'Long text with text complements has ComplTSA or ComplTSB';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 Description 1'),
     (ID: 'GAEB-BR-PERF-001'; Title: 'Number of an execution description unique';
-      Severity: gsError; Phases: [gp81, gp83, gp84, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.4.3, 11.2.3 PerfDescr 1'),
     (ID: 'GAEB-BR-PERF-002'; Title: 'Execution description precedes the items that refer to it';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.4.3, 11.2.3 PerfDescr 2'),
     (ID: 'GAEB-BR-MKUP-001'; Title: 'MarkupSubQty exactly with MarkupType ListInSubQty';
-      Severity: gsError; Phases: [gp81, gp83, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 11.2.3 MarkupItem 4'),
     (ID: 'GAEB-BR-UP-001'; Title: 'Unit price components add up to the unit price';
-      Severity: gsError; Phases: [gp81, gp84, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.5'),
     (ID: 'GAEB-BR-X84-001'; Title: 'Item not offered has no unit price';
       Severity: gsError; Phases: [gp84]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.4'),
     (ID: 'GAEB-BR-SUM-001'; Title: 'Total of an item is quantity times unit price, rounded';
-      Severity: gsError; Phases: [gp81, gp84, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.17'),
     (ID: 'GAEB-BR-SUM-002'; Title: 'Total after discount follows from total and discount';
-      Severity: gsError; Phases: [gp81, gp84, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp84, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.6.7, 4.6.17, 11.2.3 Totals 1'),
     (ID: 'GAEB-BR-SUM-003'; Title: 'Total of a category or of the bill is the sum of its counting items and subcategories';
-      Severity: gsError; Phases: [gp81, gp86]; Pair: False;
+      Severity: gsError; Phases: [gp80, gp81, gp82, gp85, gp86]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.2.3, 4.5.2, 4.5.3, 4.6.17'),
     (ID: 'GAEB-BR-PAIR-83-84-001'; Title: 'Items of the bid are the items of the request (by OZ)';
       Severity: gsError; Phases: [gp84]; Pair: True;
@@ -1063,10 +1063,10 @@ begin
   end;
 end;
 
-{ Rules of a single item about quantities and texts (X81, X83, X86):
+{ Rules of a single item about quantities and texts (every phase but X84):
   QTY-001 to -006, ITEM-001/-002, TXT-004. QTY-002 only when every split gives a quantity (a split may give
   a percentage instead; the specification gives no rounding for it).
-  DE: Regeln an einer Position zu Mengen und Texten (X81, X83, X86):
+  DE: Regeln an einer Position zu Mengen und Texten (jede Phase ausser X84):
   QTY-001 bis -006, ITEM-001/-002, TXT-004. QTY-002 nur, wenn jede Aufteilung eine Menge
   angibt (statt dessen ist ein Prozentsatz zulaessig; dafuer legt die
   Spezifikation keine Rundung fest). }
@@ -1077,6 +1077,15 @@ var
   Labels: TStringList;
   AllQty: Boolean;
 begin
+  { X85: only items offered new or modified are transferred complete; the
+    others (identical, also without AlterBidStatus, or not required) carry
+    prices and bidder text complements as in X84 (documentation 4.6.15).
+    DE: X85: nur neu oder geaendert angebotene Positionen werden komplett
+    uebertragen; die anderen (identisch, auch ohne AlterBidStatus, oder
+    nicht erforderlich) tragen wie in X84 Preise und
+    Bietertextergaenzungen (Dokumentation 4.6.15). }
+  if (FPhase = gp85) and (AItem.AlterBidStatus <> 'New') and (AItem.AlterBidStatus <> 'Modified') then
+    Exit;
   if (AItem.QtyTBD = 'Yes') and AItem.HasQtySplit then
     Report('GAEB-BR-QTY-001', R.Path, 'QtySplit together with QtyTBD');
   if AItem.HasQtySplit and AItem.Qty.HasValue then
@@ -1121,14 +1130,14 @@ end;
 
 function NotCounted(ANode: TRuleNode): Boolean; forward;
 
-{ Rules of a single item about prices (X81, X84, X86): UP-001, X84-001,
+{ Rules of a single item about prices (every phase but X83): UP-001, X84-001,
   SUM-001. A lump sum item without quantity counts with quantity 1. Items
-  the document itself takes out of the totals (X81, X86: alternative,
+  the document itself takes out of the totals (all but X84: alternative,
   eventual without total, not applicable) are not computed: their IT is 0
   or no total.
-  DE: Regeln an einer Position zu Preisen (X81, X84, X86): UP-001, X84-001,
+  DE: Regeln an einer Position zu Preisen (jede Phase ausser X83): UP-001, X84-001,
   SUM-001. Eine Pauschalposition ohne Menge zaehlt mit der Menge 1.
-  Positionen, die das Dokument selbst aus den Summen nimmt (X81, X86:
+  Positionen, die das Dokument selbst aus den Summen nimmt (ausser X84:
   Alternative, Bedarf ohne GB, entfallend), werden nicht nachgerechnet: ihr
   IT ist 0 oder kein Gesamtbetrag. }
 procedure TRuleRun.CheckItem84(R: TRuleNode; AItem: TLandrixGaebXmlItem);
@@ -1345,13 +1354,16 @@ begin
   Result := (ASerNo <> '') and (IntOf(ASerNo, 0) <> 0);
 end;
 
-{ True if a node with the kinds of a request (X81, X83, X86) is not part of
+{ True if a node with the kinds of a request (all phases but X84) is not part of
   the totals: alternative items and categories (serial number other than
-  0), eventual items without total, items and categories not applicable.
-  DE: True, wenn ein Knoten mit den Kennzeichen einer Anfrage (X81, X83,
-  X86) nicht in die Summen eingeht: Alternativpositionen und -bereiche
+  0), eventual items without total, items and categories not applicable,
+  items of a variant bid that are not required (AlterBidStatus N/A,
+  documentation 4.6.15).
+  DE: True, wenn ein Knoten mit den Kennzeichen einer Anfrage (alle Phasen
+  ausser X84) nicht in die Summen eingeht: Alternativpositionen und -bereiche
   (Nummer ungleich 0), Bedarfspositionen ohne Gesamtbetrag, entfallende
-  Positionen und Bereiche. }
+  Positionen und Bereiche, im Nebenangebot nicht erforderliche Positionen
+  (AlterBidStatus N/A, Dokumentation 4.6.15). }
 function NotCounted(ANode: TRuleNode): Boolean;
 begin
   Result := False;
@@ -1361,7 +1373,8 @@ begin
     nkItem:
       Result := IsAlternative(TLandrixGaebXmlItem(ANode.Node).ALNSerNo) or
         (TLandrixGaebXmlItem(ANode.Node).Provis = 'WithoutTotal') or
-        (TLandrixGaebXmlItem(ANode.Node).NotAppl = 'Yes');
+        (TLandrixGaebXmlItem(ANode.Node).NotAppl = 'Yes') or
+        (TLandrixGaebXmlItem(ANode.Node).AlterBidStatus = 'N/A');
     nkMarkup:
       Result := IsAlternative(TLandrixGaebXmlMarkupItem(ANode.Node).ALNSerNo) or
         (TLandrixGaebXmlMarkupItem(ANode.Node).Provis = 'WithoutTotal') or
@@ -1414,12 +1427,12 @@ end;
 { The totals of the categories and of the bill against the sums of their
   counting children (ARule). The kinds that take a node out of the totals
   come from AFirst (the index of the request, PAIR-83-84-008) or, without
-  it, from the document itself (X81, X86: SUM-003); there a node with
+  it, from the document itself (SUM-003); there a node with
   Accepted makes the sum of its parent unknown.
   DE: Die Summen der Bereiche und des LV gegen die Summe ihrer zaehlenden
   Kinder (ARule). Die Kennzeichen, die einen Knoten aus den Summen nehmen,
   kommen aus AFirst (Index der Anfrage, PAIR-83-84-008) oder ohne ihn aus
-  dem Dokument selbst (X81, X86: SUM-003); dort macht ein Knoten mit
+  dem Dokument selbst (SUM-003); dort macht ein Knoten mit
   Accepted die Summe seines Elternknotens unbekannt. }
 procedure TRuleRun.CategorySums(AFirst: TKeyIndex; const ARule: string);
 var
@@ -1498,8 +1511,8 @@ begin
     R := TRuleNode(FNodes[I]);
     if R.Kind = nkItem then
     begin
-      { the catalog decides per phase which of these rules report: X81 and
-        X86 carry both the request's structure and prices }
+      { the catalog decides per phase which of these rules report: X80 to
+        X82, X85 and X86 carry both the request's structure and prices }
       CheckItem83(R, TLandrixGaebXmlItem(R.Node));
       CheckItem84(R, TLandrixGaebXmlItem(R.Node));
     end
