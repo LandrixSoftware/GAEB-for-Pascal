@@ -127,6 +127,10 @@ type
     { First node with AKey, nil if none (after Sort). DE: Erster Knoten mit
       AKey, nil, wenn keiner (nach Sort). }
     function Find(const AKey: TLandrixGaebString): TLandrixGaebTreeNode;
+    { Position of the first entry with AKey, -1 if none (after Sort).
+      DE: Position des ersten Eintrags mit AKey, -1, wenn keiner (nach
+      Sort). }
+    function IndexOf(const AKey: TLandrixGaebString): Integer;
     { Key and node at position I. DE: Schluessel und Knoten an Position I. }
     function Key(I: Integer): TLandrixGaebString;
     function Node(I: Integer): TLandrixGaebTreeNode;
@@ -509,7 +513,7 @@ begin
   QuickSort(0, FCount - 1);
 end;
 
-function TLandrixGaebKeyIndex.Find(const AKey: TLandrixGaebString): TLandrixGaebTreeNode;
+function TLandrixGaebKeyIndex.IndexOf(const AKey: TLandrixGaebString): Integer;
 var
   Lo, Hi, Mid: Integer;
 begin
@@ -523,9 +527,19 @@ begin
     else
       Hi := Mid;
   end;
-  Result := nil;
+  Result := -1;
   if (Lo < FCount) and (FKeys[Lo] = AKey) then
-    Result := FNodes[Lo];
+    Result := Lo;
+end;
+
+function TLandrixGaebKeyIndex.Find(const AKey: TLandrixGaebString): TLandrixGaebTreeNode;
+var
+  I: Integer;
+begin
+  Result := nil;
+  I := IndexOf(AKey);
+  if I >= 0 then
+    Result := FNodes[I];
 end;
 
 function TLandrixGaebKeyIndex.Key(I: Integer): TLandrixGaebString;

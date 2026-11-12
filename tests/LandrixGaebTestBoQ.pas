@@ -14,8 +14,9 @@
 
 { Tests of the business facade (LandrixGaebBoQ): reading through the facade
   changes nothing in the model, the tree, OZ and search, values and kinds
-  of the process documents, setters, text complements and the plain
-  text. }
+  of the process documents, setters, text complements, the plain text,
+  references, sub descriptions, lots, totals, parties and award data
+  (legacy case 36: what the old adapters dropped), loading and saving. }
 
 unit LandrixGaebTestBoQ;
 
@@ -32,6 +33,7 @@ uses
   Classes,
   LandrixXmlBase,
   LandrixGaebTypes,
+  LandrixGaebDiagnostics,
   LandrixGaebDetect,
   LandrixGaebXmlModel,
   LandrixGaebXmlReader,
@@ -138,14 +140,76 @@ begin
     Inc(Count);
 end;
 
+procedure ReadTotals(T: TLandrixGaebTotals);
+var
+  F: TLandrixGaebTotalField;
+  K: Integer;
+  D: TLandrixGaebDecimal;
+  P: TLandrixGaebVATPart;
+begin
+  T.Exists;
+  T.SyntaxNode;
+  D := T.Amount;
+  for F := Low(TLandrixGaebTotalField) to High(TLandrixGaebTotalField) do
+    D := T.Value(F);
+  for K := 1 to 6 do
+    D := T.UPCompTotal(K);
+  for K := 0 to T.VATPartCount - 1 do
+    P := T.VATParts(K);
+  if D.HasValue and P.VATPcnt.HasValue and (T = nil) then
+    Check(False, 'never');
+end;
+
+procedure ReadItem(It: TLandrixGaebItem; V: TCountVisitor);
+var
+  K, J: Integer;
+  Dummy: TLandrixGaebString;
+  D: TLandrixGaebDecimal;
+  R: TLandrixGaebReference;
+  Q: TLandrixGaebQtySplit;
+  Sub: TLandrixGaebSubDescription;
+begin
+  It.DescriptionRole;
+  It.IsSumDescription;
+  Dummy := It.HoldOutType;
+  for K := 0 to It.RefBaseItemCount - 1 do
+    R := It.RefBaseItem(K);
+  for K := 0 to It.QtySplitCount - 1 do
+    Q := It.QtySplits(K);
+  for K := 0 to It.BidCommentCount - 1 do
+    Dummy := Dummy + LandrixGaebPlainText(It.BidCommentNode(K));
+  for K := 0 to It.SubDescriptionCount - 1 do
+  begin
+    Sub := It.SubDescriptions(K);
+    Dummy := Dummy + Sub.Path + Sub.Number + Sub.QU + Sub.ShortText + Sub.LongText;
+    LandrixGaebVisitText(Sub.DetailTextNode, V);
+    LandrixGaebVisitText(Sub.OutlineTextNode, V);
+    Sub.QtyTBD;
+    D := Sub.Qty;
+    D := Sub.UP;
+    for J := 1 to 6 do
+      D := Sub.UPComp(J);
+  end;
+  if (Dummy = #0) and D.HasValue and Q.Qty.HasValue and (R.Node = nil) then
+    Check(False, 'never');
+end;
+
 procedure ReadNode(N: TLandrixGaebNode; V: TCountVisitor);
 var
   K: Integer;
   Found: TLandrixGaebNode;
   Dummy: TLandrixGaebString;
   D: TLandrixGaebDecimal;
+  R: TLandrixGaebReference;
+  C: TLandrixGaebCatalogRef;
 begin
   Dummy := N.OZ + N.Index + N.Path + N.ShortText + N.LongText;
+  R := N.RefRNo;
+  R := N.RefPerfNo;
+  for K := 0 to N.CatalogCount - 1 do
+    C := N.Catalogs(K);
+  if (R.Node = nil) and (C.Code = #0) then
+    Dummy := '';
   LandrixGaebVisitText(N.DetailTextNode, V);
   LandrixGaebVisitText(N.OutlineTextNode, V);
   for K := 0 to N.ComplementCount - 1 do
@@ -158,6 +222,8 @@ begin
         Dummy := TLandrixGaebCategory(N).Lbl + TLandrixGaebCategory(N).Accepted;
         D := TLandrixGaebCategory(N).Total;
         TLandrixGaebCategory(N).CountStatus;
+        TLandrixGaebCategory(N).IsLot;
+        ReadTotals(TLandrixGaebCategory(N).Totals);
         for K := 0 to TLandrixGaebCategory(N).Children.Count - 1 do
           ReadNode(TLandrixGaebCategory(N).Children[K], V);
       end;
@@ -176,6 +242,7 @@ begin
         TLandrixGaebItem(N).Provisional;
         TLandrixGaebItem(N).IsBase;
         TLandrixGaebItem(N).NotOffered;
+        ReadItem(TLandrixGaebItem(N), V);
       end;
     gnkMarkupItem:
       begin
@@ -197,14 +264,36 @@ end;
 
 procedure ReadAll(ABill: TLandrixGaebBillOfQuantities);
 var
-  I: Integer;
+  I, K: Integer;
   V: TCountVisitor;
   Dummy: TLandrixGaebString;
   D: TLandrixGaebDecimal;
+  Bk: TLandrixGaebBreakdown;
+  R: TLandrixGaebReference;
 begin
   Dummy := ABill.ProjectName + ABill.BoQName + ABill.Currency + ABill.UPCompLabel(1);
   Dummy := Dummy + ABill.Owner.Name1 + ABill.Owner.Email + ABill.Contractor.City + ABill.Contractor.VATID;
+  Dummy := Dummy + ABill.ContractNo + ABill.ContractDate + ABill.BidDate + ABill.ConstructionStart +
+    ABill.ConstructionEnd + ABill.Owner.RequestName;
   ABill.Owner.Exists;
+  for I := 0 to ABill.RequesterCount - 1 do
+  begin
+    Dummy := Dummy + ABill.Requesters(I).Name1 + ABill.Requesters(I).RequestIDNo + ABill.Requesters(I).RequestName;
+    ABill.Requesters(I).Exists;
+  end;
+  for I := 0 to ABill.BreakdownCount - 1 do
+    Bk := ABill.Breakdowns(I);
+  ABill.HasLots;
+  for I := 0 to ABill.LotGroupCount - 1 do
+  begin
+    Dummy := Dummy + ABill.LotGroups(I).Number;
+    for K := 0 to ABill.LotGroups(I).LotCount - 1 do
+      R := ABill.LotGroups(I).Lots(K);
+    ReadTotals(ABill.LotGroups(I).Totals);
+  end;
+  ReadTotals(ABill.Totals);
+  if (Bk.Lbl = #0) and (R.Node = nil) then
+    Dummy := '';
   D := ABill.Total;
   if ABill.UPFracDig + ABill.NoUPComps < -2 then
     Dummy := '';
@@ -478,6 +567,254 @@ begin
   end;
 end;
 
+{ ---- legacy case 36: what the old adapters dropped ---- }
+
+function ItemAt(ABill: TLandrixGaebBillOfQuantities; const AOZ: string): TLandrixGaebItem;
+var
+  N: TLandrixGaebNode;
+begin
+  Result := nil;
+  if ABill.FindByOZ(TLandrixGaebString(AOZ), '', False, N) = gfrFound then
+    Result := N as TLandrixGaebItem;
+  Check(Result <> nil, 'item ' + AOZ);
+end;
+
+procedure TestLosses;
+var
+  B: TLandrixGaebBillOfQuantities;
+  Lot: TLandrixGaebCategory;
+  It: TLandrixGaebItem;
+  R: TLandrixGaebReference;
+  G: TLandrixGaebLotGroup;
+  Bk: TLandrixGaebBreakdown;
+  Sub: TLandrixGaebSubDescription;
+  Cat: TLandrixGaebCatalogRef;
+begin
+  B := Load(DataDir('legacy') + '36-losses.x86');
+  try
+    { parties, award data, currency }
+    CheckEqualsStr('Auftraggeber', S(B.Owner.Name1), 'owner');
+    CheckEqualsStr('Auftragnehmer', S(B.Contractor.Name1), 'contractor');
+    CheckEquals(1, B.RequesterCount, 'one requester');
+    Check(B.Requesters(0).Role = gprRequester, 'role of the requester');
+    Check(B.Requesters(0).Exists, 'requester with address');
+    CheckEqualsStr('Bedarfstraeger', S(B.Requesters(0).Name1), 'requester address');
+    CheckEqualsStr('Bedarfsstelle', S(B.Requesters(0).RequestName), 'requester name');
+    CheckEqualsStr('', S(B.Owner.RequestName), 'no request name of the owner');
+    CheckEqualsStr('EUR', S(B.Currency), 'currency');
+    CheckEqualsStr('V-1', S(B.ContractNo), 'contract number');
+    CheckEqualsStr('2026-11-01', S(B.ContractDate), 'contract date');
+    CheckEqualsStr('2027-01-04', S(B.ConstructionStart), 'start of construction');
+    CheckEqualsStr('2027-06-30', S(B.ConstructionEnd), 'end of construction');
+    CheckEqualsStr('', S(B.BidDate), 'no bid date');
+    { lots, lot groups, breakdown }
+    CheckEquals(3, B.BreakdownCount, 'three breakdown levels');
+    Bk := B.Breakdowns(0);
+    Check(Bk.Kind = gbkLot, 'first level is the lot');
+    CheckEquals(1, Bk.Length, 'length of the lot');
+    Bk := B.Breakdowns(1);
+    Check((Bk.Kind = gbkLevel) and Bk.Numeric, 'numeric category level');
+    CheckEqualsStr('Titel', S(Bk.Lbl), 'label of the level');
+    CheckEquals(2, Bk.Length, 'length of the level');
+    Check(B.Breakdowns(2).Kind = gbkItem, 'item level');
+    Check(B.HasLots, 'bill with lots');
+    CheckEquals(2, B.Root.Count, 'two lots');
+    Lot := B.Root[0] as TLandrixGaebCategory;
+    Check(Lot.IsLot, 'top level category is a lot');
+    Check(not (Lot.Children[1] as TLandrixGaebCategory).IsLot, 'a category in a lot is no lot');
+    CheckEqualsStr('Los eins', S(Lot.Lbl), 'label of the lot');
+    CheckEquals(1, B.LotGroupCount, 'one lot group');
+    G := B.LotGroups(0);
+    CheckEqualsStr('1', S(G.Number), 'number of the lot group');
+    CheckEquals(2, G.LotCount, 'lots of the group');
+    R := G.Lots(1);
+    Check((R.Status = grsResolved) and (R.Node = B.Root[1]), 'second lot resolved');
+    CheckEqualsStr('L2', S(R.IDRef), 'IDRef of the lot');
+    CheckEqualsStr('69.00', DecText(G.Totals.Amount), 'total of the lot group');
+    { alternatives, change orders, variant bids }
+    It := ItemAt(B, '1.01.0010');
+    Check(It.IsBase and (It.AlternativeGroup = '1'), 'base item with its group');
+    Check(ItemAt(B, '1.01.0020').IsAlternative, 'alternative item');
+    It := ItemAt(B, '1.01.0060');
+    CheckEqualsStr('1', S(It.ChangeOrderNo), 'change order number');
+    CheckEqualsStr('Approved', S(It.ChangeOrderStatus), 'change order status');
+    CheckEqualsStr('New', S(It.AlterBidStatus), 'status in the variant bid');
+    { references }
+    It := ItemAt(B, '1.01.0030');
+    Check(It.DescriptionRole = gdrReference, 'reference description');
+    It := ItemAt(B, '1.01.0040');
+    Check(It.DescriptionRole = gdrRepetition, 'repetition description');
+    R := It.RefRNo;
+    Check((R.Status = grsResolved) and (R.Node = ItemAt(B, '1.01.0030')), 'repetition refers to its reference');
+    CheckEqualsStr('I3', S(R.IDRef), 'raw IDRef');
+    Check(It.RefPerfNo.Status = grsAbsent, 'no execution description');
+    R := ItemAt(B, '1.01.0050').RefPerfNo;
+    Check((R.Status = grsResolved) and (R.Node.Kind = gnkPerfDescr), 'execution description resolved');
+    CheckEqualsStr('1', S((R.Node as TLandrixGaebPerfDescr).PerfNo), 'number of the execution description');
+    R := ItemAt(B, '1.01.0070').RefRNo;
+    Check((R.Status = grsWrongKind) and (R.Node = nil), 'RefRNo to an execution description has the wrong kind');
+    It := ItemAt(B, '1.01.0080');
+    CheckEqualsStr('ExtUseItem', S(It.HoldOutType), 'hold-out item');
+    CheckEquals(2, It.RefBaseItemCount, 'two base item references');
+    R := It.RefBaseItem(0);
+    Check((R.Status = grsResolved) and (R.Node = ItemAt(B, '1.01.0010')), 'base item resolved');
+    Check(It.RefBaseItem(1).Status = grsWrongKind, 'base item reference to a category');
+    It := ItemAt(B, '1.01.0010');
+    Check(It.RefRNo.Status = grsAbsent, 'no reference');
+    { complements, sub descriptions with quantity, partial quantities }
+    CheckEquals(1, It.ComplementCount, 'complement of the item');
+    CheckEqualsStr('1', S(It.Complements(0).MarkLbl), 'number of the complement');
+    CheckEquals(2, It.QtySplitCount, 'partial quantities');
+    CheckEqualsStr('4.000', DecText(It.QtySplits(0).Qty), 'first partial quantity');
+    CheckEqualsStr('6.000', DecText(It.QtySplits(1).Qty), 'second partial quantity');
+    Check(not It.QtySplits(0).QtyPcnt.HasValue, 'no percentage');
+    It := ItemAt(B, '1.01.0070');
+    Check(It.IsSumDescription, 'sum description');
+    CheckEquals(1, It.SubDescriptionCount, 'one sub description');
+    Sub := It.SubDescriptions(0);
+    Check(Sub.Item = It, 'item of the sub description');
+    CheckEqualsStr('1', S(Sub.Number), 'number of the sub description');
+    CheckEqualsStr('2.000', DecText(Sub.Qty), 'quantity of the sub description');
+    CheckEqualsStr('St', S(Sub.QU), 'unit of the sub description');
+    CheckEqualsStr('0.500', DecText(Sub.UP), 'unit price of the sub description');
+    CheckEqualsStr('Leistung', S(Sub.LongText), 'text of the sub description');
+    Check(Copy(S(Sub.Path), Length(S(Sub.Path)) - 11, 12) = '/SubDescr[1]', 'path of the sub description');
+    { unit price components and their labels; 0.00 is a value }
+    It := ItemAt(B, '1.01.0010');
+    CheckEqualsStr('Lohn', S(B.UPCompLabel(1)), 'label of component 1');
+    CheckEqualsStr('Stoffe', S(B.UPCompLabel(2)), 'label of component 2');
+    CheckEqualsStr('1.500', DecText(It.UPComp(1)), 'component 1');
+    CheckEqualsStr('0.000', DecText(ItemAt(B, '1.01.0050').UP), 'zero is a value');
+    { totals, discount, VAT }
+    CheckEqualsStr('69.00', DecText(B.Totals.Value(gtfTotal)), 'total');
+    CheckEqualsStr('1.000', DecText(B.Totals.Value(gtfDiscountPcnt)), 'discount');
+    CheckEqualsStr('68.31', DecText(B.Totals.Value(gtfTotAfterDisc)), 'total after discount');
+    CheckEqualsStr('19.00', DecText(B.Totals.Value(gtfVAT)), 'VAT rate');
+    CheckEqualsStr('12.98', DecText(B.Totals.Value(gtfVATAmount)), 'VAT amount');
+    CheckEqualsStr('81.29', DecText(B.Totals.Value(gtfTotalGross)), 'gross total');
+    CheckEqualsStr('68.31', DecText(B.Total), 'the amount that counts');
+    Check(not B.Totals.Value(gtfDiscountAmt).HasValue, 'no discount amount');
+    CheckEqualsStr('69.00', DecText(Lot.Totals.Value(gtfTotal)), 'total of the lot');
+    { catalogues; comments of the bidder }
+    CheckEquals(1, It.CatalogCount, 'catalogue assignment of the item');
+    Cat := It.Catalogs(0);
+    Check((Cat.CatalogID = 'C1') and (Cat.Code = 'KS1'), 'catalogue and code');
+    CheckEquals(1, It.BidCommentCount, 'comment of the bidder');
+    CheckEqualsStr('Hinweis des Bieters', S(LandrixGaebPlainText(It.BidCommentNode(0))), 'text of the comment');
+  finally
+    B.Free;
+  end;
+end;
+
+{ Unresolved references and the setters of totals, sub descriptions,
+  requesters and award data. }
+procedure TestWriteValues;
+var
+  B: TLandrixGaebBillOfQuantities;
+  It: TLandrixGaebItem;
+  C: TLandrixGaebCategory;
+  Output: TLandrixXmlUtf8;
+  Raised: Boolean;
+  R: TLandrixGaebReference;
+begin
+  B := Load(DataDir('legacy') + '36-losses.x86');
+  try
+    It := ItemAt(B, '1.01.0010');
+    TLandrixGaebXmlItem(It.SyntaxNode).RefRNo.IDRef := 'nowhere';
+    Check(It.RefRNo.Status = grsNotFound, 'IDRef without element');
+    Check(It.RefRNo.Node = nil, 'no node when not found');
+    TLandrixGaebXmlItem(It.SyntaxNode).RefRNo.IDRef := 'B1';
+    Check(It.RefRNo.Status = grsWrongKind, 'IDRef to the BoQ has the wrong kind');
+    TLandrixGaebXmlItem(It.SyntaxNode).RefRNo.IDRef := 'G1';
+    Check(It.RefRNo.Status = grsWrongKind, 'IDRef to a lot group has the wrong kind');
+    TLandrixGaebXmlItem(It.SyntaxNode).RefRNo.IDRef := '';
+    TLandrixGaebXmlItem(ItemAt(B, '1.01.0020').SyntaxNode).ID := 'I1';
+    B.Refresh;
+    R := ItemAt(B, '1.01.0080').RefBaseItem(0);
+    Check((R.Status = grsAmbiguous) and (R.Node = nil), 'duplicate ID is ambiguous');
+    TLandrixGaebXmlItem(ItemAt(B, '1.01.0020').SyntaxNode).ID := 'I2';
+    B.Refresh;
+    B.Totals.SetValue(gtfDiscountAmt, DecOf('0.69'));
+    B.Totals.ClearValue(gtfDiscountPcnt);
+    It := ItemAt(B, '1.01.0070');
+    It.SubDescriptions(0).SetQty(DecOf('3.000'));
+    It.SubDescriptions(0).SetUPComp(1, DecOf('0.250'));
+    B.Requesters(0).RequestIDNo := 'R-7';
+    B.BidDate := '2026-10-30';
+    C := (B.Root[1] as TLandrixGaebCategory).Children[0] as TLandrixGaebCategory;
+    C.Totals.ClearValue(gtfTotal);
+    Check(C.Totals.Exists, 'clearing a value keeps the block');
+    Output := Written(B);
+    Check(Pos(TLandrixXmlUtf8('<DiscountAmt>0.69</DiscountAmt>'), Output) > 0, 'discount amount written');
+    Check(Pos(TLandrixXmlUtf8('<DiscountPcnt>'), Output) = 0, 'discount percentage removed');
+    Check(Pos(TLandrixXmlUtf8('<Qty>3.000</Qty>'), Output) > 0, 'quantity of the sub description written');
+    Check(Pos(TLandrixXmlUtf8('<UPComp1>0.250</UPComp1>'), Output) > 0, 'component of the sub description written');
+    Check(Pos(TLandrixXmlUtf8('<RequestIDNo>R-7</RequestIDNo>'), Output) > 0, 'requester number written');
+    Check(Pos(TLandrixXmlUtf8('<BidDate>2026-10-30</BidDate>'), Output) > 0, 'bid date written');
+    Raised := False;
+    try
+      B.Owner.RequestName := 'x';
+    except
+      on ELandrixGaebError do
+        Raised := True;
+    end;
+    Check(Raised, 'only a requester has a request name');
+  finally
+    B.Free;
+  end;
+  B := Load(DataDir('process') + 'request.x83');
+  try
+    Check(not B.Totals.Exists, 'no totals in the request');
+    Check(not B.Totals.Value(gtfTotal).HasValue, 'absent block reads no value');
+    B.Totals.ClearValue(gtfTotal);
+    Check(not B.Totals.Exists, 'clearing does not create the block');
+    CheckEquals(0, B.RequesterCount, 'no requester');
+    CheckEquals(0, B.LotGroupCount, 'no lot group');
+    Check(not B.HasLots, 'no lots');
+    Check(not (B.Root[0] as TLandrixGaebCategory).IsLot, 'no lot without lot level');
+    B.Totals.SetValue(gtfTotal, DecOf('1.00'));
+    Check(B.Totals.Exists, 'setting creates the block');
+    CheckEqualsStr('1.00', DecText(B.Total), 'total set');
+  finally
+    B.Free;
+  end;
+end;
+
+procedure TestLoadSave;
+var
+  B, B2: TLandrixGaebBillOfQuantities;
+  FileName: string;
+  Stream: TMemoryStream;
+  Diags: TLandrixGaebDiagnostics;
+  Options: TLandrixGaebXmlWriteOptions;
+begin
+  FileName := DataDir('process') + 'bid.x84';
+  Diags := TLandrixGaebDiagnostics.Create;
+  B := nil;
+  B2 := nil;
+  Stream := TMemoryStream.Create;
+  try
+    B := TLandrixGaebBillOfQuantities.LoadFromFile(FileName, Diags, 0);
+    Check(B.Target.Phase = gp84, 'target of the file');
+    CheckEquals(5, B.AllItems.Count, 'items loaded');
+    ItemAt(B, '01.0010').SetUP(DecOf('2.75'));
+    Options := B.WriteOptions;
+    Options.Indent := False;
+    B.WriteOptions := Options;
+    B.SaveToStream(Stream, Diags);
+    Check(Stream.Size > 0, 'written to the stream');
+    Stream.Position := 0;
+    B2 := TLandrixGaebBillOfQuantities.LoadFromStream(Stream, Diags, 0);
+    CheckEqualsStr('2.750', DecText(ItemAt(B2, '01.0010').UP), 'value saved and loaded (digits of the schema)');
+    Check(not Diags.HasErrors, 'no errors: ' + Diags.ToText);
+  finally
+    B2.Free;
+    B.Free;
+    Stream.Free;
+    Diags.Free;
+  end;
+end;
+
 procedure Register;
 begin
   RegisterTest('BoQ.ReadOnly', TestReadOnly);
@@ -486,6 +823,9 @@ begin
   RegisterTest('BoQ.Ambiguous', TestAmbiguous);
   RegisterTest('BoQ.Complements', TestComplements);
   RegisterTest('BoQ.PlainText', TestPlainText);
+  RegisterTest('BoQ.Losses', TestLosses);
+  RegisterTest('BoQ.WriteValues', TestWriteValues);
+  RegisterTest('BoQ.LoadSave', TestLoadSave);
 end;
 
 end.

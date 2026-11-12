@@ -3,7 +3,7 @@
 GAEB implementation (plan, phase 1 step 8; cases 24 to 37 of the legacy
 review, XML part):
 
-  tests/data/legacy/<case>.x83|x84
+  tests/data/legacy/<case>.x83|x84|x86
 
 Documents whose name contains "-invalid" break the schema on purpose (vendor
 elements, nested categories of the old writer, broken UTF-8); all others are
@@ -230,6 +230,69 @@ case("34-zero.x84",
      rc.std84('<Item ID="I1" RNoPart="0010"><UP>0.00</UP><IT>0.00</IT></Item>',
               '<Item ID="I2" RNoPart="0020"><NotOffered>Yes</NotOffered></Item>', total="0.00"))
 
+
+# ---- 36: everything the old adapters dropped, reachable through the facade ----
+
+ADDR = "<Address><Name1>%s</Name1><Street>Weg 1</Street><PCode>12345</PCode><City>Ort</City></Address>"
+T36 = "<Text><p>%s</p></Text>" % span("Leistung")
+D36 = ("<Description><CompleteText><DetailTxt><Text><p>%s%s</p></Text></DetailTxt>%s</CompleteText></Description>"
+       % (span("Leuchte"), complement(1, "Bidder", "Typ B"), outline()))
+DESC36 = desc(T36)
+ITEMS36 = rc.itemlist(
+    '<Item ID="I1" RNoPart="0010"><ALNGroupNo>1</ALNGroupNo><ALNSerNo>0</ALNSerNo><Qty>10.000</Qty>'
+    '<QtySplit><Qty>4.000</Qty>%s</QtySplit><QtySplit><Qty>6.000</Qty>%s</QtySplit><QU>m</QU>%s<UP>2.000</UP>'
+    '<UPComp1>1.500</UPComp1><UPComp2>0.500</UPComp2><IT>20.00</IT>%s'
+    '<BidComm><p>%s</p></BidComm></Item>' % (ctlg_assign("KS1"), ctlg_assign("KS2"), ctlg_assign("KS1"), D36,
+                                          span("Hinweis des Bieters")),
+    '<Item ID="I2" RNoPart="0020"><ALNGroupNo>1</ALNGroupNo><ALNSerNo>1</ALNSerNo>'
+    '<Qty>10.000</Qty><QU>m</QU><UP>3.000</UP><IT>30.00</IT>%s</Item>' % DESC36,
+    '<Item ID="I3" RNoPart="0030"><RefDescr>Ref</RefDescr><Qty>3.000</Qty><QU>m2</QU><UP>1.000</UP>'
+    '<IT>3.00</IT>%s</Item>' % DESC36,
+    '<Item ID="I4" RNoPart="0040"><RefDescr>Rep</RefDescr><RefRNo IDRef="I3"/><Qty>5.000</Qty><QU>m2</QU>'
+    '<UP>1.000</UP><IT>5.00</IT>%s</Item>' % DESC36,
+    '<Item ID="I5" RNoPart="0050"><RefPerfNo IDRef="P1"/><Qty>1.000</Qty><QU>m3</QU><UP>0.000</UP>'
+    '<IT>0.00</IT>%s</Item>' % DESC36,
+    '<Item ID="I6" RNoPart="0060"><CONo>1</CONo><COStatus>Approved</COStatus><Qty>2.000</Qty><QU>St</QU>'
+    '<UP>5.000</UP><IT>10.00</IT>%s<AlterBidStatus>New</AlterBidStatus></Item>' % DESC36,
+    '<Item ID="I7" RNoPart="0070"><RefRNo IDRef="P1"/><Qty>1.000</Qty><QU>St</QU><UP>1.000</UP><IT>1.00</IT>'
+    '%s<SumDescr>Yes</SumDescr><SubDescr><SubDNo>1</SubDNo>%s<Qty>2.000</Qty><QU>St</QU><UP>0.500</UP>'
+    '</SubDescr></Item>' % (DESC36, DESC36),
+    '<Item ID="I9" RNoPart="0080"><HoldOutType>ExtUseItem</HoldOutType><UseDur>4</UseDur>'
+    '<UseDurLblTime>week</UseDurLblTime><RefBaseItem IDRef="I1"/><RefBaseItem IDRef="C1"/><Qty>1.000</Qty>'
+    '<QU>St</QU><UP>0.000</UP><IT>0.00</IT>%s</Item>' % DESC36)
+PERF36 = '<PerfDescr ID="P1"><PerfNo>1</PerfNo><PerfLbl>Ausfuehrung</PerfLbl>%s</PerfDescr>' % rc.desc83()
+TOTALS36 = ("<Totals><Total>69.00</Total><DiscountPcnt>1.000</DiscountPcnt><TotAfterDisc>68.31</TotAfterDisc>"
+            "<VAT>19.00</VAT><TotalNet>68.31</TotalNet><VATAmount>12.98</VATAmount><TotalGross>81.29</TotalGross>"
+            "</Totals>")
+case("36-losses.x86",
+     '<?xml version="1.0" encoding="UTF-8"?>\n'
+     '<GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA86/3.3">\n'
+     '  <GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate><Date>2026-11-12</Date>'
+     '<ProgSystem>Test</ProgSystem></GAEBInfo>\n'
+     '  <PrjInfo><NamePrj>Projekt</NamePrj></PrjInfo>\n'
+     '  <Award><DP>86</DP><AwardInfo><Cur>EUR</Cur><CurLbl>Euro</CurLbl><CnstStart>2027-01-04</CnstStart>'
+     '<CnstEnd>2027-06-30</CnstEnd><ContrNo>V-1</ContrNo><ContrDate>2026-11-01</ContrDate></AwardInfo>'
+     '<OWN>' + ADDR % "Auftraggeber" + '</OWN>'
+     '<Requester>' + ADDR % "Bedarfstraeger" + '<RequestName>Bedarfsstelle</RequestName></Requester>'
+     '<CTR>' + ADDR % "Auftragnehmer" + '</CTR>'
+     '<BoQ ID="B1"><BoQInfo><Name>LV</Name><LblBoQ>Test</LblBoQ><OutlCompl>AllTxt</OutlCompl>' +
+     rc.bkdn(levels=(("Lot", 1, "Yes"), ("BoQLevel", 2, "Yes"))) + UPCOMPS3 + TOTALS36 +
+     '</BoQInfo><BoQBody>'
+     '<BoQCtgy ID="L1" RNoPart="1"><LblTx><p>%s</p></LblTx><BoQBody>%s</BoQBody>%s</BoQCtgy>'
+     '<BoQCtgy ID="L2" RNoPart="2"><LblTx><p>%s</p></LblTx><BoQBody>%s</BoQBody>%s</BoQCtgy>'
+     '</BoQBody><LotGrp ID="G1"><LotGrNo>1</LotGrNo><RefLotNo IDRef="L1"/><RefLotNo IDRef="L2"/>%s</LotGrp>'
+     '</BoQ></Award>\n'
+     '</GAEB>\n'
+     % (span("Los eins"),
+        PERF36 + '<BoQCtgy ID="C1" RNoPart="01"><LblTx><p>%s</p></LblTx><BoQBody>%s</BoQBody>%s</BoQCtgy>'
+        % (span("Titel"), ITEMS36, rc.totals("69.00")),
+        rc.totals("69.00"),
+        span("Los zwei"),
+        '<BoQCtgy ID="C2" RNoPart="01"><LblTx><p>%s</p></LblTx><BoQBody>%s</BoQBody>%s</BoQCtgy>'
+        % (span("Titel"), rc.itemlist('<Item ID="I8" RNoPart="0010"><Qty>1.000</Qty><QU>St</QU><UP>0.000</UP>'
+                                      '<IT>0.00</IT>%s</Item>' % DESC36), rc.totals("0.00")),
+        rc.totals("0.00"),
+        rc.totals("69.00")))
 
 def files():
     return dict(CASES)
