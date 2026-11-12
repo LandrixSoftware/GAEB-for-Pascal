@@ -312,9 +312,9 @@ type
   end;
 
 { Default options: gwmNormal, decimals normalized to the target type,
-  no BOM, indented, CR LF.
+  output checked, UPFracDig -1, no BOM, indented, CR LF.
   DE: Standardoptionen: gwmNormal, Dezimale auf den Zieltyp normalisiert,
-  keine BOM, eingerueckt, CR LF. }
+  Ausgabe geprueft, UPFracDig -1, keine BOM, eingerueckt, CR LF. }
 function LandrixGaebXmlDefaultWriteOptions: TLandrixGaebXmlWriteOptions;
 
 { Builds a target. DE: Baut eine Zielangabe. }

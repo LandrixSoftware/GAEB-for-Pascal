@@ -1,14 +1,50 @@
 # GAEB-for-Pascal
 
-Pascal-Bibliothek zum Lesen, Schreiben und Verarbeiten von GAEB-Dateien (GAEB DA XML).
+Pascal-Bibliothek zum Lesen, Schreiben, Prüfen und Konvertieren von GAEB-Dateien (GAEB DA XML
+3.2 und 3.3). / Pascal library to read, write, check and convert GAEB files (GAEB DA XML 3.2
+and 3.3).
 
-**Status:** in Entwicklung; noch kein Bibliothekscode und keine Veröffentlichung.
+**Status:** vor Version 1.0; noch keine Veröffentlichung. / Before release 1.0; no release yet.
 
-- Ziel: eine Codebasis für **Delphi 6 bis Delphi 13** und **Free Pascal 3.2.2, 3.2.4 und 3.3.1**
-  (Windows, Linux, macOS).
+- Eine Codebasis für **Delphi 6 bis Delphi 13** und **Free Pascal 3.2.2, 3.2.4 und 3.3.1**
+  (Windows, Linux, macOS). / One code base for Delphi 6 to 13 and Free Pascal 3.2.2 to 3.3.1.
+- Fachliche Fassade (Bereiche, Positionen, Mengen, Preise, Texte, Angebot und Auftrag) über einem
+  vollständigen, aus den Schemas generierten Syntaxmodell; Prüfung der Inhaltsmodelle,
+  Geschäfts- und Paarregeln. / Business facade over a complete syntax model generated from the
+  schemas; content model check, business rules and pair rules.
 - Keine Abhängigkeit von MSXML oder anderen XML-Bibliotheken: XML wird über
   [LandrixXML for Pascal](https://github.com/landrix/LandrixXML-for-Pascal)
   verarbeitet, eingebunden als Git-Submodul (`git clone --recurse-submodules`).
+
+## Schnellstart / Quick start
+
+```pascal
+uses
+  LandrixGaebTypes, LandrixGaebDiagnostics, LandrixGaebBoQ;
+
+Bill := TLandrixGaebBillOfQuantities.LoadFromFile('request.x83', nil, 0);
+try
+  for I := 0 to Bill.AllItems.Count - 1 do
+    WriteLn(string(Bill.AllItems[I].OZ), '  ', string(Bill.AllItems[I].ShortText));
+  Bill.SaveToFile('copy.x83', nil);   // geprüft gegen das Schema / checked against the schema
+finally
+  Bill.Free;
+end;
+```
+
+## Dokumentation / Documentation
+
+- Erste Schritte / Getting started: [Deutsch](docs/de/getting-started.md),
+  [English](docs/getting-started.md) (Einrichtung, Versionen, Delphi 6, Grenzen / setup,
+  versions, Delphi 6, limits)
+- Lesen / Reading: [Deutsch](docs/de/reading.md), [English](docs/reading.md)
+- Schreiben und Konvertieren / Writing and converting: [Deutsch](docs/de/writing.md),
+  [English](docs/writing.md)
+- Prüfen / Checking: [Deutsch](docs/de/checking.md), [English](docs/checking.md)
+- Vergabeprozess / Bid process: [Deutsch](docs/de/process.md), [English](docs/process.md)
+- [Beispiele / Examples](examples/): Konsolenprogramme für Delphi und Free Pascal / console
+  programs for Delphi and Free Pascal (`WriteBoQ`, `ReadBoQ`, `CheckGaeb`, `ConvertGaeb`,
+  `BidToAward`)
 
 ## Öffentliche API / Public API
 
