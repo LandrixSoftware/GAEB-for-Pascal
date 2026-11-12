@@ -63,7 +63,7 @@ uses
 const
   { Library version (Semantic Versioning).
     DE: Version der Bibliothek (Semantic Versioning). }
-  LandrixGaebLibraryVersion = '0.0.1';
+  LandrixGaebLibraryVersion = '1.0.0';
 
   { Largest scale (fraction digits) of TLandrixGaebDecimal.
     DE: Groesste Skala (Nachkommastellen) von TLandrixGaebDecimal. }

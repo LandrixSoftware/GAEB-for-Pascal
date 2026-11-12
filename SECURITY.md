@@ -29,7 +29,7 @@ Die E-Mail-Adresse ist ein privater Kontaktweg, keine Zusage einer Ende-zu-Ende-
 
 ### Unterstützte Versionen und Bearbeitung
 
-Das Projekt befindet sich in der Entwicklung; es gibt noch keine veröffentlichte Version.
+Sicherheitskorrekturen erscheinen für die jeweils neueste Version (ab 1.0.0).
 Es ist keine verbindliche Tabelle mit Sicherheits-Supportzeiträumen je Release veröffentlicht.
 Es werden hier keine festen Reaktionszeiten, Behebungsfristen oder Rückportierungen zugesagt.
 Vertragliche Rechte und gesetzliche Pflichten bleiben unberührt; dieses Dokument ändert nicht
@@ -69,7 +69,7 @@ transmission or a reporting service staffed around the clock.
 
 ### Supported versions and handling
 
-The project is under development; there is no published release yet.
+Security fixes are released for the latest version (from 1.0.0 on).
 No binding table of security support periods per release is published.
 This document does not promise fixed response times, remediation deadlines or backports.
 Contractual rights and statutory obligations remain unaffected; this document does not

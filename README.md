@@ -4,7 +4,8 @@ Pascal-Bibliothek zum Lesen, Schreiben, Prüfen und Konvertieren von GAEB-Dateie
 3.2 und 3.3). / Pascal library to read, write, check and convert GAEB files (GAEB DA XML 3.2
 and 3.3).
 
-**Status:** vor Version 1.0; noch keine Veröffentlichung. / Before release 1.0; no release yet.
+**Status:** Version 1.0.0; die stabilen Units folgen der semantischen Versionierung. / Version
+1.0.0; the stable units follow semantic versioning.
 
 - Eine Codebasis für **Delphi 6 bis Delphi 13** und **Free Pascal 3.2.2, 3.2.4 und 3.3.1**
   (Windows, Linux, macOS). / One code base for Delphi 6 to 13 and Free Pascal 3.2.2 to 3.3.1.
