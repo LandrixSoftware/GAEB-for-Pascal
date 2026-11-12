@@ -38,8 +38,9 @@
   in Dokumentreihenfolge. Vorhandensein: siehe LandrixGaebXmlBase. Elemente,
   die es nur in der Beta 3.4 gibt, sind nicht Teil des Modells. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: stable. Covered by semantic versioning from release 1.0 on.
+  DE: API: stabil. Ab Version 1.0 durch die semantische Versionierung
+  abgedeckt. }
 
 unit LandrixGaebXmlModel;
 

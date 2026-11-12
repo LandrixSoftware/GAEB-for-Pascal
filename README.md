@@ -10,6 +10,22 @@ Pascal-Bibliothek zum Lesen, Schreiben und Verarbeiten von GAEB-Dateien (GAEB DA
   [LandrixXML for Pascal](https://github.com/landrix/LandrixXML-for-Pascal)
   verarbeitet, eingebunden als Git-Submodul (`git clone --recurse-submodules`).
 
+## Öffentliche API / Public API
+
+Jede Unit nennt ihre Stufe in einem Kommentar vor der `unit`-Zeile (`API: stable` oder
+`API: internal`); `tools/check-forbidden.py` prüft, dass das Interface einer stabilen Unit keine
+interne Unit verwendet. Die stabilen Units fallen ab Version 1.0 unter die semantische
+Versionierung. / Every unit states its level in a comment before its `unit` line; the stable units
+are covered by semantic versioning from release 1.0 on.
+
+- **Stabil / stable:** `LandrixGaebBoQ` (fachliche Fassade / business facade),
+  `LandrixGaebProcess`, `LandrixGaebTypes`, `LandrixGaebDiagnostics`, `LandrixGaebXmlBase`,
+  `LandrixGaebXmlModel` (Syntaxmodell / syntax model), `LandrixGaebXmlReader`,
+  `LandrixGaebXmlWriter`, `LandrixGaebXmlCheck`, `LandrixGaebRules`, `LandrixGaebDetect`.
+- **Intern / internal** (kann sich in jeder Version ändern / may change in any release):
+  `LandrixGaebBoQTree`, `LandrixGaebXmlReadBase`, `LandrixGaebXmlWriteBase`,
+  `LandrixGaebXmlProfiles`, `LandrixGaebXmlGrammar`, `LandrixGaebXmlCodes`.
+
 ## Lizenz / License
 
 english version below

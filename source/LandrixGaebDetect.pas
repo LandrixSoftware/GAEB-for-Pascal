@@ -39,8 +39,9 @@
   DE: Die Meldungen oben haben dieselben Regelkennungen; die Texte sind
   englisch und enthalten keinen Dateiinhalt. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: stable. Covered by semantic versioning from release 1.0 on.
+  DE: API: stabil. Ab Version 1.0 durch die semantische Versionierung
+  abgedeckt. }
 
 unit LandrixGaebDetect;
 
@@ -52,7 +53,6 @@ uses
   SysUtils,
   Classes,
   LandrixXmlBase,
-  LandrixXmlReader,
   LandrixGaebTypes,
   LandrixGaebDiagnostics;
 
@@ -122,6 +122,9 @@ function LandrixGaebDetectFile(const AFileName: string;
 function LandrixGaebFormatToStr(AFormat: TLandrixGaebFormat): string;
 
 implementation
+
+uses
+  LandrixXmlReader;
 
 const
   NamespacePrefix = 'http://www.gaeb.de/GAEB_DA_XML/';

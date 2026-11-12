@@ -449,8 +449,9 @@ def gen_model(model):
   in Dokumentreihenfolge. Vorhandensein: siehe LandrixGaebXmlBase. Elemente,
   die es nur in der Beta 3.4 gibt, sind nicht Teil des Modells. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: stable. Covered by semantic versioning from release 1.0 on.
+  DE: API: stabil. Ab Version 1.0 durch die semantische Versionierung
+  abgedeckt. }
 
 unit LandrixGaebXmlModel;
 
@@ -731,8 +732,10 @@ def gen_codes(model):
   TLandrixGaebPhase, TLandrixGaebVersion und TLandrixGaebEdition aus
   LandrixGaebTypes. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: internal. May change in any release, also after 1.0; use the
+  stable units instead (see README).
+  DE: API: intern. Kann sich in jeder Version aendern, auch nach 1.0;
+  stattdessen die stabilen Units verwenden (siehe README). }
 
 unit LandrixGaebXmlCodes;
 
@@ -1027,8 +1030,9 @@ def gen_reader(model):
   was nicht zum Schema passt, wird eine Meldung (LandrixGaebXmlReadBase),
   und das Lesen geht weiter. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: stable. Covered by semantic versioning from release 1.0 on.
+  DE: API: stabil. Ab Version 1.0 durch die semantische Versionierung
+  abgedeckt. }
 
 unit LandrixGaebXmlReader;
 
@@ -1039,14 +1043,10 @@ interface
 uses
   SysUtils,
   Classes,
-  LandrixXmlBase,
-  LandrixXmlReader,
   LandrixGaebTypes,
   LandrixGaebDiagnostics,
   LandrixGaebDetect,
-  LandrixGaebXmlBase,
-  LandrixGaebXmlModel,
-  LandrixGaebXmlReadBase;
+  LandrixGaebXmlModel;
 
 { Reads a GAEB DA XML document from a buffer that holds the whole input.
   Targets outside the schemas of the model raise ELandrixGaebError.
@@ -1072,6 +1072,12 @@ function LandrixGaebXmlReadFile(const AFileName: string; ADiagnostics: TLandrixG
   AMaxSize: Int64; out ADetection: TLandrixGaebDetection): TLandrixGaebXmlGAEB;
 
 implementation
+
+uses
+  LandrixXmlBase,
+  LandrixXmlReader,
+  LandrixGaebXmlBase,
+  LandrixGaebXmlReadBase;
 """)
     infos = [model.emit[n] for n in sorted(model.emit, key=lambda k: model.emit[k]["name"].lower())
              if model.emit[n]["kind"] != "group"]
@@ -1346,8 +1352,10 @@ def gen_profiles(model, prof):
   eines komplexen Kinds beginnt und wie viele Nachkommastellen eine
   begrenzte Dezimalzahl hat. Benutzt von Schreiber und Pruefung. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: internal. May change in any release, also after 1.0; use the
+  stable units instead (see README).
+  DE: API: intern. Kann sich in jeder Version aendern, auch nach 1.0;
+  stattdessen die stabilen Units verwenden (siehe README). }
 
 unit LandrixGaebXmlProfiles;
 
@@ -1557,8 +1565,9 @@ def gen_writer(model, prof):
   LandrixGaebCheck, nicht dieser Schreiber. Bricht der Modus ab, wird am
   Ziel nichts geschrieben. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: stable. Covered by semantic versioning from release 1.0 on.
+  DE: API: stabil. Ab Version 1.0 durch die semantische Versionierung
+  abgedeckt. }
 
 unit LandrixGaebXmlWriter;
 
@@ -1570,13 +1579,9 @@ uses
   SysUtils,
   Classes,
   LandrixXmlBase,
-  LandrixXmlWriter,
   LandrixGaebTypes,
   LandrixGaebDiagnostics,
-  LandrixGaebXmlBase,
-  LandrixGaebXmlModel,
-  LandrixGaebXmlProfiles,
-  LandrixGaebXmlWriteBase;
+  LandrixGaebXmlModel;
 
 { The document as UTF-8 for ATarget. Raises ELandrixGaebError if the target
   is not supported for writing or if the mode aborts (see
@@ -1618,6 +1623,10 @@ procedure LandrixGaebXmlWriteFile(ADocument: TLandrixGaebXmlGAEB; const ATarget:
 implementation
 
 uses
+  LandrixXmlWriter,
+  LandrixGaebXmlBase,
+  LandrixGaebXmlProfiles,
+  LandrixGaebXmlWriteBase,
   LandrixGaebXmlCheck;
 """)
     infos = [model.emit[n] for n in sorted(model.emit, key=lambda k: model.emit[k]["name"].lower())]
@@ -2044,8 +2053,10 @@ def gen_grammar(g):
   Automat (DFA) fuer seinen Elementinhalt. Zeilen, die in mehreren Zielen
   gleich sind, werden geteilt. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: internal. May change in any release, also after 1.0; use the
+  stable units instead (see README).
+  DE: API: intern. Kann sich in jeder Version aendern, auch nach 1.0;
+  stattdessen die stabilen Units verwenden (siehe README). }
 
 unit LandrixGaebXmlGrammar;
 

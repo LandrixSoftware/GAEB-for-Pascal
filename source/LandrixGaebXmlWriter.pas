@@ -36,8 +36,9 @@
   LandrixGaebCheck, nicht dieser Schreiber. Bricht der Modus ab, wird am
   Ziel nichts geschrieben. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: stable. Covered by semantic versioning from release 1.0 on.
+  DE: API: stabil. Ab Version 1.0 durch die semantische Versionierung
+  abgedeckt. }
 
 unit LandrixGaebXmlWriter;
 
@@ -49,13 +50,9 @@ uses
   SysUtils,
   Classes,
   LandrixXmlBase,
-  LandrixXmlWriter,
   LandrixGaebTypes,
   LandrixGaebDiagnostics,
-  LandrixGaebXmlBase,
-  LandrixGaebXmlModel,
-  LandrixGaebXmlProfiles,
-  LandrixGaebXmlWriteBase;
+  LandrixGaebXmlModel;
 
 { The document as UTF-8 for ATarget. Raises ELandrixGaebError if the target
   is not supported for writing or if the mode aborts (see
@@ -97,6 +94,10 @@ procedure LandrixGaebXmlWriteFile(ADocument: TLandrixGaebXmlGAEB; const ATarget:
 implementation
 
 uses
+  LandrixXmlWriter,
+  LandrixGaebXmlBase,
+  LandrixGaebXmlProfiles,
+  LandrixGaebXmlWriteBase,
   LandrixGaebXmlCheck;
 
 procedure WriteAddress(W: TLandrixGaebXmlWriteContext; O: TLandrixGaebXmlAddress; const AName: TLandrixXmlUtf8;

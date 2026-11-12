@@ -40,8 +40,10 @@
   oben gelten unveraendert; die Texte sind englisch und enthalten keine
   Werte. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: internal. May change in any release, also after 1.0; use the
+  stable units instead (see README).
+  DE: API: intern. Kann sich in jeder Version aendern, auch nach 1.0;
+  stattdessen die stabilen Units verwenden (siehe README). }
 
 unit LandrixGaebXmlWriteBase;
 
@@ -59,61 +61,6 @@ uses
   LandrixGaebXmlProfiles;
 
 type
-  { How strictly the writer reacts to problems.
-    DE: Wie streng der Schreiber auf Probleme reagiert. }
-  TLandrixGaebXmlWriteMode = (
-    { Any warning or error aborts; nothing is written. DE: Jede Warnung
-      oder jeder Fehler bricht ab; nichts wird geschrieben. }
-    gwmStrict,
-    { Errors abort, warnings are allowed. DE: Fehler brechen ab, Warnungen
-      sind erlaubt. }
-    gwmNormal,
-    { Nothing aborts: what the target does not allow is left out and
-      reported as warning (loss report). DE: Nichts bricht ab: Was das
-      Ziel nicht erlaubt, wird weggelassen und als Warnung gemeldet
-      (Verlustbericht). }
-    gwmBestEffort
-  );
-
-  { Options of a write. A record without methods (Delphi 6); start from
-    LandrixGaebXmlDefaultWriteOptions.
-    DE: Optionen eines Schreibvorgangs. Record ohne Methoden (Delphi 6);
-    mit LandrixGaebXmlDefaultWriteOptions beginnen. }
-  TLandrixGaebXmlWriteOptions = record
-    { See TLandrixGaebXmlWriteMode. DE: Siehe TLandrixGaebXmlWriteMode. }
-    Mode: TLandrixGaebXmlWriteMode;
-    { Write decimals with the scale they have instead of the fraction
-      digits of the target type. DE: Dezimale mit ihrer Skala statt mit
-      den Nachkommastellen des Zieltyps schreiben. }
-    PreserveScale: Boolean;
-    { UTF-8 byte order mark at the start. DE: UTF-8-BOM am Anfang. }
-    WriteBom: Boolean;
-    { Indent outside of text blocks. DE: Einruecken ausserhalb von
-      Textbloecken. }
-    Indent: Boolean;
-    { CR LF instead of LF as line break. DE: CR LF statt LF als
-      Zeilenumbruch. }
-    CrLf: Boolean;
-    { Check the output against the content models of the target
-      (LandrixGaebXmlCheck, stage 2); its findings are errors (in mode
-      gwmBestEffort reported without abort).
-      DE: Die Ausgabe gegen die Inhaltsmodelle des Ziels pruefen
-      (LandrixGaebXmlCheck, Stufe 2); ihre Befunde sind Fehler (im Modus
-      gwmBestEffort gemeldet ohne Abbruch). }
-    Check: Boolean;
-    { Fraction digits of unit prices (UP, UPComp1 to UPComp6), 2 or 3:
-      UPFracDig of the request (PrjInfo of the X83), which the bid itself
-      does not carry. A price with more significant digits is a loss
-      (GAEB-WRT-002), never rounded. -1 (default): the digits of the
-      schema type. Ignored with PreserveScale.
-      DE: Nachkommastellen der Einheitspreise (UP, UPComp1 bis UPComp6),
-      2 oder 3: UPFracDig der Anfrage (PrjInfo des X83), das das Angebot
-      selbst nicht traegt. Ein Preis mit mehr werttragenden Stellen ist
-      ein Verlust (GAEB-WRT-002), nie gerundet. -1 (Standard): die
-      Stellen des Schematyps. Bei PreserveScale ohne Wirkung. }
-    UPFracDig: Integer;
-  end;
-
   { One open element of a write: its name, its index among the siblings of
     that name (for diagnostic paths) and the names of its children written
     so far with their counts. Used by TLandrixGaebXmlWriteContext only.
@@ -225,24 +172,7 @@ type
     property Writer: TLandrixXmlWriter read FWriter;
   end;
 
-{ Default options: gwmNormal, decimals normalized to the target type,
-  no BOM, indented, CR LF.
-  DE: Standardoptionen: gwmNormal, Dezimale auf den Zieltyp normalisiert,
-  keine BOM, eingerueckt, CR LF. }
-function LandrixGaebXmlDefaultWriteOptions: TLandrixGaebXmlWriteOptions;
-
 implementation
-
-function LandrixGaebXmlDefaultWriteOptions: TLandrixGaebXmlWriteOptions;
-begin
-  Result.Mode := gwmNormal;
-  Result.PreserveScale := False;
-  Result.WriteBom := False;
-  Result.Indent := True;
-  Result.CrLf := True;
-  Result.Check := True;
-  Result.UPFracDig := -1;
-end;
 
 { True for the elements of unit prices (UP, UPComp1 to UPComp6).
   DE: True fuer die Elemente der Einheitspreise (UP, UPComp1 bis

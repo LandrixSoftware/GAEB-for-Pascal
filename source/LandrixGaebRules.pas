@@ -44,8 +44,9 @@
   englisch und enthalten nie Werte des Dokuments; der Pfad nennt das
   Element. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: stable. Covered by semantic versioning from release 1.0 on.
+  DE: API: stabil. Ab Version 1.0 durch die semantische Versionierung
+  abgedeckt. }
 
 unit LandrixGaebRules;
 
@@ -58,10 +59,8 @@ uses
   Classes,
   Contnrs,
   LandrixXmlBase,
-  LandrixXmlDecimal,
   LandrixGaebTypes,
   LandrixGaebDiagnostics,
-  LandrixGaebXmlBase,
   LandrixGaebXmlModel;
 
 const
@@ -282,6 +281,8 @@ function LandrixGaebCheckPair(AFirst: TLandrixGaebXmlGAEB; const AFirstTarget: T
 implementation
 
 uses
+  LandrixXmlDecimal,
+  LandrixGaebXmlBase,
   LandrixGaebBoQTree;
 
 const

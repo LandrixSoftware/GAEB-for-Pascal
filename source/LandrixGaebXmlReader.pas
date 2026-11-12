@@ -36,8 +36,9 @@
   was nicht zum Schema passt, wird eine Meldung (LandrixGaebXmlReadBase),
   und das Lesen geht weiter. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: stable. Covered by semantic versioning from release 1.0 on.
+  DE: API: stabil. Ab Version 1.0 durch die semantische Versionierung
+  abgedeckt. }
 
 unit LandrixGaebXmlReader;
 
@@ -48,14 +49,10 @@ interface
 uses
   SysUtils,
   Classes,
-  LandrixXmlBase,
-  LandrixXmlReader,
   LandrixGaebTypes,
   LandrixGaebDiagnostics,
   LandrixGaebDetect,
-  LandrixGaebXmlBase,
-  LandrixGaebXmlModel,
-  LandrixGaebXmlReadBase;
+  LandrixGaebXmlModel;
 
 { Reads a GAEB DA XML document from a buffer that holds the whole input.
   Targets outside the schemas of the model raise ELandrixGaebError.
@@ -81,6 +78,12 @@ function LandrixGaebXmlReadFile(const AFileName: string; ADiagnostics: TLandrixG
   AMaxSize: Int64; out ADetection: TLandrixGaebDetection): TLandrixGaebXmlGAEB;
 
 implementation
+
+uses
+  LandrixXmlBase,
+  LandrixXmlReader,
+  LandrixGaebXmlBase,
+  LandrixGaebXmlReadBase;
 
 procedure ReadAddress(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlAddress); forward;
 procedure ReadAddText(C: TLandrixGaebXmlReadContext; O: TLandrixGaebXmlAddText); forward;

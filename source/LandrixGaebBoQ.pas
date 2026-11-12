@@ -48,10 +48,9 @@
   Fassade vorbei braucht Refresh; Refresh gibt alle frueheren Sichten
   frei. }
 
-{ API: internal. May change in any release before 1.0 (becomes stable with
-  the API review of phase 4).
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern (wird
-  mit dem API-Review der Phase 4 stabil). }
+{ API: stable. Covered by semantic versioning from release 1.0 on.
+  DE: API: stabil. Ab Version 1.0 durch die semantische Versionierung
+  abgedeckt. }
 
 unit LandrixGaebBoQ;
 
@@ -67,8 +66,7 @@ uses
   LandrixGaebTypes,
   LandrixGaebDiagnostics,
   LandrixGaebXmlBase,
-  LandrixGaebXmlModel,
-  LandrixGaebXmlWriteBase;
+  LandrixGaebXmlModel;
 
 type
   { Kind of a node of the bill. DE: Art eines Knotens des LV. }

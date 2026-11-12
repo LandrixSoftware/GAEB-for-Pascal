@@ -35,7 +35,6 @@ uses
   LandrixGaebDetect,
   LandrixGaebXmlModel,
   LandrixGaebXmlReader,
-  LandrixGaebXmlWriteBase,
   LandrixGaebXmlWriter,
   LandrixGaebRules,
   LandrixGaebTestNoValues,

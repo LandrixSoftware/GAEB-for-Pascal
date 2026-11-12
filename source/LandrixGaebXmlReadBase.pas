@@ -49,8 +49,10 @@
   Regelkennungen oben gelten unveraendert; die Texte sind englisch und
   enthalten keinen Dateiinhalt. }
 
-{ API: internal. May change in any release before 1.0.
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern. }
+{ API: internal. May change in any release, also after 1.0; use the
+  stable units instead (see README).
+  DE: API: intern. Kann sich in jeder Version aendern, auch nach 1.0;
+  stattdessen die stabilen Units verwenden (siehe README). }
 
 unit LandrixGaebXmlReadBase;
 

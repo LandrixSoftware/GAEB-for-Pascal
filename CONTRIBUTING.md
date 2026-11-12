@@ -41,7 +41,7 @@ All library code must compile unchanged with **Delphi 6 through Delphi 13** and 
 * No dependency on the current locale. Quantities, prices and dates are converted with locale-independent helpers; amounts are never calculated or rounded via floating point.
 * Source files contain only ASCII characters; use `#$xx` constants for other characters.
 
-`tools/check-forbidden.py` checks these rules. Every unit in `source/` states its API level in a comment directly before its `unit` line (`{ API: internal. ...}` until the 1.0 freeze).
+`tools/check-forbidden.py` checks these rules. Every unit in `source/` states its API level in a comment directly before its `unit` line, `{ API: stable. ...}` or `{ API: internal. ...}` (English, then `DE:`); the interface section of a stable unit may use only stable units of this library. Generated units get the comment from their generator. The README lists the units per level. The generated syntax model only grows: classes and members are added, never removed or renamed.
 
 Where differences between Delphi and Free Pascal are required, use conditional compilation in the central include file and keep the common implementation shared.
 

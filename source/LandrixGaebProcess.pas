@@ -22,10 +22,9 @@
   von Bereichen und LV mit der Zaehlregel und Zusammensetzen des Auftrags
   (X86) aus Anfrage (X83) und Angebot (X84). }
 
-{ API: internal. May change in any release before 1.0 (becomes stable with
-  the API review of phase 4).
-  DE: API: intern. Kann sich vor Version 1.0 in jeder Version aendern (wird
-  mit dem API-Review der Phase 4 stabil). }
+{ API: stable. Covered by semantic versioning from release 1.0 on.
+  DE: API: stabil. Ab Version 1.0 durch die semantische Versionierung
+  abgedeckt. }
 
 unit LandrixGaebProcess;
 
@@ -205,7 +204,6 @@ uses
   LandrixXmlDecimal,
   LandrixGaebDetect,
   LandrixGaebXmlModel,
-  LandrixGaebXmlWriteBase,
   LandrixGaebXmlWriter,
   LandrixGaebXmlReader,
   LandrixGaebBoQTree;
