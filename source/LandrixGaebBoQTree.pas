@@ -588,7 +588,12 @@ var
   I: Integer;
 begin
   Result := TLandrixGaebTreeNode.Create;
-  FNodes.Add(Result);
+  try
+    FNodes.Add(Result);
+  except
+    Result.Free;
+    raise;
+  end;
   Result.Node := ANode;
   Result.Kind := AKind;
   Result.Parent := AParent;

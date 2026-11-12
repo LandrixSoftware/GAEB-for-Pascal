@@ -98,7 +98,7 @@ end;
 
 function Written(ABill: TLandrixGaebBillOfQuantities): TLandrixXmlUtf8;
 begin
-  Result := WrittenDoc(ABill.Document, ABill.Target);
+  Result := WrittenDoc(ABill.Document, ABill.OutputTarget);
 end;
 
 function DecOf(const AText: string): TLandrixGaebDecimal;
@@ -200,12 +200,13 @@ procedure ReadNode(N: TLandrixGaebNode; V: TCountVisitor);
 var
   K: Integer;
   Found: TLandrixGaebNode;
+  FoundCat: TLandrixGaebCategory;
   Dummy: TLandrixGaebString;
   D: TLandrixGaebDecimal;
   R: TLandrixGaebReference;
   C: TLandrixGaebCatalogRef;
 begin
-  Dummy := N.OZ + N.Index + N.Path + N.ShortText + N.LongText;
+  Dummy := N.OZ + N.RNoIndex + N.Path + N.ShortText + N.LongText;
   R := N.RefRNo;
   R := N.RefPerfNo;
   for K := 0 to N.CatalogCount - 1 do
@@ -220,7 +221,7 @@ begin
   case N.Kind of
     gnkCategory:
       begin
-        N.Bill.FindByOZ(N.OZ, '', True, Found);
+        N.Bill.FindCategory(N.OZ, FoundCat);
         Dummy := TLandrixGaebCategory(N).Lbl + TLandrixGaebCategory(N).Accepted;
         D := TLandrixGaebCategory(N).Total;
         TLandrixGaebCategory(N).CountStatus;
@@ -231,7 +232,7 @@ begin
       end;
     gnkItem:
       begin
-        N.Bill.FindByOZ(N.OZ, N.Index, False, Found);
+        N.Bill.FindItem(N.OZ, N.RNoIndex, Found);
         D := TLandrixGaebItem(N).Qty;
         D := TLandrixGaebItem(N).UP;
         for K := 1 to 6 do
@@ -248,7 +249,7 @@ begin
       end;
     gnkMarkupItem:
       begin
-        N.Bill.FindByOZ(N.OZ, N.Index, False, Found);
+        N.Bill.FindItem(N.OZ, N.RNoIndex, Found);
         D := TLandrixGaebMarkupItem(N).IT;
         D := TLandrixGaebMarkupItem(N).ITMarkup;
         D := TLandrixGaebMarkupItem(N).MarkupPcnt;
@@ -386,7 +387,7 @@ procedure TestTree;
 var
   B: TLandrixGaebBillOfQuantities;
   N: TLandrixGaebNode;
-  C: TLandrixGaebCategory;
+  C, Cat: TLandrixGaebCategory;
   It: TLandrixGaebItem;
 begin
   B := Load(DataDir('process') + 'request.x83');
@@ -416,13 +417,16 @@ begin
     Check(It.CountStatus = gcsNotCounted, 'eventual item without total does not count');
     It := (B.Root[1] as TLandrixGaebCategory).Children[1] as TLandrixGaebItem;
     Check(It.IsLumpSum, 'lump sum item');
-    Check(B.FindByOZ('01.0010', '', False, N) = gfrFound, 'item found');
+    Check(B.FindItem('01.0010', '', N) = gfrFound, 'item found');
     Check(N = C.Children[0], 'the first item');
-    Check(B.FindByOZ('1.10', '', False, N) = gfrFound, 'numeric parts by value');
-    Check(B.FindByOZ('01', '', True, N) = gfrFound, 'category found');
-    Check(N = C, 'the first category');
-    Check(B.FindByOZ('01', '', False, N) = gfrNotFound, 'a category is no item');
-    Check(B.FindByOZ('03.0010', '', False, N) = gfrNotFound, 'not found');
+    Check(B.FindItem('1.10', '', N) = gfrFound, 'numeric parts by value');
+    Check(B.FindCategory('01', Cat) = gfrFound, 'category found');
+    Check(Cat = C, 'the first category');
+    Check(B.FindCategory('1', Cat) = gfrFound, 'category by value');
+    Check(B.FindCategory('01.0010', Cat) = gfrNotFound, 'an item is no category');
+    Check(Cat = nil, 'nil when no category is found');
+    Check(B.FindItem('01', '', N) = gfrNotFound, 'a category is no item');
+    Check(B.FindItem('03.0010', '', N) = gfrNotFound, 'not found');
     Check(N = nil, 'nil when not found');
     CheckEqualsStr('Prozess', S(B.ProjectName), 'project name');
     Check(not B.Owner.Exists, 'no owner in the request');
@@ -438,15 +442,24 @@ var
   N: TLandrixGaebNode;
   It: TLandrixGaebItem;
   Output: TLandrixXmlUtf8;
+  T: TLandrixGaebTarget;
 begin
   B := Load(DataDir('process') + 'bid.x84');
   try
     CheckEqualsStr('Bieter', S(B.Contractor.Name1), 'contractor');
     CheckEqualsStr('365.00', DecText(B.Total), 'total of the bill');
-    Check(B.FindByOZ('01.0010', '', False, N) = gfrFound, 'item of the bid');
+    Check(B.FindItem('01.0010', '', N) = gfrFound, 'item of the bid');
     It := N as TLandrixGaebItem;
     CheckEqualsStr('2.50', DecText(It.UP), 'unit price');
     Check(It.CountStatus = gcsUnknown, 'a bid does not carry the kinds of the request');
+    { another output target converts on saving; the meaning stays }
+    T := B.Target;
+    T.Phase := gp86;
+    B.OutputTarget := T;
+    Check(B.Target.Phase = gp84, 'the target of the document stays');
+    Check(It.CountStatus = gcsUnknown, 'the output target does not change the count status');
+    Check(Pos(TLandrixXmlUtf8('<DP>86</DP>'), Written(B)) > 0, 'written for the output target');
+    B.OutputTarget := B.Target;
     CheckEqualsStr('65.00', DecText(It.Parent.Total), 'total of the category');
     It.SetUP(DecOf('2.75'));
     It.SetIT(DecOf('27.50'));
@@ -466,7 +479,7 @@ begin
   B := Load(DataDir('process') + 'award.x86');
   try
     CheckEqualsStr('Auftraggeber', S(B.Owner.Name1), 'owner');
-    Check(B.FindByOZ('02.0010', '', False, N) = gfrFound, 'eventual item of the award');
+    Check(B.FindItem('02.0010', '', N) = gfrFound, 'eventual item of the award');
     Check((N as TLandrixGaebItem).CountStatus = gcsNotCounted, 'eventual item without total, award');
   finally
     B.Free;
@@ -481,7 +494,7 @@ begin
   B := Load(DataDir('rules') + 'GAEB-BR-OZ-001' + PathDelim + 'invalid-1.x83');
   try
     Check(B.AllItems.Count >= 2, 'items');
-    Check(B.FindByOZ(B.AllItems[0].OZ, B.AllItems[0].Index, False, N) = gfrAmbiguous, 'duplicate OZ is ambiguous');
+    Check(B.FindItem(B.AllItems[0].OZ, B.AllItems[0].RNoIndex, N) = gfrAmbiguous, 'duplicate OZ is ambiguous');
     Check(N = B.AllItems[0], 'the first of them');
   finally
     B.Free;
@@ -576,7 +589,7 @@ var
   N: TLandrixGaebNode;
 begin
   Result := nil;
-  if ABill.FindByOZ(TLandrixGaebString(AOZ), '', False, N) = gfrFound then
+  if ABill.FindItem(TLandrixGaebString(AOZ), '', N) = gfrFound then
     Result := N as TLandrixGaebItem;
   Check(Result <> nil, 'item ' + AOZ);
 end;
@@ -826,6 +839,11 @@ begin
     case ACase of
       0: ABill.AddItem(AParent, '0010');
       1: ABill.AddCategory(AParent, '01', 'x');
+      3: ABill.Nodes(-1);
+      4: ABill.Nodes(ABill.NodeCount);
+      5:
+        if ABill.Root[ABill.Root.Count] <> nil then
+          Exit;
     else
       ABill.Remove(nil);
     end;
@@ -838,17 +856,23 @@ end;
 procedure TestStructure;
 var
   B: TLandrixGaebBillOfQuantities;
-  C1, C3: TLandrixGaebCategory;
+  C1, C3, Cat: TLandrixGaebCategory;
   It, NewIt, Last: TLandrixGaebItem;
   N: TLandrixGaebNode;
   Output: TLandrixXmlUtf8;
+  Version: Integer;
 begin
   B := Load(DataDir('process') + 'request.x83');
   try
+    Check(Raises(B, 3, nil), 'node index below 0');
+    Check(Raises(B, 4, nil), 'node index beyond the end');
+    Check(Raises(B, 5, nil), 'list index beyond the end');
     C1 := B.Root[0] as TLandrixGaebCategory;
     It := C1.Children[0] as TLandrixGaebItem;
     Last := C1.Children[2] as TLandrixGaebItem;
+    Version := B.StructureVersion;
     C3 := B.AddCategory(nil, '03', 'Titel drei');
+    Check(B.StructureVersion <> Version, 'AddCategory changes the structure version');
     CheckEquals(3, B.Root.Count, 'category appended');
     Check(B.Root[2] = C3, 'the new category is last');
     CheckEqualsStr('03', S(C3.OZ), 'OZ of the new category');
@@ -863,27 +887,30 @@ begin
     Check(NewIt.Parent = C3, 'parent of the new item');
     CheckEquals(1, C3.Children.Count, 'item in the new category');
     CheckEquals(6, B.AllItems.Count, 'item counted');
-    Check(B.FindByOZ('3.10', '', False, N) = gfrFound, 'new item found');
+    Check(B.FindItem('3.10', '', N) = gfrFound, 'new item found');
     Check(N = NewIt, 'the new item');
     Check(TLandrixGaebXmlItem(NewIt.SyntaxNode).ID <> TLandrixGaebXmlItem(It.SyntaxNode).ID, 'new ID');
-    Check(B.FindByOZ('03', '', True, N) = gfrFound, 'new category found');
+    Check(B.FindCategory('03', Cat) = gfrFound, 'new category found');
+    Check(Cat = C3, 'the new category');
     Check(Raises(B, 0, nil), 'no item beside categories');
     Check(Raises(B, 1, C3), 'no category beside items');
     Check(Raises(B, 2, nil), 'no node to remove');
     Output := Written(B);
     Check(Pos(TLandrixXmlUtf8('RNoPart="03"'), Output) > 0, 'new category written');
     Check(Pos(TLandrixXmlUtf8('<Qty>5.000</Qty>'), Output) > 0, 'new item written');
+    Version := B.StructureVersion;
     B.Remove(It);
+    Check(B.StructureVersion <> Version, 'Remove changes the structure version');
     CheckEquals(2, C1.Children.Count, 'item removed from its category');
     CheckEquals(5, B.AllItems.Count, 'item removed from the bill');
-    Check(B.FindByOZ('01.0010', '', False, N) = gfrNotFound, 'removed item not found');
+    Check(B.FindItem('01.0010', '', N) = gfrNotFound, 'removed item not found');
     Check(C1.Children[1] = Last, 'other items keep their views');
     Output := Written(B);
     Check(Pos(TLandrixXmlUtf8('Leistung eins'), Output) = 0, 'removed item not written');
     B.Remove(C3);
     CheckEquals(2, B.Root.Count, 'category removed');
     CheckEquals(4, B.AllItems.Count, 'its items removed');
-    Check(B.FindByOZ('03.0010', '', False, N) = gfrNotFound, 'item of the removed category not found');
+    Check(B.FindItem('03.0010', '', N) = gfrNotFound, 'item of the removed category not found');
     CheckEqualsStr('01.0030', S(Last.OZ), 'remaining view still valid');
     C3 := B.AddCategory(nil, '04', 'Titel vier');
     B.Remove(B.AddItem(C3, '0010'));

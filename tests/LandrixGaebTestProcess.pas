@@ -193,8 +193,16 @@ end;
 
 function NodeAt(ABill: TLandrixGaebBillOfQuantities; const AOZ: TLandrixGaebString;
   ACategory: Boolean): TLandrixGaebNode;
+var
+  C: TLandrixGaebCategory;
 begin
-  Check(ABill.FindByOZ(AOZ, '', ACategory, Result) = gfrFound, string(AOZ) + ' found');
+  if ACategory then
+  begin
+    Check(ABill.FindCategory(AOZ, C) = gfrFound, string(AOZ) + ' found');
+    Result := C;
+  end
+  else
+    Check(ABill.FindItem(AOZ, '', Result) = gfrFound, string(AOZ) + ' found');
 end;
 
 function DecOf(const S: string): TLandrixGaebDecimal;
@@ -208,6 +216,24 @@ begin
   Check(ASum.Known, AMsg + ': known');
   Check(ASum.Blocker = nil, AMsg + ': no blocker');
   Check(ASum.Value.Equals(DecOf(AExpected)), AMsg + ': ' + LandrixXmlUtf8ToString(ASum.Value.Text) + ' = ' + AExpected);
+end;
+
+function StaleRaises(AMatching: TLandrixGaebMatching; ACase: Integer): Boolean;
+begin
+  Result := False;
+  try
+    case ACase of
+      0: AMatching.Count;
+      1: AMatching.Entries(0);
+      2: AMatching.CountOf(gmkPair);
+      3: AMatching.PartnerOf(nil);
+    else
+      LandrixGaebComputeSum(AMatching.Right, nil, AMatching);
+    end;
+  except
+    on ELandrixGaebError do
+      Result := True;
+  end;
 end;
 
 procedure TestMatching;
@@ -259,6 +285,16 @@ begin
     E := M.Entries(M.Count - 1);
     Check((E.Kind = gmkOnlyRight) and (E.Left = nil) and (E.Right.OZ = '02.30'), 'the new item last');
     Check(M.PartnerOf(Request.Nodes(0)) = Bid.Nodes(0), 'categories stay pairs');
+
+    { a structure change on either bill makes the matching stale }
+    Check(not StaleRaises(M, 0), 'a current matching works');
+    Request.Refresh;
+    for I := 0 to 4 do
+      Check(StaleRaises(M, I), 'a stale matching raises ' + IntToStr(I));
+    M.Free;
+    M := TLandrixGaebMatching.Create(Request, Bid);
+    Bid.AddItem(TLandrixGaebCategory(NodeAt(Bid, '02', True)), '40');
+    Check(StaleRaises(M, 0), 'AddItem on the right bill makes it stale');
   finally
     M.Free;
     Bid.Free;

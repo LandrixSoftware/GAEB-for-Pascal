@@ -22,12 +22,19 @@
   model reports; a setter changes only the value it names.
 
   LoadFromFile and LoadFromStream read a document into a new bill;
-  SaveToFile and SaveToStream write it for Target with WriteOptions.
+  SaveToFile and SaveToStream write it for OutputTarget with WriteOptions.
 
   The views are built by the constructor and by Refresh. AddCategory,
   AddItem and Remove change model and views together; all other views stay
   valid. A structural change made in the syntax model behind the facade
   needs Refresh, which frees all earlier views.
+
+  Lifetime: the bill owns every view, list and totals block it returns;
+  the caller never frees them. A view stays valid until it is removed,
+  until Refresh or a failed AddCategory, AddItem or Remove, or until the
+  bill is freed. Syntax nodes belong to the
+  document. Do not change the structure (AddCategory, AddItem, Remove,
+  Refresh, or the syntax model) while a text is being visited.
 
   DE: Fachliche Fassade ueber dem Syntaxmodell eines GAEB-DA-XML-Dokuments:
   das Leistungsverzeichnis als Baum aus Bereichen, Positionen,
@@ -40,13 +47,22 @@
   meldet; ein Setter aendert nur den Wert, den er nennt.
 
   LoadFromFile und LoadFromStream lesen ein Dokument in ein neues LV;
-  SaveToFile und SaveToStream schreiben es fuer Target mit WriteOptions.
+  SaveToFile und SaveToStream schreiben es fuer OutputTarget mit
+  WriteOptions.
 
   Die Sichten entstehen im Konstruktor und durch Refresh. AddCategory,
   AddItem und Remove aendern Modell und Sichten zusammen; alle anderen
   Sichten bleiben gueltig. Eine Strukturaenderung im Syntaxmodell an der
   Fassade vorbei braucht Refresh; Refresh gibt alle frueheren Sichten
-  frei. }
+  frei.
+
+  Lebensdauer: das LV besitzt jede Sicht, Liste und jeden Summenblock, den
+  es liefert; der Aufrufer gibt sie nie frei. Eine Sicht bleibt gueltig,
+  bis sie entfernt wird, bis Refresh oder ein gescheitertes AddCategory,
+  AddItem oder Remove oder bis das LV freigegeben wird.
+  Syntaxknoten gehoeren dem Dokument. Waehrend ein Text besucht wird, die
+  Struktur nicht aendern (AddCategory, AddItem, Remove, Refresh oder das
+  Syntaxmodell). }
 
 { API: stable. Covered by semantic versioning from release 1.0 on.
   DE: API: stabil. Ab Version 1.0 durch die semantische Versionierung
@@ -240,16 +256,16 @@ type
   end;
 
   { A text complement of a long or outline text: number (MarkLbl), kind,
-    caption, body and tail.
+    caption, body and tail. Created and owned by its node or sub
+    description.
     DE: Eine Textergaenzung eines Lang- oder Kurztextes: Nummer (MarkLbl),
-    Art, Ueberschrift, Inhalt und Abschluss. }
+    Art, Ueberschrift, Inhalt und Abschluss. Von ihrem Knoten oder ihrer
+    Unterbeschreibung angelegt und besessen. }
   TLandrixGaebTextComplement = class(TObject)
   private
     FSyntaxNode: TLandrixGaebXmlTextComplement;
     function GetKind: TLandrixGaebComplementKind;
   public
-    { A view of ASyntaxNode. DE: Eine Sicht auf ASyntaxNode. }
-    constructor Create(ASyntaxNode: TLandrixGaebXmlTextComplement);
     { The element of the syntax model. DE: Das Element des Syntaxmodells. }
     property SyntaxNode: TLandrixGaebXmlTextComplement read FSyntaxNode;
     { MarkLbl. DE: MarkLbl. }
@@ -289,22 +305,17 @@ type
     procedure SetBodyNumber(const AText: TLandrixGaebString);
   end;
 
-  { A totals block (Totals) of the bill, a category or a lot group. Reading
-    an absent block gives no values; SetValue creates it.
+  { A totals block (Totals) of the bill, a category or a lot group, owned
+    by it. Reading an absent block gives no values; SetValue creates it.
     DE: Ein Summenblock (Totals) des LV, eines Bereichs oder einer
-    Losgruppe. Lesen eines fehlenden Blocks liefert keine Werte; SetValue
-    legt ihn an. }
+    Losgruppe, in deren Besitz. Lesen eines fehlenden Blocks liefert keine
+    Werte; SetValue legt ihn an. }
   TLandrixGaebTotals = class(TObject)
   private
     FBill: TLandrixGaebBillOfQuantities;
     FOwner: TLandrixGaebXmlNode;
     function Ensure: TLandrixGaebXmlTotals;
   public
-    { The totals of AOwner (TLandrixGaebXmlBoQCtgy or
-      TLandrixGaebXmlLotGrp), with nil those of the bill (BoQInfo).
-      DE: Die Summen von AOwner (TLandrixGaebXmlBoQCtgy oder
-      TLandrixGaebXmlLotGrp), mit nil die des LV (BoQInfo). }
-    constructor Create(ABill: TLandrixGaebBillOfQuantities; AOwner: TLandrixGaebXmlNode);
     { The element of the syntax model, nil if absent. DE: Das Element des
       Syntaxmodells, nil, wenn nicht vorhanden. }
     function SyntaxNode: TLandrixGaebXmlTotals;
@@ -334,11 +345,12 @@ type
   end;
 
   { A node of the bill (category, item, markup item, remark, execution
-    description). Owned by the bill; valid until Refresh or the bill is
-    freed.
+    description). Created and owned by the bill; valid until it is
+    removed, until Refresh or until the bill is freed.
     DE: Ein Knoten des LV (Bereich, Position, Zuschlagsposition,
-    Bemerkung, Ausfuehrungsbeschreibung). Im Besitz des LV; gueltig bis
-    Refresh oder bis das LV freigegeben wird. }
+    Bemerkung, Ausfuehrungsbeschreibung). Vom LV angelegt und besessen;
+    gueltig, bis er entfernt wird, bis Refresh oder bis das LV freigegeben
+    wird. }
   TLandrixGaebNode = class(TObject)
   private
     FBill: TLandrixGaebBillOfQuantities;
@@ -349,7 +361,7 @@ type
     FComplements: TObjectList;
     function GetPath: TLandrixGaebString;
     function GetOZ: TLandrixGaebString;
-    function GetIndex: TLandrixGaebString;
+    function GetRNoIndex: TLandrixGaebString;
     function GetOZKey: TLandrixGaebString;
   protected
     { The complete text and the outline text of the node (nil if absent).
@@ -357,9 +369,6 @@ type
       vorhanden). }
     procedure GetTexts(out AComplete: TLandrixGaebXmlCompleteText; out AOutline: TLandrixGaebXmlOutlineText); virtual;
   public
-    { Created by the bill only. DE: Nur vom LV angelegt. }
-    constructor Create(ABill: TLandrixGaebBillOfQuantities; AKind: TLandrixGaebNodeKind;
-      AParent: TLandrixGaebCategory; ASyntaxNode: TLandrixGaebXmlNode; ATreeNode: TObject);
     { Frees the view, never the element of the model. DE: Gibt die Sicht
       frei, nie das Element des Modells. }
     destructor Destroy; override;
@@ -381,20 +390,20 @@ type
       eigene mit '.' verbunden, wie im Dokument geschrieben ('' bei
       Bemerkungen und Ausfuehrungsbeschreibungen). }
     property OZ: TLandrixGaebString read GetOZ;
-    { RNoIndex of an item or markup item. DE: RNoIndex einer Position oder
-      Zuschlagsposition. }
-    property Index: TLandrixGaebString read GetIndex;
+    { RNoIndex of an item or markup item ('' if none). DE: RNoIndex einer
+      Position oder Zuschlagsposition ('' wenn keiner). }
+    property RNoIndex: TLandrixGaebString read GetRNoIndex;
     { Key of OZ and index for matching two documents: equal for the nodes
       that the pair rules and LandrixGaebProcess match (numeric parts by
       value, categories and items never equal); '' for remarks and
       execution descriptions. A key to compare, not for display; its form
-      may change between releases.
+      may change between releases, so do not store it.
       DE: Schluessel aus OZ und Index fuer die Zuordnung zweier Dokumente:
       gleich fuer die Knoten, die die Paarregeln und LandrixGaebProcess
       einander zuordnen (Ziffernteile nach Wert, Bereiche und Positionen
       nie gleich); '' bei Bemerkungen und Ausfuehrungsbeschreibungen. Ein
       Schluessel zum Vergleichen, nicht zur Anzeige; seine Form kann sich
-      zwischen Versionen aendern. }
+      zwischen Versionen aendern, daher nicht speichern. }
     property OZKey: TLandrixGaebString read GetOZKey;
     { Plain text of the outline text (short text) and of the detail text
       (long text); for display only, not a format to parse.
@@ -425,24 +434,23 @@ type
     function Catalogs(AIndex: Integer): TLandrixGaebCatalogRef;
   end;
 
-  { Nodes in document order (not owning). DE: Knoten in
-    Dokumentreihenfolge (ohne Besitz). }
+  { Nodes in document order (not owning), filled by the bill.
+    DE: Knoten in Dokumentreihenfolge (ohne Besitz), vom LV gefuellt. }
   TLandrixGaebNodeList = class(TObject)
   private
     FList: TObjectList;
     function GetItem(AIndex: Integer): TLandrixGaebNode;
+    procedure Add(ANode: TLandrixGaebNode);
   public
     { An empty list. DE: Eine leere Liste. }
     constructor Create;
     { Frees the list, not the nodes. DE: Gibt die Liste frei, nicht die
       Knoten. }
     destructor Destroy; override;
-    { Appends ANode (used by the bill). DE: Haengt ANode an (vom LV
-      benutzt). }
-    procedure Add(ANode: TLandrixGaebNode);
     { Number of nodes. DE: Anzahl der Knoten. }
     function Count: Integer;
-    { Node AIndex (0-based). DE: Knoten AIndex (ab 0). }
+    { Node AIndex (0-based; ELandrixGaebError outside). DE: Knoten AIndex
+      (ab 0; ELandrixGaebError ausserhalb). }
     property Items[AIndex: Integer]: TLandrixGaebNode read GetItem; default;
   end;
 
@@ -456,9 +464,6 @@ type
     FTotals: TLandrixGaebTotals;
     function Ctgy: TLandrixGaebXmlBoQCtgy;
   public
-    { Created by the bill only. DE: Nur vom LV angelegt. }
-    constructor Create(ABill: TLandrixGaebBillOfQuantities; AParent: TLandrixGaebCategory;
-      ASyntaxNode: TLandrixGaebXmlBoQCtgy; ATreeNode: TObject);
     { Frees the view, its child list and its totals view. DE: Gibt die
       Sicht, ihre Kinderliste und ihre Summensicht frei. }
     destructor Destroy; override;
@@ -510,8 +515,6 @@ type
     function GetQU: TLandrixGaebString;
     procedure SetQU(const AValue: TLandrixGaebString);
   public
-    { Created by the item only. DE: Nur von der Position angelegt. }
-    constructor Create(AItem: TLandrixGaebItem; ASyntaxNode: TLandrixGaebXmlSubDescr; APosition: Integer);
     { Frees the view and its complement views. DE: Gibt die Sicht und ihre
       Ergaenzungssichten frei. }
     destructor Destroy; override;
@@ -694,16 +697,18 @@ type
   end;
 
   { A lot group (LotGrp): number, the lots it groups and its totals.
+    Created and owned by the bill; valid until Refresh, a failed
+    AddCategory, AddItem or Remove, or until the bill is freed.
     DE: Eine Losgruppe (LotGrp): Nummer, die Lose, die sie zusammenfasst,
-    und ihre Summen. }
+    und ihre Summen. Vom LV angelegt und besessen; gueltig bis Refresh, ein
+    gescheitertes AddCategory, AddItem oder Remove oder bis das LV
+    freigegeben wird. }
   TLandrixGaebLotGroup = class(TObject)
   private
     FBill: TLandrixGaebBillOfQuantities;
     FSyntaxNode: TLandrixGaebXmlLotGrp;
     FTotals: TLandrixGaebTotals;
   public
-    { Created by the bill only. DE: Nur vom LV angelegt. }
-    constructor Create(ABill: TLandrixGaebBillOfQuantities; ASyntaxNode: TLandrixGaebXmlLotGrp);
     { Frees the view and its totals view. DE: Gibt die Sicht und ihre
       Summensicht frei. }
     destructor Destroy; override;
@@ -722,12 +727,17 @@ type
   { A party (owner OWN, contractor CTR, requester Requester): its address
     and, for a requester, number and name. Reading an absent party gives
     ''; writing creates the owner or the contractor (a requester must
-    exist).
+    exist). Created and owned by the bill: owner and contractor live as
+    long as the bill, a requester until Refresh, a failed AddCategory,
+    AddItem or Remove, or until the bill is freed.
     DE: Eine Partei (Auftraggeber OWN, Auftragnehmer CTR, Bedarfstraeger
     Requester): ihre Anschrift und bei einem Bedarfstraeger Nummer und
     Name. Lesen einer fehlenden Partei liefert ''; Schreiben legt
     Auftraggeber oder Auftragnehmer an (ein Bedarfstraeger muss
-    existieren). }
+    existieren). Vom LV angelegt und besessen: Auftraggeber und
+    Auftragnehmer leben so lange wie das LV, ein Bedarfstraeger bis
+    Refresh, ein gescheitertes AddCategory, AddItem oder Remove oder bis
+    das LV freigegeben wird. }
   TLandrixGaebParty = class(TObject)
   private
     FBill: TLandrixGaebBillOfQuantities;
@@ -738,10 +748,6 @@ type
     function GetField(AIndex: Integer): TLandrixGaebString;
     procedure SetField(AIndex: Integer; const AValue: TLandrixGaebString);
   public
-    { Party ARole of ABill; AIndex counts the requesters (from 0).
-      DE: Partei ARole von ABill; AIndex zaehlt die Bedarfstraeger (ab
-      0). }
-    constructor Create(ABill: TLandrixGaebBillOfQuantities; ARole: TLandrixGaebPartyRole; AIndex: Integer);
     { Role. DE: Rolle. }
     property Role: TLandrixGaebPartyRole read FRole;
     { True if the party is in the document (for a requester: its
@@ -778,6 +784,7 @@ type
   private
     FDocument: TLandrixGaebXmlGAEB;
     FTarget: TLandrixGaebTarget;
+    FOutputTarget: TLandrixGaebTarget;
     FOwnsDocument: Boolean;
     FTree: TObject;
     FNodes: TObjectList;
@@ -792,6 +799,7 @@ type
     FOtherId: TObject;
     FWriteOptions: TLandrixGaebXmlWriteOptions;
     FNextId: Integer;
+    FStructureVersion: Integer;
     procedure Build(ATree: TObject; AOld: TObjectList);
     procedure Rebuild;
     procedure ClearViews;
@@ -805,19 +813,22 @@ type
     function Info: TLandrixGaebXmlBoQInfo;
     function Resolve(const AIDRef: TLandrixGaebString; AKinds: TLandrixGaebNodeKinds): TLandrixGaebReference;
   public
-    { Wraps ADocument, read or written for ATarget. With AOwnsDocument the
-      bill frees the document (also if the constructor fails).
-      DE: Umhuellt ADocument, gelesen oder zu schreiben fuer ATarget. Mit
-      AOwnsDocument gibt das LV das Dokument frei (auch wenn der
-      Konstruktor scheitert). }
+    { Wraps ADocument, a document of ATarget (Target and OutputTarget).
+      With AOwnsDocument the bill frees the document (also if the
+      constructor fails); without, the document must outlive the bill.
+      DE: Umhuellt ADocument, ein Dokument von ATarget (Target und
+      OutputTarget). Mit AOwnsDocument gibt das LV das Dokument frei (auch
+      wenn der Konstruktor scheitert); ohne muss das Dokument das LV
+      ueberleben. }
     constructor Create(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
       AOwnsDocument: Boolean);
     { Frees the views and, with AOwnsDocument, the document. DE: Gibt die
       Sichten und mit AOwnsDocument das Dokument frei. }
     destructor Destroy; override;
     { Rebuilds all views after a structural change in the syntax model;
-      earlier views are freed. DE: Baut alle Sichten nach einer
-      Strukturaenderung im Syntaxmodell neu auf; fruehere Sichten werden
+      earlier views (also requesters and lot groups) are freed.
+      DE: Baut alle Sichten nach einer Strukturaenderung im Syntaxmodell
+      neu auf; fruehere Sichten (auch Bedarfstraeger und Losgruppen) werden
       freigegeben. }
     procedure Refresh;
     { Appends a category with ARNoPart and the label ALbl to AParent (nil:
@@ -840,48 +851,93 @@ type
     function AddItem(AParent: TLandrixGaebCategory; const ARNoPart: TLandrixGaebString): TLandrixGaebItem;
     { Removes ANode with everything in it from the model and frees its
       views (and those of its children); references to them are invalid
-      afterwards. A category or item list that becomes empty stays. If
-      rebuilding fails (memory), all views are freed as by Refresh.
+      afterwards. A category or item list that becomes empty stays.
+      AddCategory, AddItem and Remove: if rebuilding the views fails
+      (memory), all views are freed as by Refresh, also requesters and lot
+      groups (the bill then has no nodes until Refresh succeeds), and the
+      exception is raised again.
       DE: Entfernt ANode mit allem darin aus dem Modell und gibt seine
       Sichten (und die seiner Kinder) frei; Verweise darauf sind danach
       ungueltig. Ein Bereich oder eine Positionsliste, die leer wird,
-      bleibt. Scheitert der Neuaufbau (Speicher), sind wie nach Refresh
-      alle Sichten freigegeben. }
+      bleibt. AddCategory, AddItem und Remove: scheitert der Neuaufbau der
+      Sichten (Speicher), sind wie nach Refresh alle Sichten freigegeben,
+      auch Bedarfstraeger und Losgruppen (das LV hat dann keine Knoten, bis
+      Refresh gelingt), und die Ausnahme wird weitergereicht. }
     procedure Remove(ANode: TLandrixGaebNode);
     { Reads a GAEB DA XML file (LandrixGaebXmlReadFile; AMaxSize <= 0: the
-      default limit) into a new bill that owns the document. ADiagnostics
-      may be nil. Raises ELandrixGaebError for input that cannot be read.
+      default limit) into a new bill that owns the document; Target and
+      OutputTarget are the detected target. ADiagnostics may be nil.
+      Raises ELandrixGaebError for input that is no GAEB DA XML (also XML
+      that is not well-formed within the part the detection reads), a
+      target that cannot be read and input larger than AMaxSize,
+      ELandrixXmlError (unit LandrixXmlBase, with line and column) for XML
+      that turns out not well-formed while reading the rest, and the file
+      errors of the runtime library (EFOpenError, EReadError).
       DE: Liest eine GAEB-DA-XML-Datei (LandrixGaebXmlReadFile; AMaxSize
-      <= 0: die Standardgrenze) in ein neues LV, das das Dokument besitzt.
-      ADiagnostics darf nil sein. Loest ELandrixGaebError fuer Eingaben
-      aus, die nicht gelesen werden koennen. }
+      <= 0: die Standardgrenze) in ein neues LV, das das Dokument besitzt;
+      Target und OutputTarget sind das erkannte Ziel. ADiagnostics darf nil
+      sein. Loest ELandrixGaebError aus fuer Eingaben, die kein GAEB DA XML
+      sind (auch XML, das in dem Teil, den die Erkennung liest, nicht
+      wohlgeformt ist), ein Ziel, das nicht gelesen werden kann, und
+      Eingaben ueber AMaxSize, ELandrixXmlError (Unit LandrixXmlBase, mit
+      Zeile und Spalte) fuer XML, das sich beim Lesen des Rests als nicht
+      wohlgeformt erweist, und die Dateifehler der Laufzeitbibliothek
+      (EFOpenError, EReadError). }
     class function LoadFromFile(const AFileName: string; ADiagnostics: TLandrixGaebDiagnostics;
       AMaxSize: Int64): TLandrixGaebBillOfQuantities;
-    { As LoadFromFile, from the position of AStream to its end. DE: Wie
-      LoadFromFile, ab der Position von AStream bis zu seinem Ende. }
+    { As LoadFromFile, from the position of AStream to its end; AStream
+      must know its Size (a seekable stream) and is left at its end.
+      DE: Wie LoadFromFile, ab der Position von AStream bis zu seinem Ende;
+      AStream muss seine Groesse kennen (ein positionierbarer Stream) und
+      steht danach an seinem Ende. }
     class function LoadFromStream(AStream: TStream; ADiagnostics: TLandrixGaebDiagnostics;
       AMaxSize: Int64): TLandrixGaebBillOfQuantities;
-    { Writes the document for Target with WriteOptions
-      (LandrixGaebXmlWriteFile, LandrixGaebXmlWriteStream). ADiagnostics
-      may be nil.
-      DE: Schreibt das Dokument fuer Target mit WriteOptions
-      (LandrixGaebXmlWriteFile, LandrixGaebXmlWriteStream). ADiagnostics
+    { Writes the document for OutputTarget with WriteOptions, with the
+      exceptions of LandrixGaebXmlWriteFile and LandrixGaebXmlWriteStream
+      (SaveToStream writes at the position of AStream). ADiagnostics may be
+      nil.
+      DE: Schreibt das Dokument fuer OutputTarget mit WriteOptions, mit den
+      Ausnahmen von LandrixGaebXmlWriteFile und LandrixGaebXmlWriteStream
+      (SaveToStream schreibt an der Position von AStream). ADiagnostics
       darf nil sein. }
     procedure SaveToFile(const AFileName: string; ADiagnostics: TLandrixGaebDiagnostics);
     procedure SaveToStream(AStream: TStream; ADiagnostics: TLandrixGaebDiagnostics);
     { Options of SaveToFile and SaveToStream (default:
-      LandrixGaebXmlDefaultWriteOptions). DE: Optionen von SaveToFile und
-      SaveToStream (Standard: LandrixGaebXmlDefaultWriteOptions). }
+      LandrixGaebXmlDefaultWriteOptions). A record: read it into a
+      variable, change the variable and assign it back; do not assign
+      single fields through the property.
+      DE: Optionen von SaveToFile und SaveToStream (Standard:
+      LandrixGaebXmlDefaultWriteOptions). Ein Record: in eine Variable
+      lesen, die Variable aendern und zurueckzuweisen; keine einzelnen
+      Felder ueber die Eigenschaft zuweisen. }
     property WriteOptions: TLandrixGaebXmlWriteOptions read FWriteOptions write FWriteOptions;
-    { The document and the target it was read for or is to be written for;
-      another target converts on saving (a bid X84 has unknown count
-      status, see TLandrixGaebCountStatus).
-      DE: Das Dokument und das Ziel, fuer das es gelesen wurde oder
-      geschrieben werden soll; ein anderes Ziel konvertiert beim Speichern
-      (ein Angebot X84 hat unbestimmten Zaehlstatus, siehe
-      TLandrixGaebCountStatus). }
+    { The document. DE: Das Dokument. }
     property Document: TLandrixGaebXmlGAEB read FDocument;
-    property Target: TLandrixGaebTarget read FTarget write FTarget;
+    { The target of the document as read or created (version, edition,
+      phase). It decides what the document means: a bid X84 has unknown
+      count status (see TLandrixGaebCountStatus), and the process functions
+      check the phase. It never changes.
+      DE: Das Ziel des Dokuments, wie gelesen oder angelegt (Version,
+      Ausgabe, Phase). Es bestimmt, was das Dokument bedeutet: ein Angebot
+      X84 hat unbestimmten Zaehlstatus (siehe TLandrixGaebCountStatus), und
+      die Prozessfunktionen pruefen die Phase. Es aendert sich nie. }
+    property Target: TLandrixGaebTarget read FTarget;
+    { The target SaveToFile and SaveToStream write for (initially Target);
+      another target converts on saving. A record: assign it as a whole.
+      DE: Das Ziel, fuer das SaveToFile und SaveToStream schreiben
+      (anfangs Target); ein anderes Ziel konvertiert beim Speichern. Ein
+      Record: als Ganzes zuweisen. }
+    property OutputTarget: TLandrixGaebTarget read FOutputTarget write FOutputTarget;
+    { A number that changes whenever views of nodes are added or freed
+      (AddCategory, AddItem, Remove, Refresh). A caller that keeps views
+      or results built from them (TLandrixGaebMatching) compares it to see
+      whether they are still valid.
+      DE: Eine Zahl, die sich aendert, wann immer Knotensichten
+      hinzukommen oder freigegeben werden (AddCategory, AddItem, Remove,
+      Refresh). Ein Aufrufer, der Sichten oder daraus gebaute Ergebnisse
+      (TLandrixGaebMatching) haelt, vergleicht sie, um zu sehen, ob diese
+      noch gueltig sind. }
+    function StructureVersion: Integer;
     { Top level nodes and all items and markup items in document order.
       DE: Knoten der obersten Ebene und alle Positionen und
       Zuschlagspositionen in Dokumentreihenfolge. }
@@ -889,18 +945,29 @@ type
     property AllItems: TLandrixGaebNodeList read FAllItems;
     { All nodes (categories, items, markup items, remarks, execution
       descriptions) in document order.
+      Nodes: AIndex from 0, ELandrixGaebError outside.
       DE: Alle Knoten (Bereiche, Positionen, Zuschlagspositionen,
-      Bemerkungen, Ausfuehrungsbeschreibungen) in Dokumentreihenfolge. }
+      Bemerkungen, Ausfuehrungsbeschreibungen) in Dokumentreihenfolge.
+      Nodes: AIndex ab 0, ELandrixGaebError ausserhalb. }
     function NodeCount: Integer;
     function Nodes(AIndex: Integer): TLandrixGaebNode;
-    { Finds a category (ACategory) or an item or markup item by OZ and
-      index; numeric parts by value ('10' finds '0010'). gfrAmbiguous if
-      the document has the OZ twice (ANode is then the first).
-      DE: Sucht einen Bereich (ACategory) oder eine Position bzw.
-      Zuschlagsposition nach OZ und Index; Ziffernteile nach Wert ('10'
-      findet '0010'). gfrAmbiguous, wenn das Dokument die OZ doppelt hat
-      (ANode ist dann die erste). }
-    function FindByOZ(const AOZ, AIndex: TLandrixGaebString; ACategory: Boolean;
+    { Finds a category by its OZ; numeric parts by value ('1' finds '01').
+      gfrAmbiguous if the document has the OZ twice (ACategory is then the
+      first), gfrNotFound with ACategory nil.
+      DE: Sucht einen Bereich nach seiner OZ; Ziffernteile nach Wert ('1'
+      findet '01'). gfrAmbiguous, wenn das Dokument die OZ doppelt hat
+      (ACategory ist dann der erste), gfrNotFound mit ACategory nil. }
+    function FindCategory(const AOZ: TLandrixGaebString;
+      out ACategory: TLandrixGaebCategory): TLandrixGaebFindResult;
+    { Finds an item or markup item by OZ and RNoIndex ('' for none);
+      numeric parts by value ('1.10' finds '01.0010'). gfrAmbiguous if the
+      document has OZ and index twice (ANode is then the first),
+      gfrNotFound with ANode nil.
+      DE: Sucht eine Position oder Zuschlagsposition nach OZ und RNoIndex
+      ('' fuer keinen); Ziffernteile nach Wert ('1.10' findet '01.0010').
+      gfrAmbiguous, wenn das Dokument OZ und Index doppelt hat (ANode ist
+      dann die erste), gfrNotFound mit ANode nil. }
+    function FindItem(const AOZ, ARNoIndex: TLandrixGaebString;
       out ANode: TLandrixGaebNode): TLandrixGaebFindResult;
     { Project name (PrjInfo/NamePrj). DE: Projektname (PrjInfo/NamePrj). }
     property ProjectName: TLandrixGaebString read GetProjectName write SetProjectName;
@@ -996,6 +1063,74 @@ end;
 function TreeNodeOf(AObject: TObject): TLandrixGaebTreeNode;
 begin
   Result := TLandrixGaebTreeNode(AObject);
+end;
+
+procedure CheckIndex(AIndex, ACount: Integer);
+begin
+  if (AIndex < 0) or (AIndex >= ACount) then
+    raise ELandrixGaebError.Create('index out of range');
+end;
+
+{ ---- creation of views ---- }
+
+function NewComplement(ASyntaxNode: TLandrixGaebXmlTextComplement): TLandrixGaebTextComplement;
+begin
+  Result := TLandrixGaebTextComplement.Create;
+  Result.FSyntaxNode := ASyntaxNode;
+end;
+
+function NewTotals(ABill: TLandrixGaebBillOfQuantities; AOwner: TLandrixGaebXmlNode): TLandrixGaebTotals;
+begin
+  Result := TLandrixGaebTotals.Create;
+  Result.FBill := ABill;
+  Result.FOwner := AOwner;
+end;
+
+function NewParty(ABill: TLandrixGaebBillOfQuantities; ARole: TLandrixGaebPartyRole;
+  AIndex: Integer): TLandrixGaebParty;
+begin
+  Result := TLandrixGaebParty.Create;
+  Result.FBill := ABill;
+  Result.FRole := ARole;
+  Result.FIndex := AIndex;
+end;
+
+function NewLotGroup(ABill: TLandrixGaebBillOfQuantities; ASyntaxNode: TLandrixGaebXmlLotGrp): TLandrixGaebLotGroup;
+begin
+  Result := TLandrixGaebLotGroup.Create;
+  try
+    Result.FBill := ABill;
+    Result.FSyntaxNode := ASyntaxNode;
+    Result.FTotals := NewTotals(ABill, ASyntaxNode);
+  except
+    Result.Free;
+    raise;
+  end;
+end;
+
+function NewSubDescription(AItem: TLandrixGaebItem; ASyntaxNode: TLandrixGaebXmlSubDescr;
+  APosition: Integer): TLandrixGaebSubDescription;
+begin
+  Result := TLandrixGaebSubDescription.Create;
+  Result.FItem := AItem;
+  Result.FSyntaxNode := ASyntaxNode;
+  Result.FPosition := APosition;
+end;
+
+{ Connects a new node view (already owned by the bill) to its element. }
+procedure InitNode(ANode: TLandrixGaebNode; ABill: TLandrixGaebBillOfQuantities; AKind: TLandrixGaebNodeKind;
+  AParent: TLandrixGaebCategory; ASyntaxNode: TLandrixGaebXmlNode; ATreeNode: TObject);
+begin
+  ANode.FBill := ABill;
+  ANode.FKind := AKind;
+  ANode.FParent := AParent;
+  ANode.FSyntaxNode := ASyntaxNode;
+  ANode.FTreeNode := ATreeNode;
+  if ANode is TLandrixGaebCategory then
+  begin
+    TLandrixGaebCategory(ANode).FChildren := TLandrixGaebNodeList.Create;
+    TLandrixGaebCategory(ANode).FTotals := NewTotals(ABill, ASyntaxNode);
+  end;
 end;
 
 { ---- text ---- }
@@ -1232,16 +1367,10 @@ type
 procedure TComplementCollector.Visit(const AEvent: TLandrixGaebTextEvent);
 begin
   if AEvent.Kind = gteComplement then
-    FList.Add(TLandrixGaebTextComplement.Create(TLandrixGaebXmlTextComplement(AEvent.Node)));
+    FList.Add(NewComplement(TLandrixGaebXmlTextComplement(AEvent.Node)));
 end;
 
 { TLandrixGaebTextComplement }
-
-constructor TLandrixGaebTextComplement.Create(ASyntaxNode: TLandrixGaebXmlTextComplement);
-begin
-  inherited Create;
-  FSyntaxNode := ASyntaxNode;
-end;
 
 function TLandrixGaebTextComplement.GetKind: TLandrixGaebComplementKind;
 begin
@@ -1381,21 +1510,11 @@ end;
 
 function TLandrixGaebNodeList.GetItem(AIndex: Integer): TLandrixGaebNode;
 begin
+  CheckIndex(AIndex, Count);
   Result := TLandrixGaebNode(FList[AIndex]);
 end;
 
 { TLandrixGaebNode }
-
-constructor TLandrixGaebNode.Create(ABill: TLandrixGaebBillOfQuantities; AKind: TLandrixGaebNodeKind;
-  AParent: TLandrixGaebCategory; ASyntaxNode: TLandrixGaebXmlNode; ATreeNode: TObject);
-begin
-  inherited Create;
-  FBill := ABill;
-  FKind := AKind;
-  FParent := AParent;
-  FSyntaxNode := ASyntaxNode;
-  FTreeNode := ATreeNode;
-end;
 
 destructor TLandrixGaebNode.Destroy;
 begin
@@ -1423,7 +1542,7 @@ begin
   end;
 end;
 
-function TLandrixGaebNode.GetIndex: TLandrixGaebString;
+function TLandrixGaebNode.GetRNoIndex: TLandrixGaebString;
 begin
   Result := TreeNodeOf(FTreeNode).Index;
 end;
@@ -1542,12 +1661,6 @@ begin
   Result := TLandrixGaebTextComplement(FComplements[AIndex]);
 end;
 
-procedure CheckIndex(AIndex, ACount: Integer);
-begin
-  if (AIndex < 0) or (AIndex >= ACount) then
-    raise ELandrixGaebError.Create('index out of range');
-end;
-
 function NoReference: TLandrixGaebReference;
 begin
   Result.Status := grsAbsent;
@@ -1625,14 +1738,6 @@ begin
 end;
 
 { TLandrixGaebCategory }
-
-constructor TLandrixGaebCategory.Create(ABill: TLandrixGaebBillOfQuantities; AParent: TLandrixGaebCategory;
-  ASyntaxNode: TLandrixGaebXmlBoQCtgy; ATreeNode: TObject);
-begin
-  inherited Create(ABill, gnkCategory, AParent, ASyntaxNode, ATreeNode);
-  FChildren := TLandrixGaebNodeList.Create;
-  FTotals := TLandrixGaebTotals.Create(ABill, ASyntaxNode);
-end;
 
 destructor TLandrixGaebCategory.Destroy;
 begin
@@ -2009,7 +2114,7 @@ begin
     FSubDescriptions := TObjectList.Create;
     if Item.HasSubDescr then
       for I := 0 to Integer(Item.SubDescr.Count) - 1 do
-        FSubDescriptions.Add(TLandrixGaebSubDescription.Create(Self, Item.SubDescr[I], I + 1));
+        FSubDescriptions.Add(NewSubDescription(Self, Item.SubDescr[I], I + 1));
   end;
   Result := Integer(FSubDescriptions.Count);
 end;
@@ -2021,15 +2126,6 @@ begin
 end;
 
 { TLandrixGaebSubDescription }
-
-constructor TLandrixGaebSubDescription.Create(AItem: TLandrixGaebItem; ASyntaxNode: TLandrixGaebXmlSubDescr;
-  APosition: Integer);
-begin
-  inherited Create;
-  FItem := AItem;
-  FSyntaxNode := ASyntaxNode;
-  FPosition := APosition;
-end;
 
 destructor TLandrixGaebSubDescription.Destroy;
 begin
@@ -2301,13 +2397,6 @@ end;
 
 { TLandrixGaebTotals }
 
-constructor TLandrixGaebTotals.Create(ABill: TLandrixGaebBillOfQuantities; AOwner: TLandrixGaebXmlNode);
-begin
-  inherited Create;
-  FBill := ABill;
-  FOwner := AOwner;
-end;
-
 function TLandrixGaebTotals.SyntaxNode: TLandrixGaebXmlTotals;
 var
   Info: TLandrixGaebXmlBoQInfo;
@@ -2459,14 +2548,6 @@ end;
 
 { TLandrixGaebLotGroup }
 
-constructor TLandrixGaebLotGroup.Create(ABill: TLandrixGaebBillOfQuantities; ASyntaxNode: TLandrixGaebXmlLotGrp);
-begin
-  inherited Create;
-  FBill := ABill;
-  FSyntaxNode := ASyntaxNode;
-  FTotals := TLandrixGaebTotals.Create(ABill, ASyntaxNode);
-end;
-
 destructor TLandrixGaebLotGroup.Destroy;
 begin
   FTotals.Free;
@@ -2492,15 +2573,6 @@ begin
 end;
 
 { TLandrixGaebParty }
-
-constructor TLandrixGaebParty.Create(ABill: TLandrixGaebBillOfQuantities; ARole: TLandrixGaebPartyRole;
-  AIndex: Integer);
-begin
-  inherited Create;
-  FBill := ABill;
-  FRole := ARole;
-  FIndex := AIndex;
-end;
 
 function TLandrixGaebParty.Requester: TLandrixGaebXmlRequester;
 var
@@ -2638,13 +2710,14 @@ begin
   inherited Create;
   FDocument := ADocument;
   FTarget := ATarget;
+  FOutputTarget := ATarget;
   FOwnsDocument := AOwnsDocument;
   FNodes := TObjectList.Create;
   FRoot := TLandrixGaebNodeList.Create;
   FAllItems := TLandrixGaebNodeList.Create;
-  FOwner := TLandrixGaebParty.Create(Self, gprOwner, 0);
-  FContractor := TLandrixGaebParty.Create(Self, gprContractor, 0);
-  FTotals := TLandrixGaebTotals.Create(Self, nil);
+  FOwner := NewParty(Self, gprOwner, 0);
+  FContractor := NewParty(Self, gprContractor, 0);
+  FTotals := NewTotals(Self, nil);
   FWriteOptions := LandrixGaebXmlDefaultWriteOptions;
   Build(TLandrixGaebTree.Create(FDocument), nil);
 end;
@@ -2665,6 +2738,7 @@ end;
 
 procedure TLandrixGaebBillOfQuantities.ClearViews;
 begin
+  Inc(FStructureVersion);
   if FNodes <> nil then
     FNodes.Clear;
   if FRoot <> nil then
@@ -2693,6 +2767,7 @@ var
   Views: TObjectList;
   Parent: TLandrixGaebCategory;
   V: TLandrixGaebNode;
+  Kind: TLandrixGaebNodeKind;
 begin
   Tree := TLandrixGaebTree(ATree);
   FTree := Tree;
@@ -2708,8 +2783,10 @@ begin
         Parent := TLandrixGaebCategory(Views[T.Parent.Order - 1]);
       if (AOld <> nil) and (Cur < Integer(AOld.Count)) and (TLandrixGaebNode(AOld[Cur]).SyntaxNode = T.Node) then
       begin
-        { the element is still there: keep its view }
+        { the element is still there: keep its view (owned by AOld's
+          caller until FNodes holds it) }
         V := TLandrixGaebNode(AOld[Cur]);
+        FNodes.Add(V);
         AOld[Cur] := nil;
         Inc(Cur);
         V.FParent := Parent;
@@ -2718,19 +2795,40 @@ begin
           TLandrixGaebCategory(V).Children.FList.Clear;
       end
       else
+      begin
         case T.Kind of
           LandrixGaebTreeCtgy:
-            V := TLandrixGaebCategory.Create(Self, Parent, TLandrixGaebXmlBoQCtgy(T.Node), T);
+            begin
+              V := TLandrixGaebCategory.Create;
+              Kind := gnkCategory;
+            end;
           LandrixGaebTreeItem:
-            V := TLandrixGaebItem.Create(Self, gnkItem, Parent, T.Node, T);
+            begin
+              V := TLandrixGaebItem.Create;
+              Kind := gnkItem;
+            end;
           LandrixGaebTreeMarkup:
-            V := TLandrixGaebMarkupItem.Create(Self, gnkMarkupItem, Parent, T.Node, T);
+            begin
+              V := TLandrixGaebMarkupItem.Create;
+              Kind := gnkMarkupItem;
+            end;
           LandrixGaebTreeRemark:
-            V := TLandrixGaebRemark.Create(Self, gnkRemark, Parent, T.Node, T);
+            begin
+              V := TLandrixGaebRemark.Create;
+              Kind := gnkRemark;
+            end;
         else
-          V := TLandrixGaebPerfDescr.Create(Self, gnkPerfDescr, Parent, T.Node, T);
+          V := TLandrixGaebPerfDescr.Create;
+          Kind := gnkPerfDescr;
         end;
-      FNodes.Add(V);
+        try
+          FNodes.Add(V);
+        except
+          V.Free;
+          raise;
+        end;
+        InitNode(V, Self, Kind, Parent, T.Node, T);
+      end;
       Views.Add(V);
       if Parent = nil then
         FRoot.Add(V)
@@ -2747,7 +2845,13 @@ end;
 procedure TLandrixGaebBillOfQuantities.Refresh;
 begin
   ClearViews;
-  Build(TLandrixGaebTree.Create(FDocument), nil);
+  try
+    Build(TLandrixGaebTree.Create(FDocument), nil);
+  except
+    { no half built views }
+    ClearViews;
+    raise;
+  end;
 end;
 
 { Rebuilds the tree after AddCategory, AddItem or Remove, keeping the view
@@ -2759,38 +2863,48 @@ var
   Old: TObjectList;
   I: Integer;
   Tree: TObject;
+  Moved: Boolean;
 begin
-  { the new tree first; if it fails (out of memory), all views are freed
-    as by Refresh, so that none points to a removed element }
+  Inc(FStructureVersion);
+  Tree := nil;
+  Old := nil;
+  Moved := False;
   try
-    Tree := TLandrixGaebTree.Create(FDocument);
-  except
-    ClearViews;
-    raise;
-  end;
-  Old := TObjectList.Create(False);
-  try
-    FNodes.OwnsObjects := False;
-    for I := 0 to Integer(FNodes.Count) - 1 do
-      Old.Add(FNodes[I]);
-    FNodes.Clear;
-    FNodes.OwnsObjects := True;
-    FRoot.FList.Clear;
-    FAllItems.FList.Clear;
-    FIds.Free;
-    FIds := nil;
-    FOtherId.Free;
-    FOtherId := nil;
-    FTree.Free;
-    FTree := nil;
     try
+      Tree := TLandrixGaebTree.Create(FDocument);
+      { the views move to Old; FNodes holds them again as Build reuses
+        them }
+      Old := TObjectList.Create(False);
+      Old.Capacity := FNodes.Count;
+      for I := 0 to Integer(FNodes.Count) - 1 do
+        Old.Add(FNodes[I]);
+      FNodes.OwnsObjects := False;
+      FNodes.Clear;
+      FNodes.OwnsObjects := True;
+      Moved := True;
+      FRoot.FList.Clear;
+      FAllItems.FList.Clear;
+      FIds.Free;
+      FIds := nil;
+      FOtherId.Free;
+      FOtherId := nil;
+      FTree.Free;
+      FTree := nil;
       Build(Tree, Old);
-    finally
-      { views whose element is gone (Build sets the reused ones to nil) }
-      for I := 0 to Integer(Old.Count) - 1 do
-        Old[I].Free;
+    except
+      { any failure (out of memory): all views are freed as by Refresh,
+        so that none points to a removed element; Build owns the tree
+        once it started }
+      if FTree <> Tree then
+        Tree.Free;
+      ClearViews;
+      raise;
     end;
   finally
+    { views whose element is gone (Build sets the reused ones to nil) }
+    if Moved then
+      for I := 0 to Integer(Old.Count) - 1 do
+        Old[I].Free;
     Old.Free;
   end;
 end;
@@ -2890,23 +3004,34 @@ var
   B: TLandrixGaebXmlBoQBody;
   E: TLandrixGaebXmlNode;
   I: Integer;
+  InList: Boolean;
 begin
   if (ANode = nil) or (ANode.Bill <> Self) then
     raise ELandrixGaebError.Create('the node belongs to another bill');
   B := Body(ANode.Parent);
   E := ANode.SyntaxNode;
-  FreeViews(FNodes, ANode);
+  { find the element before anything is freed }
+  InList := False;
   I := -1;
   if B.HasItemlist then
     I := Integer(B.Itemlist.Children.IndexOf(E));
   if I >= 0 then
-    B.Itemlist.Children.Delete(I)
+    InList := True
   else
   begin
     I := Integer(B.Children.IndexOf(E));
     if I < 0 then
       raise ELandrixGaebError.Create('internal: element not in its body');
-    B.Children.Delete(I);
+  end;
+  try
+    FreeViews(FNodes, ANode);
+    if InList then
+      B.Itemlist.Children.Delete(I)
+    else
+      B.Children.Delete(I);
+  except
+    ClearViews;
+    raise;
   end;
   Rebuild;
 end;
@@ -2918,11 +3043,18 @@ end;
 
 function TLandrixGaebBillOfQuantities.Nodes(AIndex: Integer): TLandrixGaebNode;
 begin
+  CheckIndex(AIndex, NodeCount);
   Result := TLandrixGaebNode(FNodes[AIndex]);
 end;
 
-function TLandrixGaebBillOfQuantities.FindByOZ(const AOZ, AIndex: TLandrixGaebString; ACategory: Boolean;
-  out ANode: TLandrixGaebNode): TLandrixGaebFindResult;
+function TLandrixGaebBillOfQuantities.StructureVersion: Integer;
+begin
+  Result := FStructureVersion;
+end;
+
+{ A category (ACategory) or an item or markup item by OZ and index. }
+function FindNode(ABill: TLandrixGaebBillOfQuantities; const AOZ, AIndex: TLandrixGaebString;
+  ACategory: Boolean; out ANode: TLandrixGaebNode): TLandrixGaebFindResult;
 var
   Key, Part: TLandrixGaebString;
   I, P: Integer;
@@ -2952,9 +3084,9 @@ begin
     Key := Key + '#' + AIndex;
   ANode := nil;
   Result := gfrNotFound;
-  for I := 0 to Integer(FNodes.Count) - 1 do
+  for I := 0 to ABill.NodeCount - 1 do
   begin
-    V := TLandrixGaebNode(FNodes[I]);
+    V := ABill.Nodes(I);
     if (V.Kind = gnkCategory) <> ACategory then
       Continue;
     if not (V.Kind in [gnkCategory, gnkItem, gnkMarkupItem]) then
@@ -2972,6 +3104,21 @@ begin
       Exit;
     end;
   end;
+end;
+
+function TLandrixGaebBillOfQuantities.FindCategory(const AOZ: TLandrixGaebString;
+  out ACategory: TLandrixGaebCategory): TLandrixGaebFindResult;
+var
+  N: TLandrixGaebNode;
+begin
+  Result := FindNode(Self, AOZ, '', True, N);
+  ACategory := TLandrixGaebCategory(N);
+end;
+
+function TLandrixGaebBillOfQuantities.FindItem(const AOZ, ARNoIndex: TLandrixGaebString;
+  out ANode: TLandrixGaebNode): TLandrixGaebFindResult;
+begin
+  Result := FindNode(Self, AOZ, ARNoIndex, False, ANode);
 end;
 
 function TLandrixGaebBillOfQuantities.GetProjectName: TLandrixGaebString;
@@ -3241,7 +3388,7 @@ begin
     FRequesters := TObjectList.Create;
     if FDocument.HasAward and FDocument.Award.HasRequester then
       for I := 0 to Integer(FDocument.Award.Requester.Count) - 1 do
-        FRequesters.Add(TLandrixGaebParty.Create(Self, gprRequester, I));
+        FRequesters.Add(NewParty(Self, gprRequester, I));
   end;
   Result := Integer(FRequesters.Count);
 end;
@@ -3328,7 +3475,7 @@ begin
     FLotGroups := TObjectList.Create;
     if FDocument.HasAward and FDocument.Award.HasBoQ and FDocument.Award.BoQ.HasLotGrp then
       for I := 0 to Integer(FDocument.Award.BoQ.LotGrp.Count) - 1 do
-        FLotGroups.Add(TLandrixGaebLotGroup.Create(Self, FDocument.Award.BoQ.LotGrp[I]));
+        FLotGroups.Add(NewLotGroup(Self, FDocument.Award.BoQ.LotGrp[I]));
   end;
   Result := Integer(FLotGroups.Count);
 end;
@@ -3361,12 +3508,12 @@ end;
 
 procedure TLandrixGaebBillOfQuantities.SaveToFile(const AFileName: string; ADiagnostics: TLandrixGaebDiagnostics);
 begin
-  LandrixGaebXmlWriteFile(FDocument, FTarget, AFileName, FWriteOptions, ADiagnostics);
+  LandrixGaebXmlWriteFile(FDocument, FOutputTarget, AFileName, FWriteOptions, ADiagnostics);
 end;
 
 procedure TLandrixGaebBillOfQuantities.SaveToStream(AStream: TStream; ADiagnostics: TLandrixGaebDiagnostics);
 begin
-  LandrixGaebXmlWriteStream(FDocument, FTarget, AStream, FWriteOptions, ADiagnostics);
+  LandrixGaebXmlWriteStream(FDocument, FOutputTarget, AStream, FWriteOptions, ADiagnostics);
 end;
 
 end.

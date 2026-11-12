@@ -65,14 +65,16 @@ type
     of the left bill in document order, then the right nodes without a
     pair in document order. Remarks and execution descriptions are not
     matched. The matching holds views of both bills: AddCategory, AddItem,
-    Remove or Refresh on either bill make it stale; create a new one.
+    Remove or Refresh on either bill make it stale (see StructureVersion),
+    and every method then raises ELandrixGaebError; create a new one.
     DE: Die Bereiche, Positionen und Zuschlagspositionen zweier LV,
     zugeordnet ueber TLandrixGaebNode.OZKey, die Regel der Paarregeln.
     Eintraege: die Knoten des linken LV in Dokumentreihenfolge, dann die
     rechten Knoten ohne Paar in Dokumentreihenfolge. Bemerkungen und
     Ausfuehrungsbeschreibungen werden nicht zugeordnet. Die Zuordnung haelt
     Sichten beider LV: AddCategory, AddItem, Remove oder Refresh an einem
-    der beiden machen sie ungueltig; dann eine neue anlegen. }
+    der beiden machen sie ungueltig (siehe StructureVersion), und jede
+    Methode loest dann ELandrixGaebError aus; dann eine neue anlegen. }
   TLandrixGaebMatching = class(TObject)
   private
     FLeft: TLandrixGaebBillOfQuantities;
@@ -82,6 +84,9 @@ type
     FCarriers: TObjectList;
     FEntries: array of TLandrixGaebMatch;
     FCount: Integer;
+    FLeftVersion: Integer;
+    FRightVersion: Integer;
+    procedure CheckCurrent;
     procedure Fill(ABill: TLandrixGaebBillOfQuantities; AKeys: TObject);
     procedure AddEntry(AKind: TLandrixGaebMatchKind; ALeft, ARight: TLandrixGaebNode);
   public
@@ -236,6 +241,8 @@ begin
   inherited Create;
   FLeft := ALeft;
   FRight := ARight;
+  FLeftVersion := ALeft.StructureVersion;
+  FRightVersion := ARight.StructureVersion;
   FCarriers := TObjectList.Create(True);
   LeftKeys := TLandrixGaebKeyIndex.Create;
   FLeftKeys := LeftKeys;
@@ -312,13 +319,23 @@ begin
   Inc(FCount);
 end;
 
+{ The views the matching holds are gone once a bill changed its
+  structure. }
+procedure TLandrixGaebMatching.CheckCurrent;
+begin
+  if (FLeft.StructureVersion <> FLeftVersion) or (FRight.StructureVersion <> FRightVersion) then
+    raise ELandrixGaebError.Create('the matching is stale: a bill changed its structure; create a new matching');
+end;
+
 function TLandrixGaebMatching.Count: Integer;
 begin
+  CheckCurrent;
   Result := FCount;
 end;
 
 function TLandrixGaebMatching.Entries(AIndex: Integer): TLandrixGaebMatch;
 begin
+  CheckCurrent;
   if (AIndex < 0) or (AIndex >= FCount) then
     raise ELandrixGaebError.Create('match index out of range');
   Result := FEntries[AIndex];
@@ -328,6 +345,7 @@ function TLandrixGaebMatching.CountOf(AKind: TLandrixGaebMatchKind): Integer;
 var
   I: Integer;
 begin
+  CheckCurrent;
   Result := 0;
   for I := 0 to FCount - 1 do
     if FEntries[I].Kind = AKind then
@@ -341,6 +359,7 @@ var
   Key: TLandrixGaebString;
   K: Integer;
 begin
+  CheckCurrent;
   Result := nil;
   if ANode = nil then
     Exit;
@@ -496,6 +515,8 @@ var
 begin
   if (AKinds <> nil) and (AKinds.Right <> ABill) then
     raise ELandrixGaebError.Create('the kinds must match the bill as right side');
+  if AKinds <> nil then
+    AKinds.CheckCurrent;
   if (ACategory <> nil) and (ACategory.Bill <> ABill) then
     raise ELandrixGaebError.Create('the category is not part of the bill');
   Result.Value.Clear;
