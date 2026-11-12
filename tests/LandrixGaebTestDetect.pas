@@ -365,7 +365,7 @@ var
 
 function LocalDir: string;
 begin
-  Result := RepositoryRoot + 'tests' + PathDelim + 'data' + PathDelim + 'local' + PathDelim;
+  Result := LocalDataDir;
 end;
 
 function IsDocument(const FileName: string): Boolean;
@@ -447,7 +447,7 @@ var
 begin
   if not DirectoryExists(LocalDir) then
   begin
-    Skip('tests/data/local not present');
+    Skip('local corpus not present');
     Exit;
   end;
   Failures := TStringList.Create;
@@ -511,7 +511,7 @@ var
 begin
   if not DirectoryExists(LocalDir) then
   begin
-    Skip('tests/data/local not present');
+    Skip('local corpus not present');
     Exit;
   end;
   Failures := TStringList.Create;
@@ -564,7 +564,7 @@ var
 begin
   if not DirectoryExists(LocalDir + 'faulty') then
   begin
-    Skip('tests/data/local/faulty not present');
+    Skip('local corpus: faulty not present');
     Exit;
   end;
   Failures := TStringList.Create;

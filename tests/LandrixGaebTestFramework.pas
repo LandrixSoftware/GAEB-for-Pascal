@@ -96,6 +96,11 @@ function Wide(const Units: array of Word): TLandrixXmlWide;
   directory. }
 function RepositoryRoot: string;
 
+{ Folder of the local, git-ignored corpus with trailing delimiter:
+  tests/data/local/ (selection for every build), or tests/data/local-full/
+  (complete corpus, same layout) when the parameter -full is given. }
+function LocalDataDir: string;
+
 implementation
 
 type
@@ -333,6 +338,18 @@ begin
   if Result = '' then
     Result := GetCurrentDir;
   Result := IncludeTrailingPathDelimiter(Result);
+end;
+
+function LocalDataDir: string;
+var
+  I: Integer;
+  Name: string;
+begin
+  Name := 'local';
+  for I := 1 to ParamCount do
+    if ParamStr(I) = '-full' then
+      Name := 'local-full';
+  Result := RepositoryRoot + 'tests' + PathDelim + 'data' + PathDelim + Name + PathDelim;
 end;
 
 function StartsWith(const S, Prefix: string): Boolean;

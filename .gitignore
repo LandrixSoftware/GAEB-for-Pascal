@@ -86,6 +86,7 @@ BACKLOG.md
 
 # Echte GAEB-Dateien (ggf. Kundendaten), nur lokal
 tests/data/local/
+tests/data/local-full/
 
 # Lokale Anleitungen (nie committen)
 CLAUDE.md

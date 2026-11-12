@@ -475,9 +475,9 @@ var
 begin
   if not HaveSchemas then
     Exit;
-  if not DirectoryExists(DataDir('local')) then
+  if not DirectoryExists(LocalDataDir) then
   begin
-    Skip('tests/data/local not present');
+    Skip('local corpus not present');
     Exit;
   end;
   { load every schema first: a schema error must not count as a verdict }
@@ -494,7 +494,7 @@ begin
   FirstFailure := '';
   Files := TStringList.Create;
   try
-    ListFiles(DataDir('local'), Files);
+    ListFiles(LocalDataDir, Files);
     for I := 0 to Files.Count - 1 do
     { messages of exceptions may quote the file: only the class is kept }
     try

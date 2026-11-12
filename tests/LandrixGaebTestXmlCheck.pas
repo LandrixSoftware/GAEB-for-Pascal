@@ -485,10 +485,10 @@ var
   Local, Summary: string;
   I, N: Integer;
 begin
-  Local := RepositoryRoot + 'tests' + PathDelim + 'data' + PathDelim + 'local' + PathDelim;
+  Local := LocalDataDir;
   if not DirectoryExists(Local) then
   begin
-    Skip('tests/data/local not present');
+    Skip('local corpus not present');
     Exit;
   end;
   CorpusChecked := 0;

@@ -14,7 +14,10 @@
 
 { Console test runner. Exit code 0 = all tests passed.
 
-  Usage: LandrixGaebTests [repository-root] [-filter=Prefix] }
+  Usage: LandrixGaebTests [repository-root] [-filter=Prefix] [-full]
+
+  -full: the local tests use the complete corpus tests/data/local-full/
+  instead of the selection tests/data/local/. }
 
 program LandrixGaebTests;
 

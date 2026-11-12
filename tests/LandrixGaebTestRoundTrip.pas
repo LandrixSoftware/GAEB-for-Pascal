@@ -262,9 +262,9 @@ var
   Det: TLandrixGaebDetection;
   FirstDiff, FirstFailure: string;
 begin
-  if not DirectoryExists(DataDir('local')) then
+  if not DirectoryExists(LocalDataDir) then
   begin
-    Skip('tests/data/local not present');
+    Skip('local corpus not present');
     Exit;
   end;
   Compared := 0;
@@ -277,7 +277,7 @@ begin
   Files := TStringList.Create;
   Diffs := TStringList.Create;
   try
-    ListFiles(DataDir('local'), Files);
+    ListFiles(LocalDataDir, Files);
     for I := 0 to Files.Count - 1 do
     { messages of exceptions may quote the file: only the class is kept }
     try
@@ -332,9 +332,9 @@ var
   Det: TLandrixGaebDetection;
   FirstFailure: string;
 begin
-  if not DirectoryExists(DataDir('local') + 'faulty' + PathDelim + 'xml') then
+  if not DirectoryExists(LocalDataDir + 'faulty' + PathDelim + 'xml') then
   begin
-    Skip('tests/data/local/faulty/xml not present');
+    Skip('local corpus: faulty/xml not present');
     Exit;
   end;
   Count := 0;
@@ -346,7 +346,7 @@ begin
   FirstFailure := '';
   Files := TStringList.Create;
   try
-    ListFiles(DataDir('local') + 'faulty' + PathDelim + 'xml' + PathDelim, Files);
+    ListFiles(LocalDataDir + 'faulty' + PathDelim + 'xml' + PathDelim, Files);
     for I := 0 to Files.Count - 1 do
     begin
       Diags := TLandrixGaebDiagnostics.Create;

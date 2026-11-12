@@ -31,15 +31,19 @@
   ./tools/build.ps1                 # minimum set
   ./tools/build.ps1 all
   ./tools/build.ps1 d6,d7 -NoRun
+  ./tools/build.ps1 fpc322-linux -Full   # local tests over tests/data/local-full/
 #>
 param(
   [string[]]$Toolchains = @('min'),
   [string]$Program = 'tests/LandrixGaebTests.dpr',
   [switch]$NoRun,
+  [switch]$Full,
   [switch]$AllowWarnings
 )
 
 $ErrorActionPreference = 'Stop'
+# -Full: the local tests use tests/data/local-full/ (complete corpus).
+[string[]]$RunArgs = if ($Full) { @('-full') } else { @() }
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
 
@@ -110,7 +114,7 @@ function Invoke-Toolchain([string]$Name) {
       $cmd = "cd '$WslRoot' && $fpc -B -vewnhi $($fpcChecks -join ' ') $($FpcPaths -join ' ') -FU$out -FE$out '$Program' 2>&1"
       $log = & wsl.exe -e bash -lc $cmd
       $code = $LASTEXITCODE
-      $runCmd = { & wsl.exe -e bash -lc "cd '$WslRoot' && './build/$Name/$ProgramName' '$WslRoot'" }
+      $runCmd = { & wsl.exe -e bash -lc "cd '$WslRoot' && './build/$Name/$ProgramName' '$WslRoot' $($RunArgs -join ' ')" }
     }
     '^fpc\d+-win(32|64|arm)$' {
       $wrapper = Join-Path $LocalBin "$Base.cmd"
@@ -180,7 +184,7 @@ function Invoke-Toolchain([string]$Name) {
   }
   $diag | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
   if (-not $NoRun) {
-    if ($runCmd) { & $runCmd | Out-Host } else { & $exe $Root | Out-Host }
+    if ($runCmd) { & $runCmd | Out-Host } else { & $exe $Root @RunArgs | Out-Host }
     $result.Run = $LASTEXITCODE
   }
   return $result

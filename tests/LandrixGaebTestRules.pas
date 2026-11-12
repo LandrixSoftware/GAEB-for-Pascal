@@ -401,10 +401,10 @@ var
   Local, Summary: string;
   I, N: Integer;
 begin
-  Local := RepositoryRoot + 'tests' + PathDelim + 'data' + PathDelim + 'local' + PathDelim;
+  Local := LocalDataDir;
   if not DirectoryExists(Local) then
   begin
-    Skip('tests/data/local not present');
+    Skip('local corpus not present');
     Exit;
   end;
   CorpusChecked := 0;
@@ -525,10 +525,10 @@ var
   Pairs8384, Pairs8486, I, N: Integer;
   Rules: TStringList;
 begin
-  Local := RepositoryRoot + 'tests' + PathDelim + 'data' + PathDelim + 'local' + PathDelim;
+  Local := LocalDataDir;
   if not DirectoryExists(Local) then
   begin
-    Skip('tests/data/local not present');
+    Skip('local corpus not present');
     Exit;
   end;
   Pairs8384 := 0;
