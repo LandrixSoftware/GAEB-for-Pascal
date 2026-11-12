@@ -24,9 +24,10 @@
   LoadFromFile and LoadFromStream read a document into a new bill;
   SaveToFile and SaveToStream write it for Target with WriteOptions.
 
-  The views are built by the constructor and by Refresh. A structural
-  change made in the syntax model behind the facade (adding or removing a
-  category or an item) needs Refresh, which frees all earlier views.
+  The views are built by the constructor and by Refresh. AddCategory,
+  AddItem and Remove change model and views together; all other views stay
+  valid. A structural change made in the syntax model behind the facade
+  needs Refresh, which frees all earlier views.
 
   DE: Fachliche Fassade ueber dem Syntaxmodell eines GAEB-DA-XML-Dokuments:
   das Leistungsverzeichnis als Baum aus Bereichen, Positionen,
@@ -41,10 +42,11 @@
   LoadFromFile und LoadFromStream lesen ein Dokument in ein neues LV;
   SaveToFile und SaveToStream schreiben es fuer Target mit WriteOptions.
 
-  Die Sichten entstehen im Konstruktor und durch Refresh. Eine
-  Strukturaenderung im Syntaxmodell an der Fassade vorbei (Bereich oder
-  Position hinzufuegen oder entfernen) braucht Refresh; Refresh gibt alle
-  frueheren Sichten frei. }
+  Die Sichten entstehen im Konstruktor und durch Refresh. AddCategory,
+  AddItem und Remove aendern Modell und Sichten zusammen; alle anderen
+  Sichten bleiben gueltig. Eine Strukturaenderung im Syntaxmodell an der
+  Fassade vorbei braucht Refresh; Refresh gibt alle frueheren Sichten
+  frei. }
 
 { API: internal. May change in any release before 1.0 (becomes stable with
   the API review of phase 4).
@@ -456,6 +458,9 @@ type
     { Plain text of the label (LblTx). DE: Klartext der Bezeichnung
       (LblTx). }
     function Lbl: TLandrixGaebString;
+    { Replaces the label by one paragraph with AText. DE: Ersetzt die
+      Bezeichnung durch einen Absatz mit AText. }
+    procedure SetLbl(const AText: TLandrixGaebString);
     { Alternative category (ALNBGroupNo, ALNBSerNo other than 0).
       DE: Alternativbereich (ALNBGroupNo, ALNBSerNo ungleich 0). }
     function AlternativeGroup: TLandrixGaebString;
@@ -763,8 +768,13 @@ type
     FIds: TObject;
     FOtherId: TObject;
     FWriteOptions: TLandrixGaebXmlWriteOptions;
-    procedure Build;
+    FNextId: Integer;
+    procedure Build(ATree: TObject; AOld: TObjectList);
+    procedure Rebuild;
     procedure ClearViews;
+    function Body(AParent: TLandrixGaebCategory): TLandrixGaebXmlBoQBody;
+    function NewId(const APrefix: TLandrixGaebString): TLandrixGaebString;
+    function ViewOf(ASyntaxNode: TLandrixGaebXmlNode): TLandrixGaebNode;
     function GetProjectName: TLandrixGaebString;
     procedure SetProjectName(const AValue: TLandrixGaebString);
     function GetAwardField(AIndex: Integer): TLandrixGaebString;
@@ -787,6 +797,34 @@ type
       Strukturaenderung im Syntaxmodell neu auf; fruehere Sichten werden
       freigegeben. }
     procedure Refresh;
+    { Appends a category with ARNoPart and the label ALbl to AParent (nil:
+      top level) and gives it a new ID. ELandrixGaebError if AParent holds
+      items (a category body holds categories or an item list, not both).
+      DE: Haengt einen Bereich mit ARNoPart und der Bezeichnung ALbl an
+      AParent an (nil: oberste Ebene) und gibt ihm eine neue ID.
+      ELandrixGaebError, wenn AParent Positionen enthaelt (ein
+      Bereichsinhalt hat Bereiche oder eine Positionsliste, nicht beides). }
+    function AddCategory(AParent: TLandrixGaebCategory;
+      const ARNoPart, ALbl: TLandrixGaebString): TLandrixGaebCategory;
+    { Appends an item with ARNoPart to AParent (nil: top level) and gives it
+      a new ID; values and texts are set afterwards. ELandrixGaebError if
+      AParent holds categories, remarks or execution descriptions outside
+      an item list.
+      DE: Haengt eine Position mit ARNoPart an AParent an (nil: oberste
+      Ebene) und gibt ihr eine neue ID; Werte und Texte werden danach
+      gesetzt. ELandrixGaebError, wenn AParent Bereiche, Bemerkungen oder
+      Ausfuehrungsbeschreibungen ausserhalb einer Positionsliste enthaelt. }
+    function AddItem(AParent: TLandrixGaebCategory; const ARNoPart: TLandrixGaebString): TLandrixGaebItem;
+    { Removes ANode with everything in it from the model and frees its
+      views (and those of its children); references to them are invalid
+      afterwards. A category or item list that becomes empty stays. If
+      rebuilding fails (memory), all views are freed as by Refresh.
+      DE: Entfernt ANode mit allem darin aus dem Modell und gibt seine
+      Sichten (und die seiner Kinder) frei; Verweise darauf sind danach
+      ungueltig. Ein Bereich oder eine Positionsliste, die leer wird,
+      bleibt. Scheitert der Neuaufbau (Speicher), sind wie nach Refresh
+      alle Sichten freigegeben. }
+    procedure Remove(ANode: TLandrixGaebNode);
     { Reads a GAEB DA XML file (LandrixGaebXmlReadFile; AMaxSize <= 0: the
       default limit) into a new bill that owns the document. ADiagnostics
       may be nil. Raises ELandrixGaebError for input that cannot be read.
@@ -1569,6 +1607,17 @@ begin
   Result := '';
   if Ctgy.HasLblTx then
     Result := LandrixGaebPlainText(Ctgy.LblTx);
+end;
+
+procedure SetMLText(AText: TLandrixGaebXmlMLText; const AValue: TLandrixGaebString);
+begin
+  AText.Children.Clear;
+  AText.AddP.AddSpan.Value := AValue;
+end;
+
+procedure TLandrixGaebCategory.SetLbl(const AText: TLandrixGaebString);
+begin
+  SetMLText(Ctgy.LblTx, AText);
 end;
 
 function TLandrixGaebCategory.AlternativeGroup: TLandrixGaebString;
@@ -2518,7 +2567,7 @@ begin
   FContractor := TLandrixGaebParty.Create(Self, gprContractor, 0);
   FTotals := TLandrixGaebTotals.Create(Self, nil);
   FWriteOptions := LandrixGaebXmlDefaultWriteOptions;
-  Build;
+  Build(TLandrixGaebTree.Create(FDocument), nil);
 end;
 
 destructor TLandrixGaebBillOfQuantities.Destroy;
@@ -2555,17 +2604,20 @@ begin
   FTree := nil;
 end;
 
-procedure TLandrixGaebBillOfQuantities.Build;
+{ Builds the views over ATree (taken over by the bill); with AOld the
+  views of the elements that are still there are reused. }
+procedure TLandrixGaebBillOfQuantities.Build(ATree: TObject; AOld: TObjectList);
 var
   Tree: TLandrixGaebTree;
-  I: Integer;
+  I, Cur: Integer;
   T: TLandrixGaebTreeNode;
   Views: TObjectList;
   Parent: TLandrixGaebCategory;
   V: TLandrixGaebNode;
 begin
-  Tree := TLandrixGaebTree.Create(FDocument);
+  Tree := TLandrixGaebTree(ATree);
   FTree := Tree;
+  Cur := 0;
   Views := TObjectList.Create(False);
   try
     { tree node -> view, by the position of the tree node (Order - 1) }
@@ -2575,18 +2627,30 @@ begin
       Parent := nil;
       if (T.Parent <> nil) and (T.Parent <> Tree.Root) then
         Parent := TLandrixGaebCategory(Views[T.Parent.Order - 1]);
-      case T.Kind of
-        LandrixGaebTreeCtgy:
-          V := TLandrixGaebCategory.Create(Self, Parent, TLandrixGaebXmlBoQCtgy(T.Node), T);
-        LandrixGaebTreeItem:
-          V := TLandrixGaebItem.Create(Self, gnkItem, Parent, T.Node, T);
-        LandrixGaebTreeMarkup:
-          V := TLandrixGaebMarkupItem.Create(Self, gnkMarkupItem, Parent, T.Node, T);
-        LandrixGaebTreeRemark:
-          V := TLandrixGaebRemark.Create(Self, gnkRemark, Parent, T.Node, T);
+      if (AOld <> nil) and (Cur < Integer(AOld.Count)) and (TLandrixGaebNode(AOld[Cur]).SyntaxNode = T.Node) then
+      begin
+        { the element is still there: keep its view }
+        V := TLandrixGaebNode(AOld[Cur]);
+        AOld[Cur] := nil;
+        Inc(Cur);
+        V.FParent := Parent;
+        V.FTreeNode := T;
+        if V is TLandrixGaebCategory then
+          TLandrixGaebCategory(V).Children.FList.Clear;
+      end
       else
-        V := TLandrixGaebPerfDescr.Create(Self, gnkPerfDescr, Parent, T.Node, T);
-      end;
+        case T.Kind of
+          LandrixGaebTreeCtgy:
+            V := TLandrixGaebCategory.Create(Self, Parent, TLandrixGaebXmlBoQCtgy(T.Node), T);
+          LandrixGaebTreeItem:
+            V := TLandrixGaebItem.Create(Self, gnkItem, Parent, T.Node, T);
+          LandrixGaebTreeMarkup:
+            V := TLandrixGaebMarkupItem.Create(Self, gnkMarkupItem, Parent, T.Node, T);
+          LandrixGaebTreeRemark:
+            V := TLandrixGaebRemark.Create(Self, gnkRemark, Parent, T.Node, T);
+        else
+          V := TLandrixGaebPerfDescr.Create(Self, gnkPerfDescr, Parent, T.Node, T);
+        end;
       FNodes.Add(V);
       Views.Add(V);
       if Parent = nil then
@@ -2604,7 +2668,168 @@ end;
 procedure TLandrixGaebBillOfQuantities.Refresh;
 begin
   ClearViews;
-  Build;
+  Build(TLandrixGaebTree.Create(FDocument), nil);
+end;
+
+{ Rebuilds the tree after AddCategory, AddItem or Remove, keeping the view
+  objects of all elements that are still there. Neither operation moves an
+  element, so the remaining views are in the order of the new tree (Build
+  matches them in one pass). }
+procedure TLandrixGaebBillOfQuantities.Rebuild;
+var
+  Old: TObjectList;
+  I: Integer;
+  Tree: TObject;
+begin
+  { the new tree first; if it fails (out of memory), all views are freed
+    as by Refresh, so that none points to a removed element }
+  try
+    Tree := TLandrixGaebTree.Create(FDocument);
+  except
+    ClearViews;
+    raise;
+  end;
+  Old := TObjectList.Create(False);
+  try
+    FNodes.OwnsObjects := False;
+    for I := 0 to Integer(FNodes.Count) - 1 do
+      Old.Add(FNodes[I]);
+    FNodes.Clear;
+    FNodes.OwnsObjects := True;
+    FRoot.FList.Clear;
+    FAllItems.FList.Clear;
+    FIds.Free;
+    FIds := nil;
+    FOtherId.Free;
+    FOtherId := nil;
+    FTree.Free;
+    FTree := nil;
+    try
+      Build(Tree, Old);
+    finally
+      { views whose element is gone (Build sets the reused ones to nil) }
+      for I := 0 to Integer(Old.Count) - 1 do
+        Old[I].Free;
+    end;
+  finally
+    Old.Free;
+  end;
+end;
+
+function TLandrixGaebBillOfQuantities.Body(AParent: TLandrixGaebCategory): TLandrixGaebXmlBoQBody;
+begin
+  if AParent = nil then
+    Result := FDocument.Award.BoQ.BoQBody
+  else
+  begin
+    if AParent.Bill <> Self then
+      raise ELandrixGaebError.Create('the category belongs to another bill');
+    Result := AParent.Ctgy.BoQBody;
+  end;
+end;
+
+function TLandrixGaebBillOfQuantities.NewId(const APrefix: TLandrixGaebString): TLandrixGaebString;
+begin
+  repeat
+    Inc(FNextId);
+    Result := APrefix + LandrixXmlUtf8ToWide(LandrixXmlStringToUtf8(IntToStr(FNextId)));
+  until Resolve(Result, []).Status = grsNotFound;
+end;
+
+function TLandrixGaebBillOfQuantities.ViewOf(ASyntaxNode: TLandrixGaebXmlNode): TLandrixGaebNode;
+var
+  I: Integer;
+begin
+  for I := 0 to Integer(FNodes.Count) - 1 do
+  begin
+    Result := TLandrixGaebNode(FNodes[I]);
+    if Result.SyntaxNode = ASyntaxNode then
+      Exit;
+  end;
+  raise ELandrixGaebError.Create('internal: no view of the new element');
+end;
+
+function HasCategoryChildren(ABody: TLandrixGaebXmlBoQBody): Boolean;
+begin
+  Result := ABody.HasChildren;
+end;
+
+function TLandrixGaebBillOfQuantities.AddCategory(AParent: TLandrixGaebCategory;
+  const ARNoPart, ALbl: TLandrixGaebString): TLandrixGaebCategory;
+var
+  B: TLandrixGaebXmlBoQBody;
+  C: TLandrixGaebXmlBoQCtgy;
+  Id: TLandrixGaebString;
+begin
+  B := Body(AParent);
+  if B.HasItemlist then
+    raise ELandrixGaebError.Create('a category body with items takes no category');
+  Id := NewId('LGC');
+  C := B.AddBoQCtgy;
+  C.ID := Id;
+  C.RNoPart := ARNoPart;
+  SetMLText(C.LblTx, ALbl);
+  Rebuild;
+  Result := ViewOf(C) as TLandrixGaebCategory;
+end;
+
+function TLandrixGaebBillOfQuantities.AddItem(AParent: TLandrixGaebCategory;
+  const ARNoPart: TLandrixGaebString): TLandrixGaebItem;
+var
+  B: TLandrixGaebXmlBoQBody;
+  It: TLandrixGaebXmlItem;
+  Id: TLandrixGaebString;
+begin
+  B := Body(AParent);
+  if HasCategoryChildren(B) then
+    raise ELandrixGaebError.Create('a category body with categories takes no item');
+  Id := NewId('LGI');
+  { an item list made here stays when its last item is removed again }
+  B.Itemlist.Present := True;
+  It := B.Itemlist.AddItem;
+  It.ID := Id;
+  It.RNoPart := ARNoPart;
+  Rebuild;
+  Result := ViewOf(It) as TLandrixGaebItem;
+end;
+
+{ Frees the views of ANode and everything in it (taken out of ANodes). }
+procedure FreeViews(ANodes: TObjectList; ANode: TLandrixGaebNode);
+var
+  I: Integer;
+begin
+  if ANode is TLandrixGaebCategory then
+    for I := TLandrixGaebCategory(ANode).Children.Count - 1 downto 0 do
+      FreeViews(ANodes, TLandrixGaebCategory(ANode).Children[I]);
+  I := Integer(ANodes.IndexOf(ANode));
+  if I >= 0 then
+    ANodes.Delete(I);
+end;
+
+procedure TLandrixGaebBillOfQuantities.Remove(ANode: TLandrixGaebNode);
+var
+  B: TLandrixGaebXmlBoQBody;
+  E: TLandrixGaebXmlNode;
+  I: Integer;
+begin
+  if (ANode = nil) or (ANode.Bill <> Self) then
+    raise ELandrixGaebError.Create('the node belongs to another bill');
+  B := Body(ANode.Parent);
+  E := ANode.SyntaxNode;
+  FreeViews(FNodes, ANode);
+  I := -1;
+  if B.HasItemlist then
+    I := Integer(B.Itemlist.Children.IndexOf(E));
+  if I >= 0 then
+    B.Itemlist.Children.Delete(I)
+  else
+  begin
+    I := Integer(B.Children.IndexOf(E));
+    if I < 0 then
+      raise ELandrixGaebError.Create('internal: element not in its body');
+    B.Children.Delete(I);
+  end;
+  Rebuild;
 end;
 
 function TLandrixGaebBillOfQuantities.FindByOZ(const AOZ, AIndex: TLandrixGaebString; ACategory: Boolean;

@@ -815,6 +815,83 @@ begin
   end;
 end;
 
+{ ---- structure operations ---- }
+
+function Raises(ABill: TLandrixGaebBillOfQuantities; ACase: Integer; AParent: TLandrixGaebCategory): Boolean;
+begin
+  Result := False;
+  try
+    case ACase of
+      0: ABill.AddItem(AParent, '0010');
+      1: ABill.AddCategory(AParent, '01', 'x');
+    else
+      ABill.Remove(nil);
+    end;
+  except
+    on ELandrixGaebError do
+      Result := True;
+  end;
+end;
+
+procedure TestStructure;
+var
+  B: TLandrixGaebBillOfQuantities;
+  C1, C3: TLandrixGaebCategory;
+  It, NewIt, Last: TLandrixGaebItem;
+  N: TLandrixGaebNode;
+  Output: TLandrixXmlUtf8;
+begin
+  B := Load(DataDir('process') + 'request.x83');
+  try
+    C1 := B.Root[0] as TLandrixGaebCategory;
+    It := C1.Children[0] as TLandrixGaebItem;
+    Last := C1.Children[2] as TLandrixGaebItem;
+    C3 := B.AddCategory(nil, '03', 'Titel drei');
+    CheckEquals(3, B.Root.Count, 'category appended');
+    Check(B.Root[2] = C3, 'the new category is last');
+    CheckEqualsStr('03', S(C3.OZ), 'OZ of the new category');
+    CheckEqualsStr('Titel drei', S(C3.Lbl), 'label of the new category');
+    Check(C3.Parent = nil, 'top level');
+    CheckEqualsStr('01.0010', S(It.OZ), 'earlier views stay valid');
+    Check(C1.Children[0] = It, 'children keep their views');
+    NewIt := B.AddItem(C3, '0010');
+    NewIt.SetQty(DecOf('5.000'));
+    NewIt.QU := 'St';
+    CheckEqualsStr('03.0010', S(NewIt.OZ), 'OZ of the new item');
+    Check(NewIt.Parent = C3, 'parent of the new item');
+    CheckEquals(1, C3.Children.Count, 'item in the new category');
+    CheckEquals(6, B.AllItems.Count, 'item counted');
+    Check(B.FindByOZ('3.10', '', False, N) = gfrFound, 'new item found');
+    Check(N = NewIt, 'the new item');
+    Check(TLandrixGaebXmlItem(NewIt.SyntaxNode).ID <> TLandrixGaebXmlItem(It.SyntaxNode).ID, 'new ID');
+    Check(B.FindByOZ('03', '', True, N) = gfrFound, 'new category found');
+    Check(Raises(B, 0, nil), 'no item beside categories');
+    Check(Raises(B, 1, C3), 'no category beside items');
+    Check(Raises(B, 2, nil), 'no node to remove');
+    Output := Written(B);
+    Check(Pos(TLandrixXmlUtf8('RNoPart="03"'), Output) > 0, 'new category written');
+    Check(Pos(TLandrixXmlUtf8('<Qty>5.000</Qty>'), Output) > 0, 'new item written');
+    B.Remove(It);
+    CheckEquals(2, C1.Children.Count, 'item removed from its category');
+    CheckEquals(5, B.AllItems.Count, 'item removed from the bill');
+    Check(B.FindByOZ('01.0010', '', False, N) = gfrNotFound, 'removed item not found');
+    Check(C1.Children[1] = Last, 'other items keep their views');
+    Output := Written(B);
+    Check(Pos(TLandrixXmlUtf8('Leistung eins'), Output) = 0, 'removed item not written');
+    B.Remove(C3);
+    CheckEquals(2, B.Root.Count, 'category removed');
+    CheckEquals(4, B.AllItems.Count, 'its items removed');
+    Check(B.FindByOZ('03.0010', '', False, N) = gfrNotFound, 'item of the removed category not found');
+    CheckEqualsStr('01.0030', S(Last.OZ), 'remaining view still valid');
+    C3 := B.AddCategory(nil, '04', 'Titel vier');
+    B.Remove(B.AddItem(C3, '0010'));
+    CheckEquals(0, C3.Children.Count, 'last item removed');
+    Check(Raises(B, 1, C3), 'the emptied item list stays: still no category beside it');
+  finally
+    B.Free;
+  end;
+end;
+
 procedure Register;
 begin
   RegisterTest('BoQ.ReadOnly', TestReadOnly);
@@ -826,6 +903,7 @@ begin
   RegisterTest('BoQ.Losses', TestLosses);
   RegisterTest('BoQ.WriteValues', TestWriteValues);
   RegisterTest('BoQ.LoadSave', TestLoadSave);
+  RegisterTest('BoQ.Structure', TestStructure);
 end;
 
 end.
