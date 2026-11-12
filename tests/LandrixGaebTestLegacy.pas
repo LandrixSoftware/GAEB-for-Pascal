@@ -48,6 +48,11 @@ uses
   LandrixGaebTestFramework;
 
 const
+  { Bytes the detection examines (the constant of LandrixGaebDetect, which
+    is internal). }
+  DetectPrefixSize = 1024 * 1024;
+
+const
   CRLF = #13#10;
 
 function LegacyFile(const AName: string): TLandrixXmlUtf8;
@@ -343,7 +348,7 @@ begin
   begin
     if Pass = 2 then
       Source := ReplaceFirst(Source, '<BoQBody>', '<BoQBody><!--' +
-        Spaces(LandrixGaebDetectPrefixSize) + '-->');
+        Spaces(DetectPrefixSize) + '-->');
     Diags := TLandrixGaebDiagnostics.Create;
     try
       Raised := False;

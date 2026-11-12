@@ -21,8 +21,7 @@
   enumerations, lengths, digits, bounds; through LandrixXmlXsdTypes) and
   ID/IDREF (unique IDs, every IDREF names an ID). This is not a general
   XSD validator: it knows exactly the schemas of the grammar. The external
-  validation against the original schemas stays the reference (plan 6.1,
-  stage 5).
+  validation against the original schemas stays the reference.
 
   An element that is not allowed is reported once; if the content model
   knows it, the check goes on at the nearest state that accepts it (missing
@@ -58,8 +57,7 @@
   Aufzaehlungen, Laengen, Stellen, Grenzen; ueber LandrixXmlXsdTypes) und
   ID/IDREF (eindeutige IDs, jede IDREF nennt eine ID). Das ist kein
   allgemeiner XSD-Validator: Er kennt genau die Schemas der Grammatik.
-  Massstab bleibt die externe Validierung gegen die Originalschemas (Plan
-  6.1, Stufe 5).
+  Massstab bleibt die externe Validierung gegen die Originalschemas.
 
   Ein nicht erlaubtes Element wird einmal gemeldet; kennt das
   Inhaltsmodell es, geht die Pruefung am naechsten Zustand weiter, der es
@@ -114,11 +112,13 @@ function LandrixGaebXmlCheckFile(const AFileName: string; ADiagnostics: TLandrix
   AMaxSize: Int64; out ADetection: TLandrixGaebDetection): Boolean;
 
 { Checks a document in a buffer against ATarget without detection (for
-  output of the writer) and returns the number of errors.
+  output of the writer). True if no error was found. ADiagnostics may be
+  nil.
   DE: Prueft ein Dokument in einem Puffer ohne Erkennung gegen ATarget
-  (fuer Ausgaben des Schreibers) und liefert die Zahl der Fehler. }
+  (fuer Ausgaben des Schreibers). True, wenn kein Fehler gefunden wurde.
+  ADiagnostics darf nil sein. }
 function LandrixGaebXmlCheckTarget(Buffer: Pointer; Size: Integer;
-  const ATarget: TLandrixGaebTarget; ADiagnostics: TLandrixGaebDiagnostics): Integer;
+  const ATarget: TLandrixGaebTarget; ADiagnostics: TLandrixGaebDiagnostics): Boolean;
 
 { Checks a model against ATarget: writes it (mode gwmNormal, nothing is
   raised for problems) and checks the output. True if neither the writer
@@ -865,9 +865,9 @@ begin
 end;
 
 function LandrixGaebXmlCheckTarget(Buffer: Pointer; Size: Integer;
-  const ATarget: TLandrixGaebTarget; ADiagnostics: TLandrixGaebDiagnostics): Integer;
+  const ATarget: TLandrixGaebTarget; ADiagnostics: TLandrixGaebDiagnostics): Boolean;
 begin
-  Result := CheckRoot(Buffer, Size, LandrixGaebTargetNamespace(ATarget), GrammarRoot(ATarget),
+  Result := 0 = CheckRoot(Buffer, Size, LandrixGaebTargetNamespace(ATarget), GrammarRoot(ATarget),
     ADiagnostics);
 end;
 

@@ -61,12 +61,12 @@ const
     DE: Standard-Groessengrenze fuer eine GAEB-Datei (Byte). }
   LandrixGaebDefaultMaxSize = 256 * 1024 * 1024;
 
-  { Number of bytes examined for detection.
-    DE: Anzahl der Bytes, die fuer die Erkennung untersucht werden. }
-  LandrixGaebDetectPrefixSize = 1024 * 1024;
-
 type
-  { Format family. DE: Formatfamilie. }
+  { Format family. Later releases add values: handle
+    unknown values in an else branch and do not store ordinal values.
+    DE: Formatfamilie. Spaetere Versionen ergaenzen Werte:
+    unbekannte Werte in einem else-Zweig behandeln, keine Ordinalwerte
+    speichern. }
   TLandrixGaebFormat = (gfUnknown, gfXml, gfDA2000, gfDA90);
 
   { Result of a detection. Target is set for GAEB DA XML only; its fields
@@ -125,6 +125,10 @@ implementation
 
 uses
   LandrixXmlReader;
+
+const
+  { Number of bytes examined for detection. }
+  DetectPrefixSize = 1024 * 1024;
 
 const
   NamespacePrefix = 'http://www.gaeb.de/GAEB_DA_XML/';
@@ -558,8 +562,8 @@ begin
       IntToStr(AMaxSize) + ' bytes');
     Exit;
   end;
-  if Remaining > LandrixGaebDetectPrefixSize then
-    Count := LandrixGaebDetectPrefixSize
+  if Remaining > DetectPrefixSize then
+    Count := DetectPrefixSize
   else
     Count := Integer(Remaining);
   Buffer := '';

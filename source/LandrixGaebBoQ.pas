@@ -85,7 +85,11 @@ uses
   LandrixGaebXmlModel;
 
 type
-  { Kind of a node of the bill. DE: Art eines Knotens des LV. }
+  { Kind of a node of the bill. Later releases add values: handle
+    unknown values in an else branch and do not store ordinal values.
+    DE: Art eines Knotens des LV. Spaetere Versionen ergaenzen Werte:
+    unbekannte Werte in einem else-Zweig behandeln, keine Ordinalwerte
+    speichern. }
   TLandrixGaebNodeKind = (gnkCategory, gnkItem, gnkMarkupItem, gnkRemark, gnkPerfDescr);
 
   { A set of node kinds. DE: Eine Menge von Knotenarten. }
@@ -137,7 +141,12 @@ type
   TLandrixGaebBreakdownKind = (gbkLot, gbkLevel, gbkItem, gbkIndex, gbkUnrecognized);
 
   { A value of a totals block (Totals), named as the element.
-    DE: Ein Wert eines Summenblocks (Totals), benannt wie das Element. }
+    Later releases add values: handle
+    unknown values in an else branch and do not store ordinal values.
+    DE: Ein Wert eines Summenblocks (Totals), benannt wie das Element.
+    Spaetere Versionen ergaenzen Werte:
+    unbekannte Werte in einem else-Zweig behandeln, keine Ordinalwerte
+    speichern. }
   TLandrixGaebTotalField = (gtfTotal, gtfDiscountPcnt, gtfDiscountAmt, gtfTotAfterDisc, gtfTotalLSUM, gtfVAT,
     gtfTotalNet, gtfVATAmount, gtfTotalGross);
 

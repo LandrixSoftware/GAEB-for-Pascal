@@ -431,7 +431,7 @@ def gen_model(model):
     w = out.append
     w(HEADER)
     w("""{ GAEB DA XML syntax model: the document as object tree, one class per
-  schema type with element content (plan 3.4, 7.1 to 7.4). Values are
+  schema type with element content. Values are
   lexical text ('' = absent) except bounded decimals (TLandrixGaebDecimal)
   and unbounded decimals (TLandrixGaebDecimalText). Single complex children
   are created on first access and never nil; HasX tells whether a child is
@@ -440,7 +440,7 @@ def gen_model(model):
   that exist only in the 3.4 beta are not part of the model.
 
   DE: GAEB-DA-XML-Syntaxmodell: das Dokument als Objektbaum, eine Klasse je
-  Schematyp mit Elementinhalt (Plan 3.4, 7.1 bis 7.4). Werte sind
+  Schematyp mit Elementinhalt. Werte sind
   lexikalischer Text ('' = nicht vorhanden), ausser begrenzten Dezimalen
   (TLandrixGaebDecimal) und unbegrenzten Dezimalen
   (TLandrixGaebDecimalText). Einzelne komplexe Kinder werden beim ersten
@@ -1642,6 +1642,31 @@ uses
     for info in infos:
         gen_write_proc(model, prof, info, w)
     root = model.emit["tgGAEB"]
+    w("""{ Checks the output against ATarget; the number of errors it found (each
+  is one diagnostic of severity gsError). }
+function CheckErrors(const AOutput: TLandrixXmlUtf8; const ATarget: TLandrixGaebTarget;
+  ADiagnostics: TLandrixGaebDiagnostics): Integer;
+var
+  Diags: TLandrixGaebDiagnostics;
+  I, First: TLandrixGaebListIndex;
+begin
+  Diags := ADiagnostics;
+  if Diags = nil then
+    Diags := TLandrixGaebDiagnostics.Create;
+  try
+    First := Diags.Count;
+    Result := 0;
+    if LandrixGaebXmlCheckTarget(Pointer(AOutput), Length(AOutput), ATarget, Diags) then
+      Exit;
+    for I := First to Diags.Count - 1 do
+      if Diags[I].Severity >= gsError then
+        Inc(Result);
+  finally
+    if ADiagnostics = nil then
+      Diags.Free;
+  end;
+end;
+""")
     w("""function LandrixGaebXmlWriteCollect(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
   const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics;
   out AErrors, AWarnings: Integer): TLandrixXmlUtf8;
@@ -1679,7 +1704,7 @@ begin
     Writer.Free;
   end;
   if AOptions.Check then
-    Inc(AErrors, LandrixGaebXmlCheckTarget(Pointer(Result), Length(Result), ATarget, ADiagnostics));
+    Inc(AErrors, CheckErrors(Result, ATarget, ADiagnostics));
 end;
 
 function LandrixGaebXmlWriteUtf8(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;

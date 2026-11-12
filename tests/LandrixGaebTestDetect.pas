@@ -36,6 +36,11 @@ uses
   LandrixGaebTestFramework;
 
 const
+  { Bytes the detection examines (the constant of LandrixGaebDetect, which
+    is internal). }
+  DetectPrefixSize = 1024 * 1024;
+
+const
   CRLF = #13#10;
 
 { A GAEB 90 record: record type, content, record number in columns 75-80. }
@@ -254,11 +259,11 @@ begin
     '  <GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate></GAEBInfo>' + CRLF +
     '  <Award><DP>83</DP><Text>';
   { the lead byte of a character must sit at the last byte of the prefix }
-  if (LandrixGaebDetectPrefixSize - 1 - Length(Head)) mod 2 <> 0 then
+  if (DetectPrefixSize - 1 - Length(Head)) mod 2 <> 0 then
     Head := Head + ' ';
   Tail := '</Text></Award>' + CRLF + '</GAEB>' + CRLF;
   S := '';
-  SetLength(S, LandrixGaebDetectPrefixSize + 1000);
+  SetLength(S, DetectPrefixSize + 1000);
   for I := 1 to Length(Head) do
     S[I] := Head[I];
   Start := Length(Head) + 1;
@@ -271,7 +276,7 @@ begin
   end;
   SetLength(S, I - 1);
   S := S + Tail;
-  Check(S[LandrixGaebDetectPrefixSize] = #$C3, 'prefix ends after a lead byte');
+  Check(S[DetectPrefixSize] = #$C3, 'prefix ends after a lead byte');
   Diags := TLandrixGaebDiagnostics.Create;
   Stream := TMemoryStream.Create;
   try

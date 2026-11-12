@@ -87,9 +87,11 @@ type
   TLandrixGaebChar = WideChar;
 
   { Index type of the library's list classes (TObjectList descendants); it
-    matches the index type of TList on each compiler.
+    matches the index type of TList on each compiler: NativeInt on Delphi
+    12 and later (the only use of NativeInt in the library), else Integer.
     DE: Indextyp der Listenklassen (Nachfahren von TObjectList); entspricht
-    dem Indextyp von TList je Compiler. }
+    dem Indextyp von TList je Compiler: NativeInt ab Delphi 12 (die einzige
+    Verwendung von NativeInt in der Bibliothek), sonst Integer. }
 {$IFDEF FPC}
   TLandrixGaebListIndex = Integer;
 {$ELSE}
@@ -106,18 +108,32 @@ type
     ihre Klasse ELandrixXmlError). }
   ELandrixGaebError = class(Exception);
 
-  { GAEB DA XML version. DE: Version von GAEB DA XML. }
+  { GAEB DA XML version. Later releases add values: handle
+    unknown values in an else branch and do not store ordinal values.
+    DE: Version von GAEB DA XML. Spaetere Versionen ergaenzen Werte:
+    unbekannte Werte in einem else-Zweig behandeln, keine Ordinalwerte
+    speichern. }
   TLandrixGaebVersion = (gvUnknown, gv30, gv31, gv32, gv33, gv34);
 
   { Schema edition: VersDate, or the publication date of the schema set.
-    DE: Schema-Ausgabe: VersDate bzw. Erscheinungsdatum des Schemasatzes. }
+    Later releases add values: handle
+    unknown values in an else branch and do not store ordinal values.
+    DE: Schema-Ausgabe: VersDate bzw. Erscheinungsdatum des Schemasatzes.
+    Spaetere Versionen ergaenzen Werte:
+    unbekannte Werte in einem else-Zweig behandeln, keine Ordinalwerte
+    speichern. }
   TLandrixGaebEdition = (geUnknown, ge2004_07, ge2007_11, ge2009_12, ge2013_10,
     ge2014_03, ge2019_11, ge2021_05, ge2023_01, ge2026_03);
 
   { Exchange phase (DP). gp50_1 is DP '50.1' and so on. 50 and 51 alone are
     no exchange phases (base schemas without root element).
+    Later releases add values: handle
+    unknown values in an else branch and do not store ordinal values.
     DE: Austauschphase (DP). gp50_1 ist DP '50.1' usw. 50 und 51 allein sind
-    keine Austauschphasen (Basisschemas ohne Wurzelelement). }
+    keine Austauschphasen (Basisschemas ohne Wurzelelement).
+    Spaetere Versionen ergaenzen Werte:
+    unbekannte Werte in einem else-Zweig behandeln, keine Ordinalwerte
+    speichern. }
   TLandrixGaebPhase = (gpUnknown, gp31, gp50_1, gp50_2, gp51_1,
     gp51_2, gp52, gp61, gp80, gp81, gp82, gp83, gp83Z, gp84, gp84P, gp84Z,
     gp85, gp86, gp86ZE, gp86ZR, gp87, gp88, gp89, gp89B, gp93, gp94, gp96,
@@ -345,13 +361,13 @@ function LandrixGaebTargetVersDate(const ATarget: TLandrixGaebTarget): TLandrixX
   2021-05; X31 also 2023-01), only phases that exist in that edition.
   Writing: the same without 3.3/2019-11 and without beta phases (61, 84P,
   98, 99); 3.3/2023-01 X31 is writable. 3.0, 3.1 and the 3.4 beta are not
-  supported yet (plan, decision 1).
+  supported yet.
   DE: True, wenn die Bibliothek das Ziel unterstuetzt. Lesen: 3.2
   (2013-10; Zeitvertragsphasen auch 2014-03) und 3.3 (2019-11, 2021-05; X31
   auch 2023-01), nur Phasen, die es in der Ausgabe gibt. Schreiben: dasselbe
   ohne 3.3/2019-11 und ohne Beta-Phasen (61, 84P, 98, 99); 3.3/2023-01 X31
   ist schreibbar. 3.0, 3.1 und die
-  Beta 3.4 werden noch nicht unterstuetzt (Plan, Entscheidung 1). }
+  Beta 3.4 werden noch nicht unterstuetzt. }
 function LandrixGaebTargetIsSupported(const ATarget: TLandrixGaebTarget;
   AForWriting: Boolean): Boolean;
 

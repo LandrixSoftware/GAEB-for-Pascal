@@ -30,6 +30,7 @@ uses
   LandrixXmlBase,
   LandrixXmlDecimal,
   LandrixGaebTypes,
+  LandrixGaebDiagnostics,
   LandrixGaebTestFramework;
 
 procedure TestObjectSizes;
@@ -256,9 +257,27 @@ begin
   Check(not LandrixGaebTargetIsSupported(LandrixGaebTarget(gv33, geUnknown, gp83), False), 'edition required');
 end;
 
+procedure TestDiagnosticsText;
+var
+  Diags: TLandrixGaebDiagnostics;
+  Path: TLandrixGaebString;
+begin
+  Path := TLandrixGaebString('/GAEB/Award[1]/x') + TLandrixGaebChar($20AC);
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    Diags.AddAt('GAEB-TEST-001', gsWarning, Path, 3, 7, -1, 'message');
+    CheckEqualsGaebStr('3:7 warning [GAEB-TEST-001] ' + Path + ': message' + TLandrixGaebString(sLineBreak),
+      Diags.ToWideText, 'wide text keeps the path');
+    CheckEqualsStr('3:7 warning [GAEB-TEST-001] /GAEB/Award[1]/x', Copy(Diags.ToText, 1, 44), 'text');
+  finally
+    Diags.Free;
+  end;
+end;
+
 procedure Register;
 begin
   RegisterTest('Types.ObjectSizes', TestObjectSizes);
+  RegisterTest('Types.DiagnosticsText', TestDiagnosticsText);
   RegisterTest('Types.DecimalZeroedIsUnset', TestDecimalZeroedIsUnset);
   RegisterTest('Types.DecimalParse', TestDecimalParse);
   RegisterTest('Types.DecimalEquals', TestDecimalEquals);

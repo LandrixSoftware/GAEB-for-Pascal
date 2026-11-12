@@ -14,7 +14,7 @@
 
 { Business rules of GAEB DA XML (stage 3) and pair rules over two documents
   (stage 4), checked on the syntax model (LandrixGaebXmlModel). The
-  catalogue LandrixGaebRuleCatalog lists every rule with a stable identifier, the
+  catalogue (LandrixGaebRuleAt) lists every rule with a stable identifier, the
   phases it applies to and the section of the GAEB documentation it is
   based on (a reference, never a quotation). Rules that the schema of the
   target already enforces are left to the content model check (stage 2,
@@ -29,7 +29,7 @@
 
   DE: Geschaeftsregeln von GAEB DA XML (Stufe 3) und Paarregeln ueber zwei
   Dokumente (Stufe 4), geprueft auf dem Syntaxmodell
-  (LandrixGaebXmlModel). Der Katalog LandrixGaebRuleCatalog fuehrt jede Regel mit
+  (LandrixGaebXmlModel). Der Katalog (LandrixGaebRuleAt) fuehrt jede Regel mit
   stabiler Kennung, den Phasen, fuer die sie gilt, und dem Abschnitt der
   GAEB-Dokumentation, auf dem sie beruht (ein Verweis, nie ein Zitat).
   Regeln, die das Schema des Ziels schon erzwingt, bleiben der Pruefung der
@@ -67,8 +67,6 @@ const
   { Version of the rule set, independent of the library version.
     DE: Version des Regelwerks, unabhaengig von der Bibliotheksversion. }
   LandrixGaebRuleSetVersion = '2026.1';
-  { Number of rules in the catalogue. DE: Anzahl der Regeln im Katalog. }
-  LandrixGaebRuleCount = 45;
 
 type
   { One rule of the catalogue. Source names the section of the GAEB
@@ -93,14 +91,67 @@ type
     Source: string;
   end;
 
+{ Number of rules in the catalogue. Later releases add rules: identify a
+  rule by its ID, not by its position.
+  DE: Anzahl der Regeln im Katalog. Spaetere Versionen ergaenzen Regeln:
+  eine Regel ueber ihre ID bestimmen, nicht ueber ihre Position. }
+function LandrixGaebRuleCount: Integer;
+
+{ The rule at AIndex (from 0) of the catalogue; ELandrixGaebError outside.
+  Errors are violations that make a document ambiguous or its amounts
+  wrong; violations of form that real exporters produce are warnings.
+  DE: Die Regel an AIndex (ab 0) des Katalogs; ELandrixGaebError
+  ausserhalb. Fehler sind Verstoesse, die ein Dokument mehrdeutig oder
+  seine Betraege falsch machen; Formverstoesse, die echte Exportprogramme
+  erzeugen, sind Warnungen. }
+function LandrixGaebRuleAt(AIndex: Integer): TLandrixGaebRule;
+
+{ Index of the rule with the identifier AID in the catalogue, -1 if
+  unknown. DE: Index der Regel mit der Kennung AID im Katalog, -1, wenn
+  unbekannt. }
+function LandrixGaebRuleIndex(const AID: string): Integer;
+
+{ Checks the business rules of ATarget's phase on ADocument. True if no
+  diagnostic of severity gsError or higher was added. Phases without rules
+  give True. ADiagnostics may be nil.
+  DE: Prueft die Geschaeftsregeln der Phase von ATarget an ADocument. True,
+  wenn keine Meldung der Schwere gsError oder hoeher hinzukam. Phasen ohne
+  Regeln liefern True. ADiagnostics darf nil sein. }
+function LandrixGaebCheckRules(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
+  ADiagnostics: TLandrixGaebDiagnostics): Boolean;
+
+{ Checks the pair rules of two documents (X83 -> X84, X84 -> X86, X86 -> X87). Items and
+  categories are matched by OZ. Paths of the diagnostics belong to the
+  second document, except for elements that are missing there (then the
+  path of the first document; the message says so). Raises
+  ELandrixGaebError for a pair of phases without pair rules.
+  DE: Prueft die Paarregeln zweier Dokumente (X83 -> X84, X84 -> X86,
+  X86 -> X87).
+  Positionen und Kategorien werden ueber die OZ zugeordnet. Die Pfade der
+  Meldungen gehoeren zum zweiten Dokument, ausser bei Elementen, die dort
+  fehlen (dann der Pfad im ersten Dokument; der Text sagt es). Loest fuer
+  ein Phasenpaar ohne Paarregeln ELandrixGaebError aus. }
+function LandrixGaebCheckPair(AFirst: TLandrixGaebXmlGAEB; const AFirstTarget: TLandrixGaebTarget;
+  ASecond: TLandrixGaebXmlGAEB; const ASecondTarget: TLandrixGaebTarget;
+  ADiagnostics: TLandrixGaebDiagnostics): Boolean;
+
+implementation
+
+uses
+  LandrixXmlDecimal,
+  LandrixGaebXmlBase,
+  LandrixGaebBoQTree;
+
 const
+  RuleCount = 45;
+
   { The catalogue. Errors are violations that make a document ambiguous or
     its amounts wrong; violations of form that real exporters produce are
     warnings.
     DE: Der Katalog. Fehler sind Verstoesse, die ein Dokument mehrdeutig
     oder seine Betraege falsch machen; Formverstoesse, die echte
     Exportprogramme erzeugen, sind Warnungen. }
-  LandrixGaebRuleCatalog: array[0..LandrixGaebRuleCount - 1] of TLandrixGaebRule = (
+  RuleCatalog: array[0..RuleCount - 1] of TLandrixGaebRule = (
     (ID: 'GAEB-BR-OZ-001'; Title: 'OZ unique within the bill of quantities';
       Severity: gsError; Phases: [gp80, gp81, gp82, gp83, gp84, gp85, gp86, gp87]; Pair: False;
       Source: 'Fachdokumentation 3.3 (2023-01), 4.2.1'),
@@ -250,41 +301,6 @@ const
       Source: 'Fachdokumentation 3.3 (2023-01), 2.3, 4.6.3 (confirmation, also modified); own rule')
   );
 
-{ Index of a rule in LandrixGaebRuleCatalog, -1 if unknown.
-  DE: Index einer Regel in LandrixGaebRuleCatalog, -1, wenn unbekannt. }
-function LandrixGaebRuleIndex(const AID: string): Integer;
-
-{ Checks the business rules of ATarget's phase on ADocument. True if no
-  diagnostic of severity gsError or higher was added. Phases without rules
-  give True. ADiagnostics may be nil.
-  DE: Prueft die Geschaeftsregeln der Phase von ATarget an ADocument. True,
-  wenn keine Meldung der Schwere gsError oder hoeher hinzukam. Phasen ohne
-  Regeln liefern True. ADiagnostics darf nil sein. }
-function LandrixGaebCheckRules(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
-  ADiagnostics: TLandrixGaebDiagnostics): Boolean;
-
-{ Checks the pair rules of two documents (X83 -> X84, X84 -> X86, X86 -> X87). Items and
-  categories are matched by OZ. Paths of the diagnostics belong to the
-  second document, except for elements that are missing there (then the
-  path of the first document; the message says so). Raises
-  ELandrixGaebError for a pair of phases without pair rules.
-  DE: Prueft die Paarregeln zweier Dokumente (X83 -> X84, X84 -> X86,
-  X86 -> X87).
-  Positionen und Kategorien werden ueber die OZ zugeordnet. Die Pfade der
-  Meldungen gehoeren zum zweiten Dokument, ausser bei Elementen, die dort
-  fehlen (dann der Pfad im ersten Dokument; der Text sagt es). Loest fuer
-  ein Phasenpaar ohne Paarregeln ELandrixGaebError aus. }
-function LandrixGaebCheckPair(AFirst: TLandrixGaebXmlGAEB; const AFirstTarget: TLandrixGaebTarget;
-  ASecond: TLandrixGaebXmlGAEB; const ASecondTarget: TLandrixGaebTarget;
-  ADiagnostics: TLandrixGaebDiagnostics): Boolean;
-
-implementation
-
-uses
-  LandrixXmlDecimal,
-  LandrixGaebXmlBase,
-  LandrixGaebBoQTree;
-
 const
   nkCtgy = LandrixGaebTreeCtgy;
   nkItem = LandrixGaebTreeItem;
@@ -337,10 +353,22 @@ type
     property Errors: Integer read FErrors;
   end;
 
+function LandrixGaebRuleCount: Integer;
+begin
+  Result := RuleCount;
+end;
+
+function LandrixGaebRuleAt(AIndex: Integer): TLandrixGaebRule;
+begin
+  if (AIndex < 0) or (AIndex >= RuleCount) then
+    raise ELandrixGaebError.Create('rule index out of range');
+  Result := RuleCatalog[AIndex];
+end;
+
 function LandrixGaebRuleIndex(const AID: string): Integer;
 begin
-  Result := LandrixGaebRuleCount - 1;
-  while (Result >= 0) and (LandrixGaebRuleCatalog[Result].ID <> AID) do
+  Result := RuleCount - 1;
+  while (Result >= 0) and (RuleCatalog[Result].ID <> AID) do
     Dec(Result);
 end;
 
@@ -522,7 +550,7 @@ var
   I: Integer;
 begin
   I := LandrixGaebRuleIndex(ARuleId);
-  Result := (I >= 0) and (FPhase in LandrixGaebRuleCatalog[I].Phases);
+  Result := (I >= 0) and (FPhase in RuleCatalog[I].Phases);
 end;
 
 procedure TRuleRun.Report(const ARuleId: string; const APath: TLandrixXmlUtf8; const AMessage: string);
@@ -530,12 +558,12 @@ var
   I: Integer;
 begin
   I := LandrixGaebRuleIndex(ARuleId);
-  if (I < 0) or not (FPhase in LandrixGaebRuleCatalog[I].Phases) then
+  if (I < 0) or not (FPhase in RuleCatalog[I].Phases) then
     Exit;
-  if LandrixGaebRuleCatalog[I].Severity >= gsError then
+  if RuleCatalog[I].Severity >= gsError then
     Inc(FErrors);
   if FDiagnostics <> nil then
-    FDiagnostics.AddAt(ARuleId, LandrixGaebRuleCatalog[I].Severity, LandrixXmlUtf8ToWide(APath), 0, 0, -1,
+    FDiagnostics.AddAt(ARuleId, RuleCatalog[I].Severity, LandrixXmlUtf8ToWide(APath), 0, 0, -1,
       AMessage);
 end;
 

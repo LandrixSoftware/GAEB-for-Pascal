@@ -20,7 +20,7 @@
   Generator aendern und erneut ausfuehren. }
 
 { GAEB DA XML syntax model: the document as object tree, one class per
-  schema type with element content (plan 3.4, 7.1 to 7.4). Values are
+  schema type with element content. Values are
   lexical text ('' = absent) except bounded decimals (TLandrixGaebDecimal)
   and unbounded decimals (TLandrixGaebDecimalText). Single complex children
   are created on first access and never nil; HasX tells whether a child is
@@ -29,7 +29,7 @@
   that exist only in the 3.4 beta are not part of the model.
 
   DE: GAEB-DA-XML-Syntaxmodell: das Dokument als Objektbaum, eine Klasse je
-  Schematyp mit Elementinhalt (Plan 3.4, 7.1 bis 7.4). Werte sind
+  Schematyp mit Elementinhalt. Werte sind
   lexikalischer Text ('' = nicht vorhanden), ausser begrenzten Dezimalen
   (TLandrixGaebDecimal) und unbegrenzten Dezimalen
   (TLandrixGaebDecimalText). Einzelne komplexe Kinder werden beim ersten

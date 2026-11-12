@@ -271,7 +271,7 @@ begin
   Diags := TLandrixGaebDiagnostics.Create;
   try
     S := Doc(GoodItem);
-    CheckEquals(1, LandrixGaebXmlCheckTarget(Pointer(S), Length(S),
+    Check(not LandrixGaebXmlCheckTarget(Pointer(S), Length(S),
       LandrixGaebTarget(gv33, ge2021_05, gp84), Diags), 'document of another phase');
     CheckEquals(1, Diags.CountOf('GAEB-CHK-010'), 'wrong root: ' + Diags.ToText);
     S := DocIn('DA83/3.4', '3.4', '2026-03', GoodItem);

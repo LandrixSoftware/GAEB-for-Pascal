@@ -87,20 +87,29 @@ end;
 procedure TestCatalog;
 var
   I, J: Integer;
+  Raised: Boolean;
 begin
   for I := 0 to LandrixGaebRuleCount - 1 do
   begin
-    Check(Pos('GAEB-BR-', LandrixGaebRuleCatalog[I].ID) = 1, 'identifier ' + LandrixGaebRuleCatalog[I].ID);
-    Check(LandrixGaebRuleCatalog[I].Title <> '', 'title of ' + LandrixGaebRuleCatalog[I].ID);
-    Check(LandrixGaebRuleCatalog[I].Source <> '', 'source of ' + LandrixGaebRuleCatalog[I].ID);
-    Check(LandrixGaebRuleCatalog[I].Phases <> [], 'phases of ' + LandrixGaebRuleCatalog[I].ID);
-    Check(LandrixGaebRuleCatalog[I].Pair = (Pos('-PAIR-', LandrixGaebRuleCatalog[I].ID) > 0),
-      'pair flag of ' + LandrixGaebRuleCatalog[I].ID);
-    CheckEquals(I, LandrixGaebRuleIndex(LandrixGaebRuleCatalog[I].ID), 'index of ' + LandrixGaebRuleCatalog[I].ID);
+    Check(Pos('GAEB-BR-', LandrixGaebRuleAt(I).ID) = 1, 'identifier ' + LandrixGaebRuleAt(I).ID);
+    Check(LandrixGaebRuleAt(I).Title <> '', 'title of ' + LandrixGaebRuleAt(I).ID);
+    Check(LandrixGaebRuleAt(I).Source <> '', 'source of ' + LandrixGaebRuleAt(I).ID);
+    Check(LandrixGaebRuleAt(I).Phases <> [], 'phases of ' + LandrixGaebRuleAt(I).ID);
+    Check(LandrixGaebRuleAt(I).Pair = (Pos('-PAIR-', LandrixGaebRuleAt(I).ID) > 0),
+      'pair flag of ' + LandrixGaebRuleAt(I).ID);
+    CheckEquals(I, LandrixGaebRuleIndex(LandrixGaebRuleAt(I).ID), 'index of ' + LandrixGaebRuleAt(I).ID);
     for J := I + 1 to LandrixGaebRuleCount - 1 do
-      Check(LandrixGaebRuleCatalog[I].ID <> LandrixGaebRuleCatalog[J].ID, 'unique ' + LandrixGaebRuleCatalog[I].ID);
+      Check(LandrixGaebRuleAt(I).ID <> LandrixGaebRuleAt(J).ID, 'unique ' + LandrixGaebRuleAt(I).ID);
   end;
   CheckEquals(-1, LandrixGaebRuleIndex('GAEB-BR-NONE'), 'unknown rule');
+  Raised := False;
+  try
+    LandrixGaebRuleAt(LandrixGaebRuleCount);
+  except
+    on ELandrixGaebError do
+      Raised := True;
+  end;
+  Check(Raised, 'rule index beyond the catalogue');
 end;
 
 function IsSchemaGuarded(const ARuleId: string): Boolean;
@@ -214,7 +223,7 @@ begin
   try
     for I := 0 to LandrixGaebRuleCount - 1 do
     begin
-      Rule := LandrixGaebRuleCatalog[I].ID;
+      Rule := LandrixGaebRuleAt(I).ID;
       Dir := RulesDir + Rule + PathDelim;
       for P := Low(TLandrixGaebPhase) to High(TLandrixGaebPhase) do
       begin
@@ -239,7 +248,7 @@ begin
               Count := StrToInt(Copy(Rest, 1, Pos(' ', Rest) - 1));
               Path := Copy(Rest, Pos(' ', Rest) + 1, MaxInt);
             end;
-          Check(CasePhase(Name, LandrixGaebRuleCatalog[I].Phases, P), Rule + '/' + Name +
+          Check(CasePhase(Name, LandrixGaebRuleAt(I).Phases, P), Rule + '/' + Name +
             ' belongs to a phase of the rule');
           if (Pos('invalid-', Name) > 0) then
           begin
@@ -249,16 +258,16 @@ begin
           else
             Inc(Valid[P]);
           if Pos('pair-', Name) = 1 then
-            RunPair(LandrixGaebRuleCatalog[I].ID, Dir, Name, Count, Path)
+            RunPair(LandrixGaebRuleAt(I).ID, Dir, Name, Count, Path)
           else
-            RunCase(LandrixGaebRuleCatalog[I].ID, Dir, Name, Count, Path);
+            RunCase(LandrixGaebRuleAt(I).ID, Dir, Name, Count, Path);
         until FindNext(SR) <> 0;
       finally
         FindClose(SR);
       end;
       { every phase of the rule has a valid and an invalid case }
       for P := Low(TLandrixGaebPhase) to High(TLandrixGaebPhase) do
-        if P in LandrixGaebRuleCatalog[I].Phases then
+        if P in LandrixGaebRuleAt(I).Phases then
         begin
           Check(Valid[P] > 0, Rule + ' has a valid case for X' + LandrixXmlUtf8ToString(LandrixGaebPhaseToDP(P)));
           Check((Invalid[P] > 0) or IsSchemaGuarded(Rule),

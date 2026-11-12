@@ -3483,6 +3483,31 @@ begin
     W.ValueDecimal(ARow + 4, 'WgChangeRate', O.WgChangeRate);
 end;
 
+{ Checks the output against ATarget; the number of errors it found (each
+  is one diagnostic of severity gsError). }
+function CheckErrors(const AOutput: TLandrixXmlUtf8; const ATarget: TLandrixGaebTarget;
+  ADiagnostics: TLandrixGaebDiagnostics): Integer;
+var
+  Diags: TLandrixGaebDiagnostics;
+  I, First: TLandrixGaebListIndex;
+begin
+  Diags := ADiagnostics;
+  if Diags = nil then
+    Diags := TLandrixGaebDiagnostics.Create;
+  try
+    First := Diags.Count;
+    Result := 0;
+    if LandrixGaebXmlCheckTarget(Pointer(AOutput), Length(AOutput), ATarget, Diags) then
+      Exit;
+    for I := First to Diags.Count - 1 do
+      if Diags[I].Severity >= gsError then
+        Inc(Result);
+  finally
+    if ADiagnostics = nil then
+      Diags.Free;
+  end;
+end;
+
 function LandrixGaebXmlWriteCollect(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
   const AOptions: TLandrixGaebXmlWriteOptions; ADiagnostics: TLandrixGaebDiagnostics;
   out AErrors, AWarnings: Integer): TLandrixXmlUtf8;
@@ -3520,7 +3545,7 @@ begin
     Writer.Free;
   end;
   if AOptions.Check then
-    Inc(AErrors, LandrixGaebXmlCheckTarget(Pointer(Result), Length(Result), ATarget, ADiagnostics));
+    Inc(AErrors, CheckErrors(Result, ATarget, ADiagnostics));
 end;
 
 function LandrixGaebXmlWriteUtf8(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;

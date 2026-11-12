@@ -101,9 +101,18 @@ type
       DE: True, wenn ein Eintrag mindestens die Schwere gsError hat. }
     function HasErrors: Boolean;
     { All entries, one per line: "line:column severity [rule] path: message".
+      For display in the string type of the compiler: where string is not
+      Unicode (Delphi 6 to 2007, Free Pascal), characters of a path outside
+      the code page of the system are lost; ToWideText keeps them.
       DE: Alle Eintraege, einer je Zeile: "Zeile:Spalte Schwere [Regel]
-      Pfad: Text". }
+      Pfad: Text". Zur Anzeige im String-Typ des Compilers: wo string nicht
+      Unicode ist (Delphi 6 bis 2007, Free Pascal), gehen Zeichen eines
+      Pfads ausserhalb der Codepage des Systems verloren; ToWideText
+      behaelt sie. }
     function ToText: string;
+    { As ToText, as TLandrixGaebString without loss.
+      DE: Wie ToText, als TLandrixGaebString ohne Verlust. }
+    function ToWideText: TLandrixGaebString;
   end;
 
 { Name of a severity ('information', 'warning', 'error', 'fatal').
@@ -187,6 +196,25 @@ begin
     if D.Path <> '' then
       Line := Line + ' ' + string(D.Path);
     Result := Result + Line + ': ' + D.Message + sLineBreak;
+  end;
+end;
+
+function TLandrixGaebDiagnostics.ToWideText: TLandrixGaebString;
+var
+  I: TLandrixGaebListIndex;
+  D: TLandrixGaebDiagnostic;
+  Line: TLandrixGaebString;
+begin
+  Result := '';
+  for I := 0 to Count - 1 do
+  begin
+    D := Items[I];
+    { rule identifiers, severities and messages are ASCII }
+    Line := TLandrixGaebString(IntToStr(D.Line) + ':' + IntToStr(D.Column) + ' ' +
+      LandrixGaebSeverityToStr(D.Severity) + ' [' + D.RuleId + ']');
+    if D.Path <> '' then
+      Line := Line + ' ' + D.Path;
+    Result := Result + Line + ': ' + TLandrixGaebString(D.Message + sLineBreak);
   end;
 end;
 

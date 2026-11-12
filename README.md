@@ -26,6 +26,15 @@ are covered by semantic versioning from release 1.0 on.
   `LandrixGaebBoQTree`, `LandrixGaebXmlReadBase`, `LandrixGaebXmlWriteBase`,
   `LandrixGaebXmlProfiles`, `LandrixGaebXmlGrammar`, `LandrixGaebXmlCodes`.
 
+Innerhalb von 1.x bleibt der Quelltext kompatibel, nicht das Binärformat: Aufzählungen können
+Werte erhalten (unbekannte Werte in einem `else`-Zweig behandeln, keine Ordinalwerte speichern),
+Records können Felder erhalten (Schreiboptionen immer mit `LandrixGaebXmlDefaultWriteOptions`
+anlegen), Units neue Funktionen und das Syntaxmodell neue Klassen und Mitglieder. / Within 1.x the
+source stays compatible, not the binary layout: enumerations may gain values (handle unknown values
+in an `else` branch, do not store ordinal values), records may gain fields (always start write
+options from `LandrixGaebXmlDefaultWriteOptions`), units may gain functions and the syntax model
+new classes and members.
+
 ## Lizenz / License
 
 english version below
