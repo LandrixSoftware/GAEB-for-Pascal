@@ -16,7 +16,14 @@
   LandrixXml (stage 5), and agreement of the content model check (stage 2)
   with it. The schemas are not part of the repository: the tests read them
   from Specification/ and skip when it is missing. Local files under
-  tests/data/local are only counted, never printed. }
+  tests/data/local are only counted, never printed.
+
+  With the parameter -export=<folder> every document validated here is
+  also written to that folder (numbered, never named after its source),
+  with a line in index.txt: file, schema below Specification/, the verdict
+  of LandrixXml and whether it comes from the local corpus. The release
+  check validates them again with an independent schema processor
+  (tools/schema/validate-external.ps1) and compares the verdicts. }
 
 unit LandrixGaebTestXsd;
 
@@ -52,6 +59,12 @@ const
 
 var
   Schemas: array[0..TargetCount - 1] of TLandrixXmlXsdSchemaSet;
+  { export (-export=): folder with trailing delimiter, '' when off; number
+    of the last document written; documents from the local corpus }
+  ExportFolder: string;
+  ExportRead: Boolean;
+  ExportCount: Integer;
+  ExportLocal: Boolean;
 
 function TargetOf(AIndex: Integer): TLandrixGaebTarget;
 const
@@ -101,27 +114,103 @@ begin
     Skip('Specification/ with the GAEB schemas not present');
 end;
 
-{ The schema of a target, loaded once. }
-function SchemaOf(AIndex: Integer): TLandrixXmlXsdSchemaSet;
+{ The main schema of a target below Specification/, separated by '/'. }
+function SchemaPath(AIndex: Integer): string;
 var
   T: TLandrixGaebTarget;
   V, E, DP: string;
 begin
+  T := TargetOf(AIndex);
+  V := LandrixXmlUtf8ToString(LandrixGaebVersionToText(T.Version));
+  E := LandrixXmlUtf8ToString(LandrixGaebEditionToText(T.Edition));
+  DP := LandrixXmlUtf8ToString(LandrixGaebPhaseToDP(T.Phase));
+  Result := 'XML-' + V + '/Schema/GAEB_DA_XML_' + DP + '_' + V + '_' + E + '.xsd';
+end;
+
+{ The schema of a target, loaded once. }
+function SchemaOf(AIndex: Integer): TLandrixXmlXsdSchemaSet;
+begin
   if Schemas[AIndex] = nil then
-  begin
-    T := TargetOf(AIndex);
-    V := LandrixXmlUtf8ToString(LandrixGaebVersionToText(T.Version));
-    E := LandrixXmlUtf8ToString(LandrixGaebEditionToText(T.Edition));
-    DP := LandrixXmlUtf8ToString(LandrixGaebPhaseToDP(T.Phase));
-    Schemas[AIndex] := LandrixXmlXsdLoadSchema(SchemaDir + 'XML-' + V + PathDelim + 'Schema' + PathDelim +
-      'GAEB_DA_XML_' + DP + '_' + V + '_' + E + '.xsd');
-  end;
+    Schemas[AIndex] := LandrixXmlXsdLoadSchema(SchemaDir +
+      StringReplace(SchemaPath(AIndex), '/', PathDelim, [rfReplaceAll]));
   Result := Schemas[AIndex];
 end;
 
-{ True if the document is valid for the schema of target AIndex; AError
-  gets the code of the first error. }
-function XsdValid(const ASource: TLandrixXmlUtf8; AIndex: Integer; out AError: string): Boolean;
+{ The export folder of -export=, '' when the parameter is missing. }
+function ExportDir: string;
+var
+  I: Integer;
+  Index: TStringList;
+begin
+  if not ExportRead then
+  begin
+    ExportRead := True;
+    ExportFolder := '';
+    for I := 1 to ParamCount do
+      if Copy(ParamStr(I), 1, 8) = '-export=' then
+        ExportFolder := IncludeTrailingPathDelimiter(ExpandFileName(Copy(ParamStr(I), 9, MaxInt)));
+    if ExportFolder <> '' then
+    begin
+      ForceDirectories(ExportFolder);
+      { a second run (another filter) continues the numbering }
+      if FileExists(ExportFolder + 'index.txt') then
+      begin
+        Index := TStringList.Create;
+        try
+          Index.LoadFromFile(ExportFolder + 'index.txt');
+          ExportCount := Index.Count;
+        finally
+          Index.Free;
+        end;
+      end;
+    end;
+  end;
+  Result := ExportFolder;
+end;
+
+procedure AppendLine(const AFileName: string; const ALine: TLandrixXmlUtf8);
+var
+  F: TFileStream;
+  Line: TLandrixXmlUtf8;
+begin
+  if FileExists(AFileName) then
+    F := TFileStream.Create(AFileName, fmOpenReadWrite or fmShareDenyWrite)
+  else
+    F := TFileStream.Create(AFileName, fmCreate);
+  try
+    F.Seek(0, soFromEnd);
+    Line := ALine + #10;
+    F.WriteBuffer(Pointer(Line)^, Length(Line));
+  finally
+    F.Free;
+  end;
+end;
+
+{ Writes a validated document and its index line when exporting. }
+procedure ExportDocument(const ASource: TLandrixXmlUtf8; AIndex: Integer; AValid: Boolean);
+const
+  Verdicts: array[Boolean] of string = ('invalid', 'valid');
+  Origins: array[Boolean] of string = ('repo', 'local');
+var
+  Name: string;
+  F: TFileStream;
+begin
+  if ExportDir = '' then
+    Exit;
+  Inc(ExportCount);
+  Name := Format('%.5d.xml', [ExportCount]);
+  F := TFileStream.Create(ExportFolder + Name, fmCreate);
+  try
+    if Length(ASource) > 0 then
+      F.WriteBuffer(Pointer(ASource)^, Length(ASource));
+  finally
+    F.Free;
+  end;
+  AppendLine(ExportFolder + 'index.txt', LandrixXmlStringToUtf8(Name + #9 + SchemaPath(AIndex) + #9 +
+    Verdicts[AValid] + #9 + Origins[ExportLocal]));
+end;
+
+function XsdValidate(const ASource: TLandrixXmlUtf8; AIndex: Integer; out AError: string): Boolean;
 var
   Validator: TLandrixXmlXsdValidator;
   Reader: TLandrixXmlReader;
@@ -139,6 +228,20 @@ begin
     Reader.Free;
     Validator.Free;
   end;
+end;
+
+{ True if the document is valid for the schema of target AIndex; AError
+  gets the code of the first error. An exception counts as invalid for the
+  export. }
+function XsdValid(const ASource: TLandrixXmlUtf8; AIndex: Integer; out AError: string): Boolean;
+begin
+  try
+    Result := XsdValidate(ASource, AIndex, AError);
+  except
+    ExportDocument(ASource, AIndex, False);
+    raise;
+  end;
+  ExportDocument(ASource, AIndex, Result);
 end;
 
 { Verdict of the content model check. }
@@ -492,6 +595,7 @@ begin
   Converted := 0;
   ConvertedValid := 0;
   FirstFailure := '';
+  ExportLocal := True;
   Files := TStringList.Create;
   try
     ListFiles(LocalDataDir, Files);
@@ -542,6 +646,7 @@ begin
       end;
     end;
   finally
+    ExportLocal := False;
     Files.Free;
   end;
   WriteLn('  Local.Xsd: ', Checked, ' file(s), ', Valid, ' XSD-valid, check agrees on ', Agree,

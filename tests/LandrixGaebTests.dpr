@@ -15,9 +15,12 @@
 { Console test runner. Exit code 0 = all tests passed.
 
   Usage: LandrixGaebTests [repository-root] [-filter=Prefix] [-full]
+    [-export=Folder]
 
   -full: the local tests use the complete corpus tests/data/local-full/
-  instead of the selection tests/data/local/. }
+  instead of the selection tests/data/local/.
+  -export: the XSD tests write every document they validate to Folder
+  (see LandrixGaebTestXsd; used by tools/release-check.ps1). }
 
 program LandrixGaebTests;
 
