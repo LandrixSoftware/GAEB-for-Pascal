@@ -40,7 +40,9 @@ Deterministic ASCII output with CRLF.
 
 Usage:
   python tools/schema/gen-gaeb-model.py                 write the units
-  python tools/schema/gen-gaeb-model.py --check         exit 1 if a unit differs
+  python tools/schema/gen-gaeb-model.py --check         exit 1 if a unit differs or the
+                                                        stable units break the frozen API
+                                                        (tools/check-api.py)
   python tools/schema/gen-gaeb-model.py --update-names  update names.json, then write
 """
 
@@ -48,6 +50,7 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -2437,7 +2440,10 @@ def main(argv):
                 status = 1
         if status == 0:
             print("gen-gaeb-model: units up to date")
-        return status
+        # the stable generated units only grow (tools/check-api.py)
+        api = subprocess.call([sys.executable, os.path.join(ROOT, "tools", "check-api.py"), "--units",
+                               "LandrixGaebXmlModel,LandrixGaebXmlReader,LandrixGaebXmlWriter"])
+        return status or api
     for path, text in units:
         io.open(path, "wb").write(text.encode("ascii"))
         print("gen-gaeb-model: wrote %s (%d lines)" % (os.path.basename(path), text.count("\r\n")))

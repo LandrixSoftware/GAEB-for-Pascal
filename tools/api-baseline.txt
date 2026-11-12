@@ -1,0 +1,2300 @@
+LandrixGaebBoQ: class tlandrixgaebbillofquantities(tobject)
+LandrixGaebBoQ: class tlandrixgaebcategory(tlandrixgaebnode)
+LandrixGaebBoQ: class tlandrixgaebitem(tlandrixgaebnode)
+LandrixGaebBoQ: class tlandrixgaeblotgroup(tobject)
+LandrixGaebBoQ: class tlandrixgaebmarkupitem(tlandrixgaebnode)
+LandrixGaebBoQ: class tlandrixgaebnode(tobject)
+LandrixGaebBoQ: class tlandrixgaebnodelist(tobject)
+LandrixGaebBoQ: class tlandrixgaebparty(tobject)
+LandrixGaebBoQ: class tlandrixgaebperfdescr(tlandrixgaebnode)
+LandrixGaebBoQ: class tlandrixgaebremark(tlandrixgaebnode)
+LandrixGaebBoQ: class tlandrixgaebsubdescription(tobject)
+LandrixGaebBoQ: class tlandrixgaebtextcomplement(tobject)
+LandrixGaebBoQ: class tlandrixgaebtextvisitor(tobject)
+LandrixGaebBoQ: class tlandrixgaebtotals(tobject)
+LandrixGaebBoQ: enum tlandrixgaebbreakdownkind
+LandrixGaebBoQ: enum tlandrixgaebbreakdownkind value gbkindex
+LandrixGaebBoQ: enum tlandrixgaebbreakdownkind value gbkitem
+LandrixGaebBoQ: enum tlandrixgaebbreakdownkind value gbklevel
+LandrixGaebBoQ: enum tlandrixgaebbreakdownkind value gbklot
+LandrixGaebBoQ: enum tlandrixgaebbreakdownkind value gbkunrecognized
+LandrixGaebBoQ: enum tlandrixgaebcomplementkind
+LandrixGaebBoQ: enum tlandrixgaebcomplementkind value gckbidder
+LandrixGaebBoQ: enum tlandrixgaebcomplementkind value gckowner
+LandrixGaebBoQ: enum tlandrixgaebcomplementkind value gckunrecognized
+LandrixGaebBoQ: enum tlandrixgaebcountstatus
+LandrixGaebBoQ: enum tlandrixgaebcountstatus value gcscounts
+LandrixGaebBoQ: enum tlandrixgaebcountstatus value gcsnotcounted
+LandrixGaebBoQ: enum tlandrixgaebcountstatus value gcsunknown
+LandrixGaebBoQ: enum tlandrixgaebdescriptionrole
+LandrixGaebBoQ: enum tlandrixgaebdescriptionrole value gdrnormal
+LandrixGaebBoQ: enum tlandrixgaebdescriptionrole value gdrreference
+LandrixGaebBoQ: enum tlandrixgaebdescriptionrole value gdrrepetition
+LandrixGaebBoQ: enum tlandrixgaebdescriptionrole value gdrunrecognized
+LandrixGaebBoQ: enum tlandrixgaebfindresult
+LandrixGaebBoQ: enum tlandrixgaebfindresult value gframbiguous
+LandrixGaebBoQ: enum tlandrixgaebfindresult value gfrfound
+LandrixGaebBoQ: enum tlandrixgaebfindresult value gfrnotfound
+LandrixGaebBoQ: enum tlandrixgaebnodekind
+LandrixGaebBoQ: enum tlandrixgaebnodekind value gnkcategory
+LandrixGaebBoQ: enum tlandrixgaebnodekind value gnkitem
+LandrixGaebBoQ: enum tlandrixgaebnodekind value gnkmarkupitem
+LandrixGaebBoQ: enum tlandrixgaebnodekind value gnkperfdescr
+LandrixGaebBoQ: enum tlandrixgaebnodekind value gnkremark
+LandrixGaebBoQ: enum tlandrixgaebpartyrole
+LandrixGaebBoQ: enum tlandrixgaebpartyrole value gprcontractor
+LandrixGaebBoQ: enum tlandrixgaebpartyrole value gprowner
+LandrixGaebBoQ: enum tlandrixgaebpartyrole value gprrequester
+LandrixGaebBoQ: enum tlandrixgaebprovisional
+LandrixGaebBoQ: enum tlandrixgaebprovisional value gpvnone
+LandrixGaebBoQ: enum tlandrixgaebprovisional value gpvunrecognized
+LandrixGaebBoQ: enum tlandrixgaebprovisional value gpvwithouttotal
+LandrixGaebBoQ: enum tlandrixgaebprovisional value gpvwithtotal
+LandrixGaebBoQ: enum tlandrixgaebrefstatus
+LandrixGaebBoQ: enum tlandrixgaebrefstatus value grsabsent
+LandrixGaebBoQ: enum tlandrixgaebrefstatus value grsambiguous
+LandrixGaebBoQ: enum tlandrixgaebrefstatus value grsnotfound
+LandrixGaebBoQ: enum tlandrixgaebrefstatus value grsresolved
+LandrixGaebBoQ: enum tlandrixgaebrefstatus value grswrongkind
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gtebegincell
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gtebeginlist
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gtebeginlistitem
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gtebeginparagraph
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gtebeginrow
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gtebegintable
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gtecomplement
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gteendcell
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gteendlist
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gteendlistitem
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gteendparagraph
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gteendrow
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gteendtable
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gteimage
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gtelinebreak
+LandrixGaebBoQ: enum tlandrixgaebtexteventkind value gtetext
+LandrixGaebBoQ: enum tlandrixgaebtotalfield
+LandrixGaebBoQ: enum tlandrixgaebtotalfield value gtfdiscountamt
+LandrixGaebBoQ: enum tlandrixgaebtotalfield value gtfdiscountpcnt
+LandrixGaebBoQ: enum tlandrixgaebtotalfield value gtftotafterdisc
+LandrixGaebBoQ: enum tlandrixgaebtotalfield value gtftotal
+LandrixGaebBoQ: enum tlandrixgaebtotalfield value gtftotalgross
+LandrixGaebBoQ: enum tlandrixgaebtotalfield value gtftotallsum
+LandrixGaebBoQ: enum tlandrixgaebtotalfield value gtftotalnet
+LandrixGaebBoQ: enum tlandrixgaebtotalfield value gtfvat
+LandrixGaebBoQ: enum tlandrixgaebtotalfield value gtfvatamount
+LandrixGaebBoQ: function landrixgaebplaintext(tlandrixgaebxmlnode): tlandrixgaebstring
+LandrixGaebBoQ: procedure landrixgaebvisittext(tlandrixgaebxmlnode, tlandrixgaebtextvisitor)
+LandrixGaebBoQ: record tlandrixgaebbreakdown
+LandrixGaebBoQ: record tlandrixgaebcatalogref
+LandrixGaebBoQ: record tlandrixgaebqtysplit
+LandrixGaebBoQ: record tlandrixgaebreference
+LandrixGaebBoQ: record tlandrixgaebtextevent
+LandrixGaebBoQ: record tlandrixgaebvatpart
+LandrixGaebBoQ: tlandrixgaebbillofquantities class function loadfromfile(const string, tlandrixgaebdiagnostics, int64): tlandrixgaebbillofquantities
+LandrixGaebBoQ: tlandrixgaebbillofquantities class function loadfromstream(tstream, tlandrixgaebdiagnostics, int64): tlandrixgaebbillofquantities
+LandrixGaebBoQ: tlandrixgaebbillofquantities constructor create(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, boolean)
+LandrixGaebBoQ: tlandrixgaebbillofquantities destructor destroy(); override
+LandrixGaebBoQ: tlandrixgaebbillofquantities function addcategory(tlandrixgaebcategory, const tlandrixgaebstring, const tlandrixgaebstring): tlandrixgaebcategory
+LandrixGaebBoQ: tlandrixgaebbillofquantities function additem(tlandrixgaebcategory, const tlandrixgaebstring): tlandrixgaebitem
+LandrixGaebBoQ: tlandrixgaebbillofquantities function boqname(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebbillofquantities function breakdowncount(): integer
+LandrixGaebBoQ: tlandrixgaebbillofquantities function breakdowns(integer): tlandrixgaebbreakdown
+LandrixGaebBoQ: tlandrixgaebbillofquantities function currency(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebbillofquantities function findcategory(const tlandrixgaebstring, out tlandrixgaebcategory): tlandrixgaebfindresult
+LandrixGaebBoQ: tlandrixgaebbillofquantities function finditem(const tlandrixgaebstring, const tlandrixgaebstring, out tlandrixgaebnode): tlandrixgaebfindresult
+LandrixGaebBoQ: tlandrixgaebbillofquantities function haslots(): boolean
+LandrixGaebBoQ: tlandrixgaebbillofquantities function lotgroupcount(): integer
+LandrixGaebBoQ: tlandrixgaebbillofquantities function lotgroups(integer): tlandrixgaeblotgroup
+LandrixGaebBoQ: tlandrixgaebbillofquantities function nodecount(): integer
+LandrixGaebBoQ: tlandrixgaebbillofquantities function nodes(integer): tlandrixgaebnode
+LandrixGaebBoQ: tlandrixgaebbillofquantities function noupcomps(): integer
+LandrixGaebBoQ: tlandrixgaebbillofquantities function requestercount(): integer
+LandrixGaebBoQ: tlandrixgaebbillofquantities function requesters(integer): tlandrixgaebparty
+LandrixGaebBoQ: tlandrixgaebbillofquantities function structureversion(): integer
+LandrixGaebBoQ: tlandrixgaebbillofquantities function total(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebbillofquantities function upcomplabel(integer): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebbillofquantities function upfracdig(): integer
+LandrixGaebBoQ: tlandrixgaebbillofquantities procedure refresh()
+LandrixGaebBoQ: tlandrixgaebbillofquantities procedure remove(tlandrixgaebnode)
+LandrixGaebBoQ: tlandrixgaebbillofquantities procedure savetofile(const string, tlandrixgaebdiagnostics)
+LandrixGaebBoQ: tlandrixgaebbillofquantities procedure savetostream(tstream, tlandrixgaebdiagnostics)
+LandrixGaebBoQ: tlandrixgaebbillofquantities property allitems read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property allitems: tlandrixgaebnodelist
+LandrixGaebBoQ: tlandrixgaebbillofquantities property biddate read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property biddate write
+LandrixGaebBoQ: tlandrixgaebbillofquantities property biddate: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebbillofquantities property constructionend read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property constructionend write
+LandrixGaebBoQ: tlandrixgaebbillofquantities property constructionend: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebbillofquantities property constructionstart read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property constructionstart write
+LandrixGaebBoQ: tlandrixgaebbillofquantities property constructionstart: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebbillofquantities property contractdate read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property contractdate write
+LandrixGaebBoQ: tlandrixgaebbillofquantities property contractdate: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebbillofquantities property contractno read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property contractno write
+LandrixGaebBoQ: tlandrixgaebbillofquantities property contractno: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebbillofquantities property contractor read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property contractor: tlandrixgaebparty
+LandrixGaebBoQ: tlandrixgaebbillofquantities property document read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property document: tlandrixgaebxmlgaeb
+LandrixGaebBoQ: tlandrixgaebbillofquantities property outputtarget read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property outputtarget write
+LandrixGaebBoQ: tlandrixgaebbillofquantities property outputtarget: tlandrixgaebtarget
+LandrixGaebBoQ: tlandrixgaebbillofquantities property owner read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property owner: tlandrixgaebparty
+LandrixGaebBoQ: tlandrixgaebbillofquantities property projectname read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property projectname write
+LandrixGaebBoQ: tlandrixgaebbillofquantities property projectname: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebbillofquantities property root read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property root: tlandrixgaebnodelist
+LandrixGaebBoQ: tlandrixgaebbillofquantities property target read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property target: tlandrixgaebtarget
+LandrixGaebBoQ: tlandrixgaebbillofquantities property totals read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property totals: tlandrixgaebtotals
+LandrixGaebBoQ: tlandrixgaebbillofquantities property writeoptions read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property writeoptions write
+LandrixGaebBoQ: tlandrixgaebbillofquantities property writeoptions: tlandrixgaebxmlwriteoptions
+LandrixGaebBoQ: tlandrixgaebbreakdown field alignment: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebbreakdown field kind: tlandrixgaebbreakdownkind
+LandrixGaebBoQ: tlandrixgaebbreakdown field lbl: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebbreakdown field length: integer
+LandrixGaebBoQ: tlandrixgaebbreakdown field numeric: boolean
+LandrixGaebBoQ: tlandrixgaebcatalogref field catalogid: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebcatalogref field code: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebcategory destructor destroy(); override
+LandrixGaebBoQ: tlandrixgaebcategory function accepted(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebcategory function alternativegroup(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebcategory function alternativeserial(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebcategory function countstatus(): tlandrixgaebcountstatus
+LandrixGaebBoQ: tlandrixgaebcategory function isalternative(): boolean
+LandrixGaebBoQ: tlandrixgaebcategory function islot(): boolean
+LandrixGaebBoQ: tlandrixgaebcategory function lbl(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebcategory function notapplicable(): boolean
+LandrixGaebBoQ: tlandrixgaebcategory function total(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebcategory procedure setlbl(const tlandrixgaebstring)
+LandrixGaebBoQ: tlandrixgaebcategory property children read
+LandrixGaebBoQ: tlandrixgaebcategory property children: tlandrixgaebnodelist
+LandrixGaebBoQ: tlandrixgaebcategory property totals read
+LandrixGaebBoQ: tlandrixgaebcategory property totals: tlandrixgaebtotals
+LandrixGaebBoQ: tlandrixgaebitem destructor destroy(); override
+LandrixGaebBoQ: tlandrixgaebitem function accepted(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebitem function alterbidstatus(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebitem function alternativegroup(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebitem function alternativeserial(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebitem function bidcommentcount(): integer
+LandrixGaebBoQ: tlandrixgaebitem function bidcommentnode(integer): tlandrixgaebxmlnode
+LandrixGaebBoQ: tlandrixgaebitem function changeorderno(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebitem function changeorderstatus(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebitem function countstatus(): tlandrixgaebcountstatus
+LandrixGaebBoQ: tlandrixgaebitem function descriptionrole(): tlandrixgaebdescriptionrole
+LandrixGaebBoQ: tlandrixgaebitem function discountpcnt(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebitem function holdouttype(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebitem function hourit(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebitem function isalternative(): boolean
+LandrixGaebBoQ: tlandrixgaebitem function isbase(): boolean
+LandrixGaebBoQ: tlandrixgaebitem function islumpsum(): boolean
+LandrixGaebBoQ: tlandrixgaebitem function issumdescription(): boolean
+LandrixGaebBoQ: tlandrixgaebitem function it(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebitem function notapplicable(): boolean
+LandrixGaebBoQ: tlandrixgaebitem function notoffered(): boolean
+LandrixGaebBoQ: tlandrixgaebitem function provisional(): tlandrixgaebprovisional
+LandrixGaebBoQ: tlandrixgaebitem function qty(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebitem function qtysplitcount(): integer
+LandrixGaebBoQ: tlandrixgaebitem function qtysplits(integer): tlandrixgaebqtysplit
+LandrixGaebBoQ: tlandrixgaebitem function qtytbd(): boolean
+LandrixGaebBoQ: tlandrixgaebitem function refbaseitem(integer): tlandrixgaebreference
+LandrixGaebBoQ: tlandrixgaebitem function refbaseitemcount(): integer
+LandrixGaebBoQ: tlandrixgaebitem function subdescriptioncount(): integer
+LandrixGaebBoQ: tlandrixgaebitem function subdescriptions(integer): tlandrixgaebsubdescription
+LandrixGaebBoQ: tlandrixgaebitem function up(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebitem function upcomp(integer): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebitem procedure cleardiscountpcnt()
+LandrixGaebBoQ: tlandrixgaebitem procedure clearit()
+LandrixGaebBoQ: tlandrixgaebitem procedure clearqty()
+LandrixGaebBoQ: tlandrixgaebitem procedure clearup()
+LandrixGaebBoQ: tlandrixgaebitem procedure clearupcomp(integer)
+LandrixGaebBoQ: tlandrixgaebitem procedure gettexts(out tlandrixgaebxmlcompletetext, out tlandrixgaebxmloutlinetext); override (protected)
+LandrixGaebBoQ: tlandrixgaebitem procedure setdiscountpcnt(const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebitem procedure setit(const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebitem procedure setnotoffered(boolean)
+LandrixGaebBoQ: tlandrixgaebitem procedure setqty(const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebitem procedure setup(const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebitem procedure setupcomp(integer, const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebitem property qu read
+LandrixGaebBoQ: tlandrixgaebitem property qu write
+LandrixGaebBoQ: tlandrixgaebitem property qu: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaeblotgroup destructor destroy(); override
+LandrixGaebBoQ: tlandrixgaeblotgroup function lotcount(): integer
+LandrixGaebBoQ: tlandrixgaeblotgroup function lots(integer): tlandrixgaebreference
+LandrixGaebBoQ: tlandrixgaeblotgroup function number(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaeblotgroup property syntaxnode read
+LandrixGaebBoQ: tlandrixgaeblotgroup property syntaxnode: tlandrixgaebxmllotgrp
+LandrixGaebBoQ: tlandrixgaeblotgroup property totals read
+LandrixGaebBoQ: tlandrixgaeblotgroup property totals: tlandrixgaebtotals
+LandrixGaebBoQ: tlandrixgaebmarkupitem function alternativeserial(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebmarkupitem function countstatus(): tlandrixgaebcountstatus
+LandrixGaebBoQ: tlandrixgaebmarkupitem function discountpcnt(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebmarkupitem function isalternative(): boolean
+LandrixGaebBoQ: tlandrixgaebmarkupitem function it(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebmarkupitem function itmarkup(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebmarkupitem function markuppcnt(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebmarkupitem function markuptype(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebmarkupitem function notapplicable(): boolean
+LandrixGaebBoQ: tlandrixgaebmarkupitem procedure cleardiscountpcnt()
+LandrixGaebBoQ: tlandrixgaebmarkupitem procedure gettexts(out tlandrixgaebxmlcompletetext, out tlandrixgaebxmloutlinetext); override (protected)
+LandrixGaebBoQ: tlandrixgaebmarkupitem procedure setdiscountpcnt(const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebmarkupitem procedure setit(const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebmarkupitem procedure setitmarkup(const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebmarkupitem procedure setmarkuppcnt(const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebnode destructor destroy(); override
+LandrixGaebBoQ: tlandrixgaebnode function catalogcount(): integer
+LandrixGaebBoQ: tlandrixgaebnode function catalogs(integer): tlandrixgaebcatalogref
+LandrixGaebBoQ: tlandrixgaebnode function complementcount(): integer
+LandrixGaebBoQ: tlandrixgaebnode function complements(integer): tlandrixgaebtextcomplement
+LandrixGaebBoQ: tlandrixgaebnode function detailtextnode(): tlandrixgaebxmlnode
+LandrixGaebBoQ: tlandrixgaebnode function longtext(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebnode function outlinetextnode(): tlandrixgaebxmlnode
+LandrixGaebBoQ: tlandrixgaebnode function refperfno(): tlandrixgaebreference
+LandrixGaebBoQ: tlandrixgaebnode function refrno(): tlandrixgaebreference
+LandrixGaebBoQ: tlandrixgaebnode function shorttext(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebnode procedure gettexts(out tlandrixgaebxmlcompletetext, out tlandrixgaebxmloutlinetext); virtual (protected)
+LandrixGaebBoQ: tlandrixgaebnode property bill read
+LandrixGaebBoQ: tlandrixgaebnode property bill: tlandrixgaebbillofquantities
+LandrixGaebBoQ: tlandrixgaebnode property kind read
+LandrixGaebBoQ: tlandrixgaebnode property kind: tlandrixgaebnodekind
+LandrixGaebBoQ: tlandrixgaebnode property oz read
+LandrixGaebBoQ: tlandrixgaebnode property oz: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebnode property ozkey read
+LandrixGaebBoQ: tlandrixgaebnode property ozkey: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebnode property parent read
+LandrixGaebBoQ: tlandrixgaebnode property parent: tlandrixgaebcategory
+LandrixGaebBoQ: tlandrixgaebnode property path read
+LandrixGaebBoQ: tlandrixgaebnode property path: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebnode property rnoindex read
+LandrixGaebBoQ: tlandrixgaebnode property rnoindex: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebnode property syntaxnode read
+LandrixGaebBoQ: tlandrixgaebnode property syntaxnode: tlandrixgaebxmlnode
+LandrixGaebBoQ: tlandrixgaebnodelist constructor create()
+LandrixGaebBoQ: tlandrixgaebnodelist destructor destroy(); override
+LandrixGaebBoQ: tlandrixgaebnodelist function count(): integer
+LandrixGaebBoQ: tlandrixgaebnodelist property items[integer] default property
+LandrixGaebBoQ: tlandrixgaebnodelist property items[integer] read
+LandrixGaebBoQ: tlandrixgaebnodelist property items[integer]: tlandrixgaebnode
+LandrixGaebBoQ: tlandrixgaebparty function exists(): boolean
+LandrixGaebBoQ: tlandrixgaebparty property city read
+LandrixGaebBoQ: tlandrixgaebparty property city write
+LandrixGaebBoQ: tlandrixgaebparty property city: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property contact read
+LandrixGaebBoQ: tlandrixgaebparty property contact write
+LandrixGaebBoQ: tlandrixgaebparty property contact: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property country read
+LandrixGaebBoQ: tlandrixgaebparty property country write
+LandrixGaebBoQ: tlandrixgaebparty property country: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property email read
+LandrixGaebBoQ: tlandrixgaebparty property email write
+LandrixGaebBoQ: tlandrixgaebparty property email: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property fax read
+LandrixGaebBoQ: tlandrixgaebparty property fax write
+LandrixGaebBoQ: tlandrixgaebparty property fax: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property name1 read
+LandrixGaebBoQ: tlandrixgaebparty property name1 write
+LandrixGaebBoQ: tlandrixgaebparty property name1: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property name2 read
+LandrixGaebBoQ: tlandrixgaebparty property name2 write
+LandrixGaebBoQ: tlandrixgaebparty property name2: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property name3 read
+LandrixGaebBoQ: tlandrixgaebparty property name3 write
+LandrixGaebBoQ: tlandrixgaebparty property name3: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property name4 read
+LandrixGaebBoQ: tlandrixgaebparty property name4 write
+LandrixGaebBoQ: tlandrixgaebparty property name4: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property pcode read
+LandrixGaebBoQ: tlandrixgaebparty property pcode write
+LandrixGaebBoQ: tlandrixgaebparty property pcode: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property phone read
+LandrixGaebBoQ: tlandrixgaebparty property phone write
+LandrixGaebBoQ: tlandrixgaebparty property phone: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property requestidno read
+LandrixGaebBoQ: tlandrixgaebparty property requestidno write
+LandrixGaebBoQ: tlandrixgaebparty property requestidno: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property requestname read
+LandrixGaebBoQ: tlandrixgaebparty property requestname write
+LandrixGaebBoQ: tlandrixgaebparty property requestname: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property role read
+LandrixGaebBoQ: tlandrixgaebparty property role: tlandrixgaebpartyrole
+LandrixGaebBoQ: tlandrixgaebparty property street read
+LandrixGaebBoQ: tlandrixgaebparty property street write
+LandrixGaebBoQ: tlandrixgaebparty property street: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebparty property vatid read
+LandrixGaebBoQ: tlandrixgaebparty property vatid write
+LandrixGaebBoQ: tlandrixgaebparty property vatid: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebperfdescr function perflbl(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebperfdescr function perfno(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebperfdescr procedure gettexts(out tlandrixgaebxmlcompletetext, out tlandrixgaebxmloutlinetext); override (protected)
+LandrixGaebBoQ: tlandrixgaebqtysplit field qty: tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebqtysplit field qtypcnt: tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebreference field idref: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebreference field node: tlandrixgaebnode
+LandrixGaebBoQ: tlandrixgaebreference field status: tlandrixgaebrefstatus
+LandrixGaebBoQ: tlandrixgaebremark procedure gettexts(out tlandrixgaebxmlcompletetext, out tlandrixgaebxmloutlinetext); override (protected)
+LandrixGaebBoQ: tlandrixgaebsubdescription destructor destroy(); override
+LandrixGaebBoQ: tlandrixgaebsubdescription function complementcount(): integer
+LandrixGaebBoQ: tlandrixgaebsubdescription function complements(integer): tlandrixgaebtextcomplement
+LandrixGaebBoQ: tlandrixgaebsubdescription function detailtextnode(): tlandrixgaebxmlnode
+LandrixGaebBoQ: tlandrixgaebsubdescription function longtext(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebsubdescription function number(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebsubdescription function outlinetextnode(): tlandrixgaebxmlnode
+LandrixGaebBoQ: tlandrixgaebsubdescription function path(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebsubdescription function qty(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebsubdescription function qtytbd(): boolean
+LandrixGaebBoQ: tlandrixgaebsubdescription function shorttext(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebsubdescription function up(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebsubdescription function upcomp(integer): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebsubdescription procedure clearqty()
+LandrixGaebBoQ: tlandrixgaebsubdescription procedure clearup()
+LandrixGaebBoQ: tlandrixgaebsubdescription procedure clearupcomp(integer)
+LandrixGaebBoQ: tlandrixgaebsubdescription procedure setqty(const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebsubdescription procedure setup(const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebsubdescription procedure setupcomp(integer, const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebsubdescription property item read
+LandrixGaebBoQ: tlandrixgaebsubdescription property item: tlandrixgaebitem
+LandrixGaebBoQ: tlandrixgaebsubdescription property qu read
+LandrixGaebBoQ: tlandrixgaebsubdescription property qu write
+LandrixGaebBoQ: tlandrixgaebsubdescription property qu: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebsubdescription property syntaxnode read
+LandrixGaebBoQ: tlandrixgaebsubdescription property syntaxnode: tlandrixgaebxmlsubdescr
+LandrixGaebBoQ: tlandrixgaebtextcomplement function bodytext(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebtextcomplement function captiontext(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebtextcomplement function isemptymarked(): boolean
+LandrixGaebBoQ: tlandrixgaebtextcomplement function marklbl(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebtextcomplement function tailtext(): tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebtextcomplement function wantsdecimal(): boolean
+LandrixGaebBoQ: tlandrixgaebtextcomplement function wantsinteger(): boolean
+LandrixGaebBoQ: tlandrixgaebtextcomplement procedure setbodynumber(const tlandrixgaebstring)
+LandrixGaebBoQ: tlandrixgaebtextcomplement procedure setbodytext(const tlandrixgaebstring)
+LandrixGaebBoQ: tlandrixgaebtextcomplement property kind read
+LandrixGaebBoQ: tlandrixgaebtextcomplement property kind: tlandrixgaebcomplementkind
+LandrixGaebBoQ: tlandrixgaebtextcomplement property syntaxnode read
+LandrixGaebBoQ: tlandrixgaebtextcomplement property syntaxnode: tlandrixgaebxmltextcomplement
+LandrixGaebBoQ: tlandrixgaebtextevent field header: boolean
+LandrixGaebBoQ: tlandrixgaebtextevent field kind: tlandrixgaebtexteventkind
+LandrixGaebBoQ: tlandrixgaebtextevent field node: tlandrixgaebxmlnode
+LandrixGaebBoQ: tlandrixgaebtextevent field ordered: boolean
+LandrixGaebBoQ: tlandrixgaebtextevent field text: tlandrixgaebstring
+LandrixGaebBoQ: tlandrixgaebtextvisitor procedure visit(const tlandrixgaebtextevent); abstract; virtual
+LandrixGaebBoQ: tlandrixgaebtotals function amount(): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebtotals function exists(): boolean
+LandrixGaebBoQ: tlandrixgaebtotals function syntaxnode(): tlandrixgaebxmltotals
+LandrixGaebBoQ: tlandrixgaebtotals function upcomptotal(integer): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebtotals function value(tlandrixgaebtotalfield): tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebtotals function vatpartcount(): integer
+LandrixGaebBoQ: tlandrixgaebtotals function vatparts(integer): tlandrixgaebvatpart
+LandrixGaebBoQ: tlandrixgaebtotals procedure clearvalue(tlandrixgaebtotalfield)
+LandrixGaebBoQ: tlandrixgaebtotals procedure setvalue(tlandrixgaebtotalfield, const tlandrixgaebdecimal)
+LandrixGaebBoQ: tlandrixgaebvatpart field totalnet: tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebvatpart field vatamount: tlandrixgaebdecimal
+LandrixGaebBoQ: tlandrixgaebvatpart field vatpcnt: tlandrixgaebdecimal
+LandrixGaebBoQ: type tlandrixgaebnodekinds = set of tlandrixgaebnodekind
+LandrixGaebDetect: const landrixgaebdefaultmaxsize (integer)
+LandrixGaebDetect: enum tlandrixgaebformat
+LandrixGaebDetect: enum tlandrixgaebformat value gfda2000
+LandrixGaebDetect: enum tlandrixgaebformat value gfda90
+LandrixGaebDetect: enum tlandrixgaebformat value gfunknown
+LandrixGaebDetect: enum tlandrixgaebformat value gfxml
+LandrixGaebDetect: function landrixgaebdetectbuffer(pointer, integer, boolean, tlandrixgaebdiagnostics): tlandrixgaebdetection
+LandrixGaebDetect: function landrixgaebdetectfile(const string, tlandrixgaebdiagnostics, int64): tlandrixgaebdetection
+LandrixGaebDetect: function landrixgaebdetectformat(pointer, integer): tlandrixgaebformat
+LandrixGaebDetect: function landrixgaebdetectstream(tstream, tlandrixgaebdiagnostics, int64): tlandrixgaebdetection
+LandrixGaebDetect: function landrixgaebformattostr(tlandrixgaebformat): string
+LandrixGaebDetect: record tlandrixgaebdetection
+LandrixGaebDetect: tlandrixgaebdetection field accepted: boolean
+LandrixGaebDetect: tlandrixgaebdetection field format: tlandrixgaebformat
+LandrixGaebDetect: tlandrixgaebdetection field namespace: tlandrixxmlutf8
+LandrixGaebDetect: tlandrixgaebdetection field target: tlandrixgaebtarget
+LandrixGaebDiagnostics: class tlandrixgaebdiagnostic(tobject)
+LandrixGaebDiagnostics: class tlandrixgaebdiagnostics(tobjectlist)
+LandrixGaebDiagnostics: enum tlandrixgaebseverity
+LandrixGaebDiagnostics: enum tlandrixgaebseverity value gserror
+LandrixGaebDiagnostics: enum tlandrixgaebseverity value gsfatal
+LandrixGaebDiagnostics: enum tlandrixgaebseverity value gsinformation
+LandrixGaebDiagnostics: enum tlandrixgaebseverity value gswarning
+LandrixGaebDiagnostics: function landrixgaebseveritytostr(tlandrixgaebseverity): string
+LandrixGaebDiagnostics: tlandrixgaebdiagnostic field column: integer
+LandrixGaebDiagnostics: tlandrixgaebdiagnostic field line: integer
+LandrixGaebDiagnostics: tlandrixgaebdiagnostic field message: string
+LandrixGaebDiagnostics: tlandrixgaebdiagnostic field offset: int64
+LandrixGaebDiagnostics: tlandrixgaebdiagnostic field path: tlandrixgaebstring
+LandrixGaebDiagnostics: tlandrixgaebdiagnostic field ruleid: string
+LandrixGaebDiagnostics: tlandrixgaebdiagnostic field severity: tlandrixgaebseverity
+LandrixGaebDiagnostics: tlandrixgaebdiagnostics function addat(const string, tlandrixgaebseverity, const tlandrixgaebstring, integer, integer, int64, const string): tlandrixgaebdiagnostic
+LandrixGaebDiagnostics: tlandrixgaebdiagnostics function adddiagnostic(const string, tlandrixgaebseverity, const string): tlandrixgaebdiagnostic
+LandrixGaebDiagnostics: tlandrixgaebdiagnostics function countof(const string): integer
+LandrixGaebDiagnostics: tlandrixgaebdiagnostics function getitem(tlandrixgaeblistindex): tlandrixgaebdiagnostic (protected)
+LandrixGaebDiagnostics: tlandrixgaebdiagnostics function haserrors(): boolean
+LandrixGaebDiagnostics: tlandrixgaebdiagnostics function totext(): string
+LandrixGaebDiagnostics: tlandrixgaebdiagnostics function towidetext(): tlandrixgaebstring
+LandrixGaebDiagnostics: tlandrixgaebdiagnostics property items[tlandrixgaeblistindex] default property
+LandrixGaebDiagnostics: tlandrixgaebdiagnostics property items[tlandrixgaeblistindex] read
+LandrixGaebDiagnostics: tlandrixgaebdiagnostics property items[tlandrixgaeblistindex]: tlandrixgaebdiagnostic
+LandrixGaebProcess: class tlandrixgaebmatching(tobject)
+LandrixGaebProcess: enum tlandrixgaebmatchkind
+LandrixGaebProcess: enum tlandrixgaebmatchkind value gmkambiguous
+LandrixGaebProcess: enum tlandrixgaebmatchkind value gmkonlyleft
+LandrixGaebProcess: enum tlandrixgaebmatchkind value gmkonlyright
+LandrixGaebProcess: enum tlandrixgaebmatchkind value gmkpair
+LandrixGaebProcess: function landrixgaebapplytotals(tlandrixgaebbillofquantities, tlandrixgaebmatching): integer
+LandrixGaebProcess: function landrixgaebbuildaward(tlandrixgaebbillofquantities, tlandrixgaebbillofquantities, tlandrixgaebdiagnostics): tlandrixgaebbillofquantities
+LandrixGaebProcess: function landrixgaebcomputesum(tlandrixgaebbillofquantities, tlandrixgaebcategory, tlandrixgaebmatching): tlandrixgaebsum
+LandrixGaebProcess: record tlandrixgaebmatch
+LandrixGaebProcess: record tlandrixgaebsum
+LandrixGaebProcess: tlandrixgaebmatch field kind: tlandrixgaebmatchkind
+LandrixGaebProcess: tlandrixgaebmatch field left: tlandrixgaebnode
+LandrixGaebProcess: tlandrixgaebmatch field right: tlandrixgaebnode
+LandrixGaebProcess: tlandrixgaebmatching constructor create(tlandrixgaebbillofquantities, tlandrixgaebbillofquantities)
+LandrixGaebProcess: tlandrixgaebmatching destructor destroy(); override
+LandrixGaebProcess: tlandrixgaebmatching function count(): integer
+LandrixGaebProcess: tlandrixgaebmatching function countof(tlandrixgaebmatchkind): integer
+LandrixGaebProcess: tlandrixgaebmatching function entries(integer): tlandrixgaebmatch
+LandrixGaebProcess: tlandrixgaebmatching function partnerof(tlandrixgaebnode): tlandrixgaebnode
+LandrixGaebProcess: tlandrixgaebmatching property left read
+LandrixGaebProcess: tlandrixgaebmatching property left: tlandrixgaebbillofquantities
+LandrixGaebProcess: tlandrixgaebmatching property right read
+LandrixGaebProcess: tlandrixgaebmatching property right: tlandrixgaebbillofquantities
+LandrixGaebProcess: tlandrixgaebsum field blocker: tlandrixgaebnode
+LandrixGaebProcess: tlandrixgaebsum field known: boolean
+LandrixGaebProcess: tlandrixgaebsum field value: tlandrixgaebdecimal
+LandrixGaebRules: const landrixgaebrulesetversion (string)
+LandrixGaebRules: function landrixgaebcheckpair(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, tlandrixgaebxmlgaeb, const tlandrixgaebtarget, tlandrixgaebdiagnostics): boolean
+LandrixGaebRules: function landrixgaebcheckrules(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, tlandrixgaebdiagnostics): boolean
+LandrixGaebRules: function landrixgaebruleat(integer): tlandrixgaebrule
+LandrixGaebRules: function landrixgaebrulecount(): integer
+LandrixGaebRules: function landrixgaebruleindex(const string): integer
+LandrixGaebRules: record tlandrixgaebrule
+LandrixGaebRules: tlandrixgaebrule field id: string
+LandrixGaebRules: tlandrixgaebrule field pair: boolean
+LandrixGaebRules: tlandrixgaebrule field phases: tlandrixgaebphases
+LandrixGaebRules: tlandrixgaebrule field severity: tlandrixgaebseverity
+LandrixGaebRules: tlandrixgaebrule field source: string
+LandrixGaebRules: tlandrixgaebrule field title: string
+LandrixGaebTypes: class elandrixgaeberror(exception)
+LandrixGaebTypes: const landrixgaebdecimalmaxcoefficient (integer)
+LandrixGaebTypes: const landrixgaebdecimalmaxscale (integer)
+LandrixGaebTypes: const landrixgaeblibraryversion (string)
+LandrixGaebTypes: enum tlandrixgaebedition
+LandrixGaebTypes: enum tlandrixgaebedition value ge2004_07
+LandrixGaebTypes: enum tlandrixgaebedition value ge2007_11
+LandrixGaebTypes: enum tlandrixgaebedition value ge2009_12
+LandrixGaebTypes: enum tlandrixgaebedition value ge2013_10
+LandrixGaebTypes: enum tlandrixgaebedition value ge2014_03
+LandrixGaebTypes: enum tlandrixgaebedition value ge2019_11
+LandrixGaebTypes: enum tlandrixgaebedition value ge2021_05
+LandrixGaebTypes: enum tlandrixgaebedition value ge2023_01
+LandrixGaebTypes: enum tlandrixgaebedition value ge2026_03
+LandrixGaebTypes: enum tlandrixgaebedition value geunknown
+LandrixGaebTypes: enum tlandrixgaebphase
+LandrixGaebTypes: enum tlandrixgaebphase value gp31
+LandrixGaebTypes: enum tlandrixgaebphase value gp50_1
+LandrixGaebTypes: enum tlandrixgaebphase value gp50_2
+LandrixGaebTypes: enum tlandrixgaebphase value gp51_1
+LandrixGaebTypes: enum tlandrixgaebphase value gp51_2
+LandrixGaebTypes: enum tlandrixgaebphase value gp52
+LandrixGaebTypes: enum tlandrixgaebphase value gp61
+LandrixGaebTypes: enum tlandrixgaebphase value gp80
+LandrixGaebTypes: enum tlandrixgaebphase value gp81
+LandrixGaebTypes: enum tlandrixgaebphase value gp82
+LandrixGaebTypes: enum tlandrixgaebphase value gp83
+LandrixGaebTypes: enum tlandrixgaebphase value gp83z
+LandrixGaebTypes: enum tlandrixgaebphase value gp84
+LandrixGaebTypes: enum tlandrixgaebphase value gp84p
+LandrixGaebTypes: enum tlandrixgaebphase value gp84z
+LandrixGaebTypes: enum tlandrixgaebphase value gp85
+LandrixGaebTypes: enum tlandrixgaebphase value gp86
+LandrixGaebTypes: enum tlandrixgaebphase value gp86ze
+LandrixGaebTypes: enum tlandrixgaebphase value gp86zr
+LandrixGaebTypes: enum tlandrixgaebphase value gp87
+LandrixGaebTypes: enum tlandrixgaebphase value gp88
+LandrixGaebTypes: enum tlandrixgaebphase value gp89
+LandrixGaebTypes: enum tlandrixgaebphase value gp89b
+LandrixGaebTypes: enum tlandrixgaebphase value gp93
+LandrixGaebTypes: enum tlandrixgaebphase value gp94
+LandrixGaebTypes: enum tlandrixgaebphase value gp96
+LandrixGaebTypes: enum tlandrixgaebphase value gp97
+LandrixGaebTypes: enum tlandrixgaebphase value gp98
+LandrixGaebTypes: enum tlandrixgaebphase value gp99
+LandrixGaebTypes: enum tlandrixgaebphase value gpunknown
+LandrixGaebTypes: enum tlandrixgaebversion
+LandrixGaebTypes: enum tlandrixgaebversion value gv30
+LandrixGaebTypes: enum tlandrixgaebversion value gv31
+LandrixGaebTypes: enum tlandrixgaebversion value gv32
+LandrixGaebTypes: enum tlandrixgaebversion value gv33
+LandrixGaebTypes: enum tlandrixgaebversion value gv34
+LandrixGaebTypes: enum tlandrixgaebversion value gvunknown
+LandrixGaebTypes: enum tlandrixgaebxmlwritemode
+LandrixGaebTypes: enum tlandrixgaebxmlwritemode value gwmbesteffort
+LandrixGaebTypes: enum tlandrixgaebxmlwritemode value gwmnormal
+LandrixGaebTypes: enum tlandrixgaebxmlwritemode value gwmstrict
+LandrixGaebTypes: function landrixgaebeditionfromtext(const tlandrixxmlutf8): tlandrixgaebedition
+LandrixGaebTypes: function landrixgaebeditiontotext(tlandrixgaebedition): tlandrixxmlutf8
+LandrixGaebTypes: function landrixgaebphasefromdp(const tlandrixxmlutf8): tlandrixgaebphase
+LandrixGaebTypes: function landrixgaebphasetodp(tlandrixgaebphase): tlandrixxmlutf8
+LandrixGaebTypes: function landrixgaebroundhalfawayfromzero(const tlandrixxmldecimal, integer): tlandrixxmldecimal
+LandrixGaebTypes: function landrixgaebtarget(tlandrixgaebversion, tlandrixgaebedition, tlandrixgaebphase): tlandrixgaebtarget
+LandrixGaebTypes: function landrixgaebtargetissupported(const tlandrixgaebtarget, boolean): boolean
+LandrixGaebTypes: function landrixgaebtargetnamespace(const tlandrixgaebtarget): tlandrixxmlutf8
+LandrixGaebTypes: function landrixgaebtargetversdate(const tlandrixgaebtarget): tlandrixxmlutf8
+LandrixGaebTypes: function landrixgaebversionfromtext(const tlandrixxmlutf8): tlandrixgaebversion
+LandrixGaebTypes: function landrixgaebversiontotext(tlandrixgaebversion): tlandrixxmlutf8
+LandrixGaebTypes: function landrixgaebxmldefaultwriteoptions(): tlandrixgaebxmlwriteoptions
+LandrixGaebTypes: object tlandrixgaebdecimal()
+LandrixGaebTypes: object tlandrixgaebdecimaltext()
+LandrixGaebTypes: record tlandrixgaebtarget
+LandrixGaebTypes: record tlandrixgaebxmlwriteoptions
+LandrixGaebTypes: tlandrixgaebdecimal function asxmldecimal(): tlandrixxmldecimal
+LandrixGaebTypes: tlandrixgaebdecimal function coefficient(): int64
+LandrixGaebTypes: tlandrixgaebdecimal function equals(const tlandrixgaebdecimal): boolean
+LandrixGaebTypes: tlandrixgaebdecimal function hasvalue(): boolean
+LandrixGaebTypes: tlandrixgaebdecimal function scale(): integer
+LandrixGaebTypes: tlandrixgaebdecimal function text(): tlandrixxmlutf8
+LandrixGaebTypes: tlandrixgaebdecimal function trysettext(const tlandrixxmlutf8): boolean
+LandrixGaebTypes: tlandrixgaebdecimal function trytextwithscale(integer, out tlandrixxmlutf8): boolean
+LandrixGaebTypes: tlandrixgaebdecimal procedure clear()
+LandrixGaebTypes: tlandrixgaebdecimal procedure setvalue(int64, integer)
+LandrixGaebTypes: tlandrixgaebdecimaltext function asxmldecimal(): tlandrixxmldecimal
+LandrixGaebTypes: tlandrixgaebdecimaltext function equals(const tlandrixgaebdecimaltext): boolean
+LandrixGaebTypes: tlandrixgaebdecimaltext function hasvalue(): boolean
+LandrixGaebTypes: tlandrixgaebdecimaltext function text(): tlandrixxmlutf8
+LandrixGaebTypes: tlandrixgaebdecimaltext function trysettext(const tlandrixxmlutf8): boolean
+LandrixGaebTypes: tlandrixgaebdecimaltext procedure clear()
+LandrixGaebTypes: tlandrixgaebdecimaltext procedure setxmldecimal(const tlandrixxmldecimal)
+LandrixGaebTypes: tlandrixgaebtarget field edition: tlandrixgaebedition
+LandrixGaebTypes: tlandrixgaebtarget field phase: tlandrixgaebphase
+LandrixGaebTypes: tlandrixgaebtarget field version: tlandrixgaebversion
+LandrixGaebTypes: tlandrixgaebxmlwriteoptions field check: boolean
+LandrixGaebTypes: tlandrixgaebxmlwriteoptions field crlf: boolean
+LandrixGaebTypes: tlandrixgaebxmlwriteoptions field indent: boolean
+LandrixGaebTypes: tlandrixgaebxmlwriteoptions field mode: tlandrixgaebxmlwritemode
+LandrixGaebTypes: tlandrixgaebxmlwriteoptions field preservescale: boolean
+LandrixGaebTypes: tlandrixgaebxmlwriteoptions field upfracdig: integer
+LandrixGaebTypes: tlandrixgaebxmlwriteoptions field writebom: boolean
+LandrixGaebTypes: type tlandrixgaebchar = widechar
+LandrixGaebTypes: type tlandrixgaeblistindex = integer [d2009,d6,fpc]
+LandrixGaebTypes: type tlandrixgaeblistindex = nativeint [d12]
+LandrixGaebTypes: type tlandrixgaebphases = set of tlandrixgaebphase
+LandrixGaebTypes: type tlandrixgaebstring = string [d12,d2009]
+LandrixGaebTypes: type tlandrixgaebstring = unicodestring [fpc]
+LandrixGaebTypes: type tlandrixgaebstring = widestring [d6]
+LandrixGaebXmlBase: class tlandrixgaebxmlnode(tobject)
+LandrixGaebXmlBase: class tlandrixgaebxmlnodelist(tobjectlist)
+LandrixGaebXmlBase: class tlandrixgaebxmltextnode(tlandrixgaebxmlnode)
+LandrixGaebXmlBase: class tlandrixgaebxmlvaluenode(tlandrixgaebxmlnode)
+LandrixGaebXmlBase: tlandrixgaebxmlnode destructor destroy(); override
+LandrixGaebXmlBase: tlandrixgaebxmlnode field elementname: tlandrixxmlutf8
+LandrixGaebXmlBase: tlandrixgaebxmlnode field present: boolean
+LandrixGaebXmlBase: tlandrixgaebxmlnode function isempty(): boolean; virtual
+LandrixGaebXmlBase: tlandrixgaebxmlnode function ismarkedempty(const tlandrixxmlutf8): boolean
+LandrixGaebXmlBase: tlandrixgaebxmlnode function ispresent(): boolean
+LandrixGaebXmlBase: tlandrixgaebxmlnode procedure clear(); virtual
+LandrixGaebXmlBase: tlandrixgaebxmlnode procedure clearemptymarks()
+LandrixGaebXmlBase: tlandrixgaebxmlnode procedure markempty(const tlandrixxmlutf8)
+LandrixGaebXmlBase: tlandrixgaebxmlnodelist function addnode(tlandrixgaebxmlnode): tlandrixgaebxmlnode
+LandrixGaebXmlBase: tlandrixgaebxmlnodelist function addvalue(const tlandrixxmlutf8, const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlBase: tlandrixgaebxmlnodelist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlnode (protected)
+LandrixGaebXmlBase: tlandrixgaebxmlnodelist function isempty(): boolean
+LandrixGaebXmlBase: tlandrixgaebxmlnodelist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlBase: tlandrixgaebxmlnodelist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlBase: tlandrixgaebxmlnodelist property items[tlandrixgaeblistindex]: tlandrixgaebxmlnode
+LandrixGaebXmlBase: tlandrixgaebxmltextnode field text: tlandrixgaebstring
+LandrixGaebXmlBase: tlandrixgaebxmltextnode function isempty(): boolean; override
+LandrixGaebXmlBase: tlandrixgaebxmltextnode procedure clear(); override
+LandrixGaebXmlBase: tlandrixgaebxmlvaluenode field value: tlandrixgaebstring
+LandrixGaebXmlBase: tlandrixgaebxmlvaluenode function isempty(): boolean; override
+LandrixGaebXmlBase: tlandrixgaebxmlvaluenode procedure clear(); override
+LandrixGaebXmlCheck: function landrixgaebxmlcheckbuffer(pointer, integer, tlandrixgaebdiagnostics, out tlandrixgaebdetection): boolean
+LandrixGaebXmlCheck: function landrixgaebxmlcheckfile(const string, tlandrixgaebdiagnostics, int64, out tlandrixgaebdetection): boolean
+LandrixGaebXmlCheck: function landrixgaebxmlcheckmodel(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, tlandrixgaebdiagnostics): boolean
+LandrixGaebXmlCheck: function landrixgaebxmlcheckstream(tstream, tlandrixgaebdiagnostics, int64, out tlandrixgaebdetection): boolean
+LandrixGaebXmlCheck: function landrixgaebxmlchecktarget(pointer, integer, const tlandrixgaebtarget, tlandrixgaebdiagnostics): boolean
+LandrixGaebXmlModel: class tlandrixgaebxmladdress(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmladdtext(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmladdtextlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlarticle(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlarticlelist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlaward(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlawardcnstsitegroup(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlawardcnstsitegrouplist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlawardinfo(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlbank(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlbanklist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlboq(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlboqbkdn(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlboqbkdnlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlboqbody(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlboqctgy(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlboqinfo(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlboqtext(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlcashdiscount(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlcashdiscountcashdiscdays(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlcashdiscountlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlcnstsite(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlcoinfo(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlcoinfolist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlcomplbodydec(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlcomplbodyint(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlcompletetext(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlcontrvalcode(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlcostapproach(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlcostapproachlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlcosttype(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlcosttypelist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlcpvcode(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlcpvcodelist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlctlg(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlctlgassign(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlctlgassignlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlctlgassignquantity(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlctlglist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlctr(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmldescription(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmldiv(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmldivtc(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlftext(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlftexttc(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlgaeb(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlgaebinfo(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlimage(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlindivagrinfo(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlinsas(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlitem(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlitemlist(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmllblupcomp(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlli(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmllilist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmllitc(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmllitclist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmllotgrp(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmllotgrplist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlmaintinfo(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlmarkupitem(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlmarkupsubqty(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlmarkupsubqtylist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlmastagrinfo(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlmltext(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlmltextlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlnotifsite(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlol(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmloltc(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmloutlinetext(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmloutltxt(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlown(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlp(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlperfdescr(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlperfdescription(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlperfdescriptionlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlpmltext(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlprjinfo(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlproduct(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlptc(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlqdetermitem(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlqdetermitemlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlqdetermitemqtakeoff(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlqtydeterm(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlqtydeterminfo(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlqtysplit(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlqtysplitlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlrefboq(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlrefboqctgy(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlrefboqctgylist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlrefitem(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlrefitemlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlreflotgrp(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlremark(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlrequester(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlrequesterlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlspan(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlstlbbau(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlstlbbauctlg(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlstlbbauid(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlstlbbauidlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlstlno(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlstyle(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlsubdescr(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlsubdescrlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmltable(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmltabletc(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmltd(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmltdtc(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmltextcomplement(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlth(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmltotalnetupcomp(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmltotals(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmltr(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmltrlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmltrtc(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmltrtclist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlul(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlultc(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlvatpart(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlvatpartlist(tobjectlist)
+LandrixGaebXmlModel: class tlandrixgaebxmlwgchange(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlwgchangerefgroup(tlandrixgaebxmlnode)
+LandrixGaebXmlModel: class tlandrixgaebxmlwgchangerefgrouplist(tobjectlist)
+LandrixGaebXmlModel: tlandrixgaebxmladdress destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmladdress field city: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field contact: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field country: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field email: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field fax: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field iln: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field name1: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field name2: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field name3: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field name4: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field pcode: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field phone: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field street: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress field vatid: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmladdress function hasbank(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmladdress function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmladdress function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmladdress procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmladdress property bank read
+LandrixGaebXmlModel: tlandrixgaebxmladdress property bank: tlandrixgaebxmlbanklist
+LandrixGaebXmlModel: tlandrixgaebxmladdress property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmladdress property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmladdtext destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmladdtext function hasdetailaddtext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmladdtext function hasoutlineaddtext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmladdtext function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmladdtext procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmladdtext property detailaddtext read
+LandrixGaebXmlModel: tlandrixgaebxmladdtext property detailaddtext: tlandrixgaebxmlftext
+LandrixGaebXmlModel: tlandrixgaebxmladdtext property outlineaddtext read
+LandrixGaebXmlModel: tlandrixgaebxmladdtext property outlineaddtext: tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmladdtextlist function add(): tlandrixgaebxmladdtext
+LandrixGaebXmlModel: tlandrixgaebxmladdtextlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmladdtext (protected)
+LandrixGaebXmlModel: tlandrixgaebxmladdtextlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmladdtextlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmladdtextlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmladdtextlist property items[tlandrixgaeblistindex]: tlandrixgaebxmladdtext
+LandrixGaebXmlModel: tlandrixgaebxmlarticle destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlarticle field artno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlarticle field brand: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlarticle field qty: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlarticle field qu: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlarticle function hasaddtext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlarticle function hasartoutline(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlarticle function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlarticle procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlarticle property addtext read
+LandrixGaebXmlModel: tlandrixgaebxmlarticle property addtext: tlandrixgaebxmladdtextlist
+LandrixGaebXmlModel: tlandrixgaebxmlarticle property artoutline read
+LandrixGaebXmlModel: tlandrixgaebxmlarticle property artoutline: tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmlarticlelist function add(): tlandrixgaebxmlarticle
+LandrixGaebXmlModel: tlandrixgaebxmlarticlelist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlarticle (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlarticlelist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlarticlelist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlarticlelist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlarticlelist property items[tlandrixgaeblistindex]: tlandrixgaebxmlarticle
+LandrixGaebXmlModel: tlandrixgaebxmlaward destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlaward field dp: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlaward function hasaddtext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlaward function hasawardinfo(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlaward function hasboq(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlaward function hascnstsitegroup(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlaward function hasctr(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlaward function hasindivagrinfo(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlaward function hasown(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlaward function hasrequester(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlaward function haswgchange(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlaward function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlaward procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlaward property addtext read
+LandrixGaebXmlModel: tlandrixgaebxmlaward property addtext: tlandrixgaebxmladdtextlist
+LandrixGaebXmlModel: tlandrixgaebxmlaward property awardinfo read
+LandrixGaebXmlModel: tlandrixgaebxmlaward property awardinfo: tlandrixgaebxmlawardinfo
+LandrixGaebXmlModel: tlandrixgaebxmlaward property boq read
+LandrixGaebXmlModel: tlandrixgaebxmlaward property boq: tlandrixgaebxmlboq
+LandrixGaebXmlModel: tlandrixgaebxmlaward property cnstsitegroup read
+LandrixGaebXmlModel: tlandrixgaebxmlaward property cnstsitegroup: tlandrixgaebxmlawardcnstsitegrouplist
+LandrixGaebXmlModel: tlandrixgaebxmlaward property ctr read
+LandrixGaebXmlModel: tlandrixgaebxmlaward property ctr: tlandrixgaebxmlctr
+LandrixGaebXmlModel: tlandrixgaebxmlaward property indivagrinfo read
+LandrixGaebXmlModel: tlandrixgaebxmlaward property indivagrinfo: tlandrixgaebxmlindivagrinfo
+LandrixGaebXmlModel: tlandrixgaebxmlaward property own read
+LandrixGaebXmlModel: tlandrixgaebxmlaward property own: tlandrixgaebxmlown
+LandrixGaebXmlModel: tlandrixgaebxmlaward property requester read
+LandrixGaebXmlModel: tlandrixgaebxmlaward property requester: tlandrixgaebxmlrequesterlist
+LandrixGaebXmlModel: tlandrixgaebxmlaward property wgchange read
+LandrixGaebXmlModel: tlandrixgaebxmlaward property wgchange: tlandrixgaebxmlwgchange
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegroup destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegroup function hascnstsite(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegroup function hasnotifsite(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegroup function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegroup procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegroup property cnstsite read
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegroup property cnstsite: tlandrixgaebxmlcnstsite
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegroup property notifsite read
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegroup property notifsite: tlandrixgaebxmlnotifsite
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegrouplist function add(): tlandrixgaebxmlawardcnstsitegroup
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegrouplist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlawardcnstsitegroup (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegrouplist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegrouplist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegrouplist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlawardcnstsitegrouplist property items[tlandrixgaeblistindex]: tlandrixgaebxmlawardcnstsitegroup
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field acceptdate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field accepttype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field biddate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field boqid: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field cat: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field cnstend: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field cnststart: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field contrdate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field contrno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field cur: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field curlbl: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field evalend: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field opendate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field opentime: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field performpcnt: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field specialtype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field submloc: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field warrantpcnt: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field warrdur: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field warrend: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo field warrunit: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo function hascashdiscount(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo function hascoinfo(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo function hasmaintinfo(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo function hasmastagrinfo(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo property cashdiscount read
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo property cashdiscount: tlandrixgaebxmlcashdiscountlist
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo property coinfo read
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo property coinfo: tlandrixgaebxmlcoinfolist
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo property maintinfo read
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo property maintinfo: tlandrixgaebxmlmaintinfo
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo property mastagrinfo read
+LandrixGaebXmlModel: tlandrixgaebxmlawardinfo property mastagrinfo: tlandrixgaebxmlmastagrinfo
+LandrixGaebXmlModel: tlandrixgaebxmlbank destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlbank field acctno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlbank field bic: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlbank field brno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlbank field iban: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlbank field lblbank: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlbank function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlbank procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlbanklist function add(): tlandrixgaebxmlbank
+LandrixGaebXmlModel: tlandrixgaebxmlbanklist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlbank (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlbanklist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlbanklist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlbanklist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlbanklist property items[tlandrixgaeblistindex]: tlandrixgaebxmlbank
+LandrixGaebXmlModel: tlandrixgaebxmlboq destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlboq field id: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboq function hasboqbody(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboq function hasboqinfo(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboq function haslotgrp(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboq function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlboq procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlboq property boqbody read
+LandrixGaebXmlModel: tlandrixgaebxmlboq property boqbody: tlandrixgaebxmlboqbody
+LandrixGaebXmlModel: tlandrixgaebxmlboq property boqinfo read
+LandrixGaebXmlModel: tlandrixgaebxmlboq property boqinfo: tlandrixgaebxmlboqinfo
+LandrixGaebXmlModel: tlandrixgaebxmlboq property lotgrp read
+LandrixGaebXmlModel: tlandrixgaebxmlboq property lotgrp: tlandrixgaebxmllotgrplist
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdn destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdn field alignment: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdn field lblboqbkdn: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdn field lengthelement: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdn field num: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdn field typeelement: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdn function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdn procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdnlist function add(): tlandrixgaebxmlboqbkdn
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdnlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlboqbkdn (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdnlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdnlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdnlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlboqbkdnlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlboqbkdn
+LandrixGaebXmlModel: tlandrixgaebxmlboqbody destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlboqbody function addboqctgy(): tlandrixgaebxmlboqctgy
+LandrixGaebXmlModel: tlandrixgaebxmlboqbody function addperfdescr(): tlandrixgaebxmlperfdescr
+LandrixGaebXmlModel: tlandrixgaebxmlboqbody function addremark(): tlandrixgaebxmlremark
+LandrixGaebXmlModel: tlandrixgaebxmlboqbody function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqbody function hasitemlist(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqbody function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlboqbody procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlboqbody property children read
+LandrixGaebXmlModel: tlandrixgaebxmlboqbody property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmlboqbody property itemlist read
+LandrixGaebXmlModel: tlandrixgaebxmlboqbody property itemlist: tlandrixgaebxmlitemlist
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy field accepted: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy field alnbgroupno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy field alnbserno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy field alterbidstatus: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy field cono: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy field costatus: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy field id: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy field notapplboq: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy field rnopart: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy function hasboqbody(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy function hascpvcode(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy function haslbltx(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy function hastotals(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy property boqbody read
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy property boqbody: tlandrixgaebxmlboqbody
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy property cpvcode read
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy property cpvcode: tlandrixgaebxmlcpvcodelist
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy property lbltx read
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy property lbltx: tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy property totals read
+LandrixGaebXmlModel: tlandrixgaebxmlboqctgy property totals: tlandrixgaebxmltotals
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo field cono: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo field costatus: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo field date: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo field lblboq: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo field lbltime: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo field name: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo field noupcomps: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo field outlcompl: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function hasboqbkdn(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function hascosttype(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function hascpvcode(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function hasctlg(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function haslblupcomp1(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function haslblupcomp2(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function haslblupcomp3(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function haslblupcomp4(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function haslblupcomp5(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function haslblupcomp6(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function hasqtydeterminfo(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function hastotals(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property boqbkdn read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property boqbkdn: tlandrixgaebxmlboqbkdnlist
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property costtype read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property costtype: tlandrixgaebxmlcosttypelist
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property cpvcode read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property cpvcode: tlandrixgaebxmlcpvcodelist
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property ctlg read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property ctlg: tlandrixgaebxmlctlglist
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property lblupcomp1 read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property lblupcomp1: tlandrixgaebxmllblupcomp
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property lblupcomp2 read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property lblupcomp2: tlandrixgaebxmllblupcomp
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property lblupcomp3 read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property lblupcomp3: tlandrixgaebxmllblupcomp
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property lblupcomp4 read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property lblupcomp4: tlandrixgaebxmllblupcomp
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property lblupcomp5 read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property lblupcomp5: tlandrixgaebxmllblupcomp
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property lblupcomp6 read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property lblupcomp6: tlandrixgaebxmllblupcomp
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property qtydeterminfo read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property qtydeterminfo: tlandrixgaebxmlqtydeterminfo
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property totals read
+LandrixGaebXmlModel: tlandrixgaebxmlboqinfo property totals: tlandrixgaebxmltotals
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext function addattachment(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext function addtext(): tlandrixgaebxmlftexttc
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext function addtextcomplement(): tlandrixgaebxmltextcomplement
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext function hasstyle(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext property children read
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext property style read
+LandrixGaebXmlModel: tlandrixgaebxmlboqtext property style: tlandrixgaebxmlstyle
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscount destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscount field cashdiscdate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscount field discountpcnt: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscount function hascashdiscdays(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscount function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscount procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscount property cashdiscdays read
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscount property cashdiscdays: tlandrixgaebxmlcashdiscountcashdiscdays
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscountcashdiscdays destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscountcashdiscdays field days: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscountcashdiscdays field typeofdays: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscountcashdiscdays function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscountcashdiscdays procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscountlist function add(): tlandrixgaebxmlcashdiscount
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscountlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlcashdiscount (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscountlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscountlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscountlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlcashdiscountlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlcashdiscount
+LandrixGaebXmlModel: tlandrixgaebxmlcnstsite destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcnstsite field cnstsiteidno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcnstsite field cnstsitename: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcnstsite function hasaddress(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlcnstsite function hasaddtext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlcnstsite function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlcnstsite procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcnstsite property address read
+LandrixGaebXmlModel: tlandrixgaebxmlcnstsite property address: tlandrixgaebxmladdress
+LandrixGaebXmlModel: tlandrixgaebxmlcnstsite property addtext read
+LandrixGaebXmlModel: tlandrixgaebxmlcnstsite property addtext: tlandrixgaebxmladdtextlist
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfo destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfo field codate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfo field coinit: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfo field cono: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfo field cophase: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfo field costatus: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfo field refboqcoinfo: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfo function hascoreas(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfo function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfo procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfo property coreas read
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfo property coreas: tlandrixgaebxmlftext
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfolist function add(): tlandrixgaebxmlcoinfo
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfolist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlcoinfo (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfolist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfolist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfolist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlcoinfolist property items[tlandrixgaeblistindex]: tlandrixgaebxmlcoinfo
+LandrixGaebXmlModel: tlandrixgaebxmlcomplbodydec destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcomplbodydec field value: tlandrixgaebdecimaltext
+LandrixGaebXmlModel: tlandrixgaebxmlcomplbodydec function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlcomplbodydec procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcomplbodyint destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcomplbodyint field value: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcomplbodyint function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlcomplbodyint procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcompletetext destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcompletetext field compltsa: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcompletetext field compltsb: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcompletetext function hasdetailtxt(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlcompletetext function hasoutlinetext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlcompletetext function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlcompletetext procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcompletetext property detailtxt read
+LandrixGaebXmlModel: tlandrixgaebxmlcompletetext property detailtxt: tlandrixgaebxmlboqtext
+LandrixGaebXmlModel: tlandrixgaebxmlcompletetext property outlinetext read
+LandrixGaebXmlModel: tlandrixgaebxmlcompletetext property outlinetext: tlandrixgaebxmloutlinetext
+LandrixGaebXmlModel: tlandrixgaebxmlcontrvalcode destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcontrvalcode field number: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcontrvalcode field percent: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlcontrvalcode function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlcontrvalcode procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproach destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproach field costapproachqty: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproach field costapproachqu: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproach field key: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproach field performance: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproach field value: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproach function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproach procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproachlist function add(): tlandrixgaebxmlcostapproach
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproachlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlcostapproach (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproachlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproachlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproachlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlcostapproachlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlcostapproach
+LandrixGaebXmlModel: tlandrixgaebxmlcosttype destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcosttype field costtypeunit: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcosttype field key: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcosttype field markup: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlcosttype function hascostdescription(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlcosttype function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlcosttype procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcosttype property costdescription read
+LandrixGaebXmlModel: tlandrixgaebxmlcosttype property costdescription: tlandrixgaebxmlpmltext
+LandrixGaebXmlModel: tlandrixgaebxmlcosttypelist function add(): tlandrixgaebxmlcosttype
+LandrixGaebXmlModel: tlandrixgaebxmlcosttypelist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlcosttype (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlcosttypelist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlcosttypelist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlcosttypelist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlcosttypelist property items[tlandrixgaeblistindex]: tlandrixgaebxmlcosttype
+LandrixGaebXmlModel: tlandrixgaebxmlcpvcode destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcpvcode field cpvno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcpvcode field cpvtext: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlcpvcode function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlcpvcode procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlcpvcodelist function add(): tlandrixgaebxmlcpvcode
+LandrixGaebXmlModel: tlandrixgaebxmlcpvcodelist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlcpvcode (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlcpvcodelist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlcpvcodelist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlcpvcodelist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlcpvcodelist property items[tlandrixgaeblistindex]: tlandrixgaebxmlcpvcode
+LandrixGaebXmlModel: tlandrixgaebxmlctlg destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlctlg field ctlgassigntype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctlg field ctlgid: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctlg field ctlgname: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctlg field ctlgtype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctlg function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlctlg procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassign destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassign field ctlgcode: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassign field ctlgid: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassign function hasquantity(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassign function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassign procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassign property quantity read
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassign property quantity: tlandrixgaebxmlctlgassignquantity
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassignlist function add(): tlandrixgaebxmlctlgassign
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassignlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlctlgassign (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassignlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassignlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassignlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassignlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlctlgassign
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassignquantity destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassignquantity field typeattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassignquantity field value: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassignquantity function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlctlgassignquantity procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlctlglist function add(): tlandrixgaebxmlctlg
+LandrixGaebXmlModel: tlandrixgaebxmlctlglist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlctlg (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlctlglist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlctlglist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlctlglist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlctlglist property items[tlandrixgaeblistindex]: tlandrixgaebxmlctlg
+LandrixGaebXmlModel: tlandrixgaebxmlctr destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlctr field acctspayno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctr field awardno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctr field bidderno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctr field cntryname: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctr field cntrytype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctr field dpno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctr field prefbidtype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctr field sctype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctr field sectortype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlctr function hasaddress(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlctr function hasaddtext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlctr function hasinsas(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlctr function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlctr procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlctr property address read
+LandrixGaebXmlModel: tlandrixgaebxmlctr property address: tlandrixgaebxmladdress
+LandrixGaebXmlModel: tlandrixgaebxmlctr property addtext read
+LandrixGaebXmlModel: tlandrixgaebxmlctr property addtext: tlandrixgaebxmladdtextlist
+LandrixGaebXmlModel: tlandrixgaebxmlctr property insas read
+LandrixGaebXmlModel: tlandrixgaebxmlctr property insas: tlandrixgaebxmlinsas
+LandrixGaebXmlModel: tlandrixgaebxmldescription destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmldescription field id: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmldescription field wicno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmldescription function hascompletetext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmldescription function hasoutlinetext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmldescription function hasstlbbau(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmldescription function hasstlno(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmldescription function hassubmissioncomment(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmldescription function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmldescription procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmldescription property completetext read
+LandrixGaebXmlModel: tlandrixgaebxmldescription property completetext: tlandrixgaebxmlcompletetext
+LandrixGaebXmlModel: tlandrixgaebxmldescription property outlinetext read
+LandrixGaebXmlModel: tlandrixgaebxmldescription property outlinetext: tlandrixgaebxmloutlinetext
+LandrixGaebXmlModel: tlandrixgaebxmldescription property stlbbau read
+LandrixGaebXmlModel: tlandrixgaebxmldescription property stlbbau: tlandrixgaebxmlstlbbau
+LandrixGaebXmlModel: tlandrixgaebxmldescription property stlno read
+LandrixGaebXmlModel: tlandrixgaebxmldescription property stlno: tlandrixgaebxmlstlno
+LandrixGaebXmlModel: tlandrixgaebxmldescription property submissioncomment read
+LandrixGaebXmlModel: tlandrixgaebxmldescription property submissioncomment: tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmldiv destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmldiv field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmldiv field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmldiv function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmldiv function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmldiv function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmldiv function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmldiv procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmldiv property children read
+LandrixGaebXmlModel: tlandrixgaebxmldiv property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmldivtc destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmldivtc field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmldivtc field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmldivtc function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmldivtc function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmldivtc function addtextcomplement(): tlandrixgaebxmltextcomplement
+LandrixGaebXmlModel: tlandrixgaebxmldivtc function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmldivtc function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmldivtc procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmldivtc property children read
+LandrixGaebXmlModel: tlandrixgaebxmldivtc property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmlftext destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlftext field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlftext field textwidth: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlftext function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmlftext function adddiv(): tlandrixgaebxmldiv
+LandrixGaebXmlModel: tlandrixgaebxmlftext function addimage(): tlandrixgaebxmlimage
+LandrixGaebXmlModel: tlandrixgaebxmlftext function addol(): tlandrixgaebxmlol
+LandrixGaebXmlModel: tlandrixgaebxmlftext function addp(): tlandrixgaebxmlp
+LandrixGaebXmlModel: tlandrixgaebxmlftext function addpage(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmlftext function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmlftext function addtable(): tlandrixgaebxmltable
+LandrixGaebXmlModel: tlandrixgaebxmlftext function addul(): tlandrixgaebxmlul
+LandrixGaebXmlModel: tlandrixgaebxmlftext function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlftext function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlftext procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlftext property children read
+LandrixGaebXmlModel: tlandrixgaebxmlftext property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc field textwidth: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc function adddiv(): tlandrixgaebxmldivtc
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc function addimage(): tlandrixgaebxmlimage
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc function addol(): tlandrixgaebxmloltc
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc function addp(): tlandrixgaebxmlptc
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc function addpage(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc function addtable(): tlandrixgaebxmltabletc
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc function addtextcomplement(): tlandrixgaebxmltextcomplement
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc function addul(): tlandrixgaebxmlultc
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc property children read
+LandrixGaebXmlModel: tlandrixgaebxmlftexttc property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb function hasaddtext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb function hasaward(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb function hasgaebinfo(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb function hasprjinfo(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb property addtext read
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb property addtext: tlandrixgaebxmladdtextlist
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb property award read
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb property award: tlandrixgaebxmlaward
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb property gaebinfo read
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb property gaebinfo: tlandrixgaebxmlgaebinfo
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb property prjinfo read
+LandrixGaebXmlModel: tlandrixgaebxmlgaeb property prjinfo: tlandrixgaebxmlprjinfo
+LandrixGaebXmlModel: tlandrixgaebxmlgaebinfo destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlgaebinfo field certific: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlgaebinfo field date: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlgaebinfo field progname: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlgaebinfo field progsystem: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlgaebinfo field time: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlgaebinfo field versdate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlgaebinfo field version: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlgaebinfo function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlgaebinfo procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlimage destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlimage field align: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlimage field base64: tlandrixxmlutf8
+LandrixGaebXmlModel: tlandrixgaebxmlimage field border: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlimage field encoding: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlimage field hspace: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlimage field name: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlimage field typeattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlimage field vspace: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlimage field width: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlimage function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlimage procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlindivagrinfo destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlindivagrinfo field attestperson: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlindivagrinfo field infoperson: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlindivagrinfo function hascnstsiteloc(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlindivagrinfo function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlindivagrinfo procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlindivagrinfo property cnstsiteloc read
+LandrixGaebXmlModel: tlandrixgaebxmlindivagrinfo property cnstsiteloc: tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmlinsas destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlinsas field insasdate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlinsas field insasname: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlinsas field insasno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlinsas function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlinsas procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlitem destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlitem field accepted: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field alngroupno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field alnserno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field alterbidstatus: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field billqty: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field cono: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field costatus: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field discountpcnt: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field holdouttype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field hourit: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field id: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field it: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field keyit: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field lumpsumitem: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field markupit: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field notappl: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field notoffered: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field predqty: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field priceinfo: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field provis: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field provisaccpt: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field qty: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field qtytbd: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field qu: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field refdescr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field rnoindex: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field rnopart: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field sumdescr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field timequ: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field up110: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field up: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upavg: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upbkdn: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upcomp1: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upcomp2: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upcomp3: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upcomp4: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upcomp5: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upcomp6: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upfrom: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upto: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upwgavg: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upwgfrom: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field upwgto: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field usedur: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem field usedurlbltime: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlitem field vat: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlitem function hasbidcomm(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlitem function hascostapproach(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlitem function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlitem function hasdescription(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlitem function hasproduct(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlitem function hasqtydeterm(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlitem function hasqtysplit(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlitem function hasrefbaseitem(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlitem function hasrefperfno(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlitem function hasrefrno(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlitem function hassubdescr(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlitem function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlitem procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlitem property bidcomm read
+LandrixGaebXmlModel: tlandrixgaebxmlitem property bidcomm: tlandrixgaebxmlmltextlist
+LandrixGaebXmlModel: tlandrixgaebxmlitem property costapproach read
+LandrixGaebXmlModel: tlandrixgaebxmlitem property costapproach: tlandrixgaebxmlcostapproachlist
+LandrixGaebXmlModel: tlandrixgaebxmlitem property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlitem property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlitem property description read
+LandrixGaebXmlModel: tlandrixgaebxmlitem property description: tlandrixgaebxmldescription
+LandrixGaebXmlModel: tlandrixgaebxmlitem property product read
+LandrixGaebXmlModel: tlandrixgaebxmlitem property product: tlandrixgaebxmlproduct
+LandrixGaebXmlModel: tlandrixgaebxmlitem property qtydeterm read
+LandrixGaebXmlModel: tlandrixgaebxmlitem property qtydeterm: tlandrixgaebxmlqtydeterm
+LandrixGaebXmlModel: tlandrixgaebxmlitem property qtysplit read
+LandrixGaebXmlModel: tlandrixgaebxmlitem property qtysplit: tlandrixgaebxmlqtysplitlist
+LandrixGaebXmlModel: tlandrixgaebxmlitem property refbaseitem read
+LandrixGaebXmlModel: tlandrixgaebxmlitem property refbaseitem: tlandrixgaebxmlrefitemlist
+LandrixGaebXmlModel: tlandrixgaebxmlitem property refperfno read
+LandrixGaebXmlModel: tlandrixgaebxmlitem property refperfno: tlandrixgaebxmlrefitem
+LandrixGaebXmlModel: tlandrixgaebxmlitem property refrno read
+LandrixGaebXmlModel: tlandrixgaebxmlitem property refrno: tlandrixgaebxmlrefitem
+LandrixGaebXmlModel: tlandrixgaebxmlitem property subdescr read
+LandrixGaebXmlModel: tlandrixgaebxmlitem property subdescr: tlandrixgaebxmlsubdescrlist
+LandrixGaebXmlModel: tlandrixgaebxmlitemlist destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlitemlist function additem(): tlandrixgaebxmlitem
+LandrixGaebXmlModel: tlandrixgaebxmlitemlist function addmarkupitem(): tlandrixgaebxmlmarkupitem
+LandrixGaebXmlModel: tlandrixgaebxmlitemlist function addperfdescr(): tlandrixgaebxmlperfdescr
+LandrixGaebXmlModel: tlandrixgaebxmlitemlist function addremark(): tlandrixgaebxmlremark
+LandrixGaebXmlModel: tlandrixgaebxmlitemlist function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlitemlist function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlitemlist procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlitemlist property children read
+LandrixGaebXmlModel: tlandrixgaebxmlitemlist property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmllblupcomp destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmllblupcomp field typeattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmllblupcomp field value: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmllblupcomp function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmllblupcomp procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlli destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlli field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlli field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlli function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmlli function adddiv(): tlandrixgaebxmldiv
+LandrixGaebXmlModel: tlandrixgaebxmlli function addol(): tlandrixgaebxmlol
+LandrixGaebXmlModel: tlandrixgaebxmlli function addp(): tlandrixgaebxmlp
+LandrixGaebXmlModel: tlandrixgaebxmlli function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmlli function addul(): tlandrixgaebxmlul
+LandrixGaebXmlModel: tlandrixgaebxmlli function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlli function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlli procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlli property children read
+LandrixGaebXmlModel: tlandrixgaebxmlli property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmllilist function add(): tlandrixgaebxmlli
+LandrixGaebXmlModel: tlandrixgaebxmllilist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlli (protected)
+LandrixGaebXmlModel: tlandrixgaebxmllilist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmllilist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmllilist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmllilist property items[tlandrixgaeblistindex]: tlandrixgaebxmlli
+LandrixGaebXmlModel: tlandrixgaebxmllitc destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmllitc field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmllitc field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmllitc function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmllitc function adddiv(): tlandrixgaebxmldivtc
+LandrixGaebXmlModel: tlandrixgaebxmllitc function addol(): tlandrixgaebxmloltc
+LandrixGaebXmlModel: tlandrixgaebxmllitc function addp(): tlandrixgaebxmlptc
+LandrixGaebXmlModel: tlandrixgaebxmllitc function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmllitc function addtextcomplement(): tlandrixgaebxmltextcomplement
+LandrixGaebXmlModel: tlandrixgaebxmllitc function addul(): tlandrixgaebxmlultc
+LandrixGaebXmlModel: tlandrixgaebxmllitc function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmllitc function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmllitc procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmllitc property children read
+LandrixGaebXmlModel: tlandrixgaebxmllitc property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmllitclist function add(): tlandrixgaebxmllitc
+LandrixGaebXmlModel: tlandrixgaebxmllitclist function getitem(tlandrixgaeblistindex): tlandrixgaebxmllitc (protected)
+LandrixGaebXmlModel: tlandrixgaebxmllitclist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmllitclist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmllitclist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmllitclist property items[tlandrixgaeblistindex]: tlandrixgaebxmllitc
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp field id: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp field lotgrno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp function hasreflotno(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp function hastotals(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp property reflotno read
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp property reflotno: tlandrixgaebxmlrefboqctgylist
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp property totals read
+LandrixGaebXmlModel: tlandrixgaebxmllotgrp property totals: tlandrixgaebxmltotals
+LandrixGaebXmlModel: tlandrixgaebxmllotgrplist function add(): tlandrixgaebxmllotgrp
+LandrixGaebXmlModel: tlandrixgaebxmllotgrplist function getitem(tlandrixgaeblistindex): tlandrixgaebxmllotgrp (protected)
+LandrixGaebXmlModel: tlandrixgaebxmllotgrplist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmllotgrplist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmllotgrplist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmllotgrplist property items[tlandrixgaeblistindex]: tlandrixgaebxmllotgrp
+LandrixGaebXmlModel: tlandrixgaebxmlmaintinfo destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlmaintinfo field contrlaw: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmaintinfo field contrtransdate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmaintinfo field contrtranstime: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmaintinfo field deadline: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmaintinfo field mainttype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmaintinfo field processtype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmaintinfo function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlmaintinfo procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field accepted: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field alngroupno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field alnserno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field alterbidstatus: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field cono: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field costatus: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field discountpcnt: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field hourit: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field id: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field it: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field itmarkup: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field keyit: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field markup: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field markuptype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field notappl: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field provis: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field provisaccpt: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field refdescr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field rnoindex: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem field rnopart: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem function hasdescription(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem function hasmarkupsubqty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem function hasrefperfno(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem function hasrefrno(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem property description read
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem property description: tlandrixgaebxmldescription
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem property markupsubqty read
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem property markupsubqty: tlandrixgaebxmlmarkupsubqtylist
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem property refperfno read
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem property refperfno: tlandrixgaebxmlrefitem
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem property refrno read
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupitem property refrno: tlandrixgaebxmlrefitem
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqty destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqty field subqty: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqty function hasrefitem(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqty function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqty procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqty property refitem read
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqty property refitem: tlandrixgaebxmlrefitem
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqtylist function add(): tlandrixgaebxmlmarkupsubqty
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqtylist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlmarkupsubqty (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqtylist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqtylist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqtylist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlmarkupsubqtylist property items[tlandrixgaeblistindex]: tlandrixgaebxmlmarkupsubqty
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo field bidupdown: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo field mastagrbeg: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo field mastagrdate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo field mastagrdur: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo field mastagrend: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo field mastagrno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo field mastagrvers: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo field maxcontrval: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo field mincontrawd: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo field mincontrval: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo field totcontrval: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo function hasawardagencyadr(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo function hascontrvalcode(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo function hascostresponsible(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo function hasdescrip(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo function hasmastagrlbl(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo property awardagencyadr read
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo property awardagencyadr: tlandrixgaebxmladdress
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo property contrvalcode read
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo property contrvalcode: tlandrixgaebxmlcontrvalcode
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo property costresponsible read
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo property costresponsible: tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo property descrip read
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo property descrip: tlandrixgaebxmlftext
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo property mastagrlbl read
+LandrixGaebXmlModel: tlandrixgaebxmlmastagrinfo property mastagrlbl: tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmlmltext destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlmltext field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmltext field textwidth: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlmltext function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmlmltext function adddiv(): tlandrixgaebxmldiv
+LandrixGaebXmlModel: tlandrixgaebxmlmltext function addp(): tlandrixgaebxmlpmltext
+LandrixGaebXmlModel: tlandrixgaebxmlmltext function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmlmltext function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmltext function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlmltext procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlmltext property children read
+LandrixGaebXmlModel: tlandrixgaebxmlmltext property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmlmltextlist function add(): tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmlmltextlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlmltext (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlmltextlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlmltextlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlmltextlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlmltextlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmlnotifsite destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlnotifsite field notifsiteidno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlnotifsite field notifsitename: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlnotifsite function hasaddress(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlnotifsite function hasaddtext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlnotifsite function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlnotifsite procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlnotifsite property address read
+LandrixGaebXmlModel: tlandrixgaebxmlnotifsite property address: tlandrixgaebxmladdress
+LandrixGaebXmlModel: tlandrixgaebxmlnotifsite property addtext read
+LandrixGaebXmlModel: tlandrixgaebxmlnotifsite property addtext: tlandrixgaebxmladdtextlist
+LandrixGaebXmlModel: tlandrixgaebxmlol destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlol field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlol field start: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlol field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlol function hasli(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlol function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlol procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlol property li read
+LandrixGaebXmlModel: tlandrixgaebxmlol property li: tlandrixgaebxmllilist
+LandrixGaebXmlModel: tlandrixgaebxmloltc destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmloltc field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmloltc field start: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmloltc field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmloltc function hasli(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmloltc function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmloltc procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmloltc property li read
+LandrixGaebXmlModel: tlandrixgaebxmloltc property li: tlandrixgaebxmllitclist
+LandrixGaebXmlModel: tlandrixgaebxmloutlinetext destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmloutlinetext field outltsa: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmloutlinetext function hasoutltxt(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmloutlinetext function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmloutlinetext procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmloutlinetext property outltxt read
+LandrixGaebXmlModel: tlandrixgaebxmloutlinetext property outltxt: tlandrixgaebxmloutltxt
+LandrixGaebXmlModel: tlandrixgaebxmloutltxt destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmloutltxt field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmloutltxt function addtextcomplement(): tlandrixgaebxmltextcomplement
+LandrixGaebXmlModel: tlandrixgaebxmloutltxt function addtextoutltxt(): tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmloutltxt function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmloutltxt function hasstyle(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmloutltxt function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmloutltxt procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmloutltxt property children read
+LandrixGaebXmlModel: tlandrixgaebxmloutltxt property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmloutltxt property style read
+LandrixGaebXmlModel: tlandrixgaebxmloutltxt property style: tlandrixgaebxmlstyle
+LandrixGaebXmlModel: tlandrixgaebxmlown destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlown field acctrecno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlown field awardno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlown field cntryname: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlown field cntrytype: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlown field dpno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlown function hasaddress(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlown function hasaddtext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlown function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlown procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlown property address read
+LandrixGaebXmlModel: tlandrixgaebxmlown property address: tlandrixgaebxmladdress
+LandrixGaebXmlModel: tlandrixgaebxmlown property addtext read
+LandrixGaebXmlModel: tlandrixgaebxmlown property addtext: tlandrixgaebxmladdtextlist
+LandrixGaebXmlModel: tlandrixgaebxmlp destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlp field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlp field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlp function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmlp function addimage(): tlandrixgaebxmlimage
+LandrixGaebXmlModel: tlandrixgaebxmlp function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmlp function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlp function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlp procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlp property children read
+LandrixGaebXmlModel: tlandrixgaebxmlp property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr field alterbidstatus: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr field cono: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr field id: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr field perflbl: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr field perfno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr function hasdescription(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr property description read
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescr property description: tlandrixgaebxmlperfdescriptionlist
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription field id: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription field wicno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription function hascompletetext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription function hasoutlinetext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription function hasstlbbau(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription function hasstlno(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription function hassubmissioncomment(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription property completetext read
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription property completetext: tlandrixgaebxmlcompletetext
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription property outlinetext read
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription property outlinetext: tlandrixgaebxmloutlinetext
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription property stlbbau read
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription property stlbbau: tlandrixgaebxmlstlbbau
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription property stlno read
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription property stlno: tlandrixgaebxmlstlno
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription property submissioncomment read
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescription property submissioncomment: tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescriptionlist function add(): tlandrixgaebxmlperfdescription
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescriptionlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlperfdescription (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescriptionlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescriptionlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescriptionlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlperfdescriptionlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlperfdescription
+LandrixGaebXmlModel: tlandrixgaebxmlpmltext destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlpmltext field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlpmltext field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlpmltext function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmlpmltext function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmlpmltext function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlpmltext function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlpmltext procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlpmltext property children read
+LandrixGaebXmlModel: tlandrixgaebxmlpmltext property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo field alterbidperm: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo field bidcommperm: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo field cur: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo field curlbl: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo field lblprj: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo field nameprj: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo field prjid: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo field upfracdig: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo function hasaddtext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo function hasdescrip(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo property addtext read
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo property addtext: tlandrixgaebxmladdtextlist
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo property descrip read
+LandrixGaebXmlModel: tlandrixgaebxmlprjinfo property descrip: tlandrixgaebxmlftext
+LandrixGaebXmlModel: tlandrixgaebxmlproduct destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlproduct function hasaddress(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlproduct function hasaddtext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlproduct function hasarticle(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlproduct function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlproduct procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlproduct property address read
+LandrixGaebXmlModel: tlandrixgaebxmlproduct property address: tlandrixgaebxmladdress
+LandrixGaebXmlModel: tlandrixgaebxmlproduct property addtext read
+LandrixGaebXmlModel: tlandrixgaebxmlproduct property addtext: tlandrixgaebxmladdtextlist
+LandrixGaebXmlModel: tlandrixgaebxmlproduct property article read
+LandrixGaebXmlModel: tlandrixgaebxmlproduct property article: tlandrixgaebxmlarticlelist
+LandrixGaebXmlModel: tlandrixgaebxmlptc destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlptc field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlptc field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlptc function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmlptc function addimage(): tlandrixgaebxmlimage
+LandrixGaebXmlModel: tlandrixgaebxmlptc function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmlptc function addtextcomplement(): tlandrixgaebxmltextcomplement
+LandrixGaebXmlModel: tlandrixgaebxmlptc function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlptc function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlptc procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlptc property children read
+LandrixGaebXmlModel: tlandrixgaebxmlptc property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitem destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitem function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitem function hasqtakeoff(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitem function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitem procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitem property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitem property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitem property qtakeoff read
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitem property qtakeoff: tlandrixgaebxmlqdetermitemqtakeoff
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitemlist function add(): tlandrixgaebxmlqdetermitem
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitemlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlqdetermitem (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitemlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitemlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitemlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitemlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlqdetermitem
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitemqtakeoff destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitemqtakeoff field row: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitemqtakeoff function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlqdetermitemqtakeoff procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterm destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterm field qty: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterm function hasqdetermitem(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterm function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterm procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterm property qdetermitem read
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterm property qdetermitem: tlandrixgaebxmlqdetermitemlist
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo field id: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo field methoddescription: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo field orddescr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo field projdescr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo field serviceprovisionenddate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo field serviceprovisionstartdate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo function hascreator(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo function hasprofiler(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo property creator read
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo property creator: tlandrixgaebxmladdress
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo property profiler read
+LandrixGaebXmlModel: tlandrixgaebxmlqtydeterminfo property profiler: tlandrixgaebxmladdress
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplit destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplit field qty: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplit field qtypcnt: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplit function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplit function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplit procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplit property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplit property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplitlist function add(): tlandrixgaebxmlqtysplit
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplitlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlqtysplit (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplitlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplitlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplitlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlqtysplitlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlqtysplit
+LandrixGaebXmlModel: tlandrixgaebxmlrefboq destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlrefboq field idref: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlrefboq function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlrefboq procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlrefboqctgy destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlrefboqctgy field idref: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlrefboqctgy function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlrefboqctgy procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlrefboqctgylist function add(): tlandrixgaebxmlrefboqctgy
+LandrixGaebXmlModel: tlandrixgaebxmlrefboqctgylist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlrefboqctgy (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlrefboqctgylist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlrefboqctgylist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlrefboqctgylist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlrefboqctgylist property items[tlandrixgaeblistindex]: tlandrixgaebxmlrefboqctgy
+LandrixGaebXmlModel: tlandrixgaebxmlrefitem destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlrefitem field idref: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlrefitem function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlrefitem procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlrefitemlist function add(): tlandrixgaebxmlrefitem
+LandrixGaebXmlModel: tlandrixgaebxmlrefitemlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlrefitem (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlrefitemlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlrefitemlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlrefitemlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlrefitemlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlrefitem
+LandrixGaebXmlModel: tlandrixgaebxmlreflotgrp destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlreflotgrp field idref: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlreflotgrp function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlreflotgrp procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlremark destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlremark field alterbidstatus: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlremark field cono: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlremark field id: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlremark function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlremark function hasdescription(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlremark function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlremark procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlremark property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlremark property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlremark property description read
+LandrixGaebXmlModel: tlandrixgaebxmlremark property description: tlandrixgaebxmldescription
+LandrixGaebXmlModel: tlandrixgaebxmlrequester destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlrequester field requestidno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlrequester field requestname: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlrequester function hasaddress(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlrequester function hasaddtext(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlrequester function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlrequester procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlrequester property address read
+LandrixGaebXmlModel: tlandrixgaebxmlrequester property address: tlandrixgaebxmladdress
+LandrixGaebXmlModel: tlandrixgaebxmlrequester property addtext read
+LandrixGaebXmlModel: tlandrixgaebxmlrequester property addtext: tlandrixgaebxmladdtextlist
+LandrixGaebXmlModel: tlandrixgaebxmlrequesterlist function add(): tlandrixgaebxmlrequester
+LandrixGaebXmlModel: tlandrixgaebxmlrequesterlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlrequester (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlrequesterlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlrequesterlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlrequesterlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlrequesterlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlrequester
+LandrixGaebXmlModel: tlandrixgaebxmlspan destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlspan field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlspan field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlspan field value: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlspan function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlspan procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbau destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbau function hasstlbbauctlg(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbau function hasstlbbauid(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbau function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbau procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbau property stlbbauctlg read
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbau property stlbbauctlg: tlandrixgaebxmlstlbbauctlg
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbau property stlbbauid read
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbau property stlbbauid: tlandrixgaebxmlstlbbauidlist
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauctlg destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauctlg field costgrp: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauctlg field ctlgname: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauctlg field group: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauctlg field versdate: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauctlg field wctg: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauctlg function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauctlg procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauid destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauid field artchidx: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauid field artchrident: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauid field chvident: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauid field outltextpart: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauid function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauid procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauidlist function add(): tlandrixgaebxmlstlbbauid
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauidlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlstlbbauid (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauidlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauidlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauidlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlstlbbauidlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlstlbbauid
+LandrixGaebXmlModel: tlandrixgaebxmlstlno destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlstlno field typeattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstlno field value: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstlno function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlstlno procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlstyle destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlstyle field typeattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstyle field value: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlstyle function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlstyle procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field qty: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field qtyspec: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field qtytbd: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field qu: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field subdno: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field up: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field upbkdn: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field upcomp1: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field upcomp2: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field upcomp3: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field upcomp4: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field upcomp5: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field upcomp6: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr field upspec: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr function hasdescription(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr property description read
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescr property description: tlandrixgaebxmldescription
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescrlist function add(): tlandrixgaebxmlsubdescr
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescrlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlsubdescr (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescrlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescrlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescrlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlsubdescrlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlsubdescr
+LandrixGaebXmlModel: tlandrixgaebxmltable destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmltable field align: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltable field border: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltable field cellpadding: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltable field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltable field frame: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltable field height: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltable field org: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltable field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltable field width: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltable function hastr(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltable function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmltable procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmltable property tr read
+LandrixGaebXmlModel: tlandrixgaebxmltable property tr: tlandrixgaebxmltrlist
+LandrixGaebXmlModel: tlandrixgaebxmltabletc destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmltabletc field align: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltabletc field border: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltabletc field cellpadding: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltabletc field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltabletc field frame: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltabletc field height: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltabletc field org: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltabletc field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltabletc field width: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltabletc function hastr(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltabletc function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmltabletc procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmltabletc property tr read
+LandrixGaebXmlModel: tlandrixgaebxmltabletc property tr: tlandrixgaebxmltrtclist
+LandrixGaebXmlModel: tlandrixgaebxmltd destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmltd field align: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltd field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltd field colspan: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltd field rowspan: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltd field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltd field valign: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltd function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmltd function adddiv(): tlandrixgaebxmldiv
+LandrixGaebXmlModel: tlandrixgaebxmltd function addol(): tlandrixgaebxmlol
+LandrixGaebXmlModel: tlandrixgaebxmltd function addp(): tlandrixgaebxmlp
+LandrixGaebXmlModel: tlandrixgaebxmltd function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmltd function addtable(): tlandrixgaebxmltable
+LandrixGaebXmlModel: tlandrixgaebxmltd function addul(): tlandrixgaebxmlul
+LandrixGaebXmlModel: tlandrixgaebxmltd function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltd function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmltd procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmltd property children read
+LandrixGaebXmlModel: tlandrixgaebxmltd property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmltdtc destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmltdtc field align: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltdtc field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltdtc field colspan: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltdtc field rowspan: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltdtc field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltdtc field valign: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltdtc function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmltdtc function adddiv(): tlandrixgaebxmldivtc
+LandrixGaebXmlModel: tlandrixgaebxmltdtc function addol(): tlandrixgaebxmloltc
+LandrixGaebXmlModel: tlandrixgaebxmltdtc function addp(): tlandrixgaebxmlptc
+LandrixGaebXmlModel: tlandrixgaebxmltdtc function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmltdtc function addtable(): tlandrixgaebxmltabletc
+LandrixGaebXmlModel: tlandrixgaebxmltdtc function addtextcomplement(): tlandrixgaebxmltextcomplement
+LandrixGaebXmlModel: tlandrixgaebxmltdtc function addul(): tlandrixgaebxmlultc
+LandrixGaebXmlModel: tlandrixgaebxmltdtc function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltdtc function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmltdtc procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmltdtc property children read
+LandrixGaebXmlModel: tlandrixgaebxmltdtc property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement field artchrident: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement field empty: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement field id: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement field kind: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement field marklbl: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement function hascomplbody(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement function hascomplbodydec(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement function hascomplbodyint(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement function hascomplcaption(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement function hascompltail(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement function hasctlgassign(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement property complbody read
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement property complbody: tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement property complbodydec read
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement property complbodydec: tlandrixgaebxmlcomplbodydec
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement property complbodyint read
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement property complbodyint: tlandrixgaebxmlcomplbodyint
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement property complcaption read
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement property complcaption: tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement property compltail read
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement property compltail: tlandrixgaebxmlmltext
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement property ctlgassign read
+LandrixGaebXmlModel: tlandrixgaebxmltextcomplement property ctlgassign: tlandrixgaebxmlctlgassignlist
+LandrixGaebXmlModel: tlandrixgaebxmlth destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlth field align: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlth field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlth field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlth field valign: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlth function addbr(const tlandrixgaebstring): tlandrixgaebxmlvaluenode
+LandrixGaebXmlModel: tlandrixgaebxmlth function adddiv(): tlandrixgaebxmldiv
+LandrixGaebXmlModel: tlandrixgaebxmlth function addol(): tlandrixgaebxmlol
+LandrixGaebXmlModel: tlandrixgaebxmlth function addp(): tlandrixgaebxmlp
+LandrixGaebXmlModel: tlandrixgaebxmlth function addspan(): tlandrixgaebxmlspan
+LandrixGaebXmlModel: tlandrixgaebxmlth function addtable(): tlandrixgaebxmltable
+LandrixGaebXmlModel: tlandrixgaebxmlth function addul(): tlandrixgaebxmlul
+LandrixGaebXmlModel: tlandrixgaebxmlth function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlth function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlth procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlth property children read
+LandrixGaebXmlModel: tlandrixgaebxmlth property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmltotalnetupcomp destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmltotalnetupcomp field upcomp1: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotalnetupcomp field upcomp2: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotalnetupcomp field upcomp3: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotalnetupcomp field upcomp4: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotalnetupcomp field upcomp5: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotalnetupcomp field upcomp6: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotalnetupcomp function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmltotalnetupcomp procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmltotals destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmltotals field discountamt: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotals field discountpcnt: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotals field totafterdisc: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotals field total: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotals field totalgross: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotals field totallsum: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotals field totalnet: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotals field vat: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotals field vatamount: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmltotals function hastotalnetupcomp(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltotals function hasvatpart(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltotals function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmltotals procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmltotals property totalnetupcomp read
+LandrixGaebXmlModel: tlandrixgaebxmltotals property totalnetupcomp: tlandrixgaebxmltotalnetupcomp
+LandrixGaebXmlModel: tlandrixgaebxmltotals property vatpart read
+LandrixGaebXmlModel: tlandrixgaebxmltotals property vatpart: tlandrixgaebxmlvatpartlist
+LandrixGaebXmlModel: tlandrixgaebxmltr destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmltr field align: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltr field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltr field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltr field valign: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltr function addtd(): tlandrixgaebxmltd
+LandrixGaebXmlModel: tlandrixgaebxmltr function addth(): tlandrixgaebxmlth
+LandrixGaebXmlModel: tlandrixgaebxmltr function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltr function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmltr procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmltr property children read
+LandrixGaebXmlModel: tlandrixgaebxmltr property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmltrlist function add(): tlandrixgaebxmltr
+LandrixGaebXmlModel: tlandrixgaebxmltrlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmltr (protected)
+LandrixGaebXmlModel: tlandrixgaebxmltrlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltrlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmltrlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmltrlist property items[tlandrixgaeblistindex]: tlandrixgaebxmltr
+LandrixGaebXmlModel: tlandrixgaebxmltrtc destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmltrtc field align: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltrtc field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltrtc field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltrtc field valign: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmltrtc function addtd(): tlandrixgaebxmltdtc
+LandrixGaebXmlModel: tlandrixgaebxmltrtc function addth(): tlandrixgaebxmlth
+LandrixGaebXmlModel: tlandrixgaebxmltrtc function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltrtc function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmltrtc procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmltrtc property children read
+LandrixGaebXmlModel: tlandrixgaebxmltrtc property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmltrtclist function add(): tlandrixgaebxmltrtc
+LandrixGaebXmlModel: tlandrixgaebxmltrtclist function getitem(tlandrixgaeblistindex): tlandrixgaebxmltrtc (protected)
+LandrixGaebXmlModel: tlandrixgaebxmltrtclist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmltrtclist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmltrtclist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmltrtclist property items[tlandrixgaeblistindex]: tlandrixgaebxmltrtc
+LandrixGaebXmlModel: tlandrixgaebxmlul destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlul field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlul field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlul function hasli(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlul function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlul procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlul property li read
+LandrixGaebXmlModel: tlandrixgaebxmlul property li: tlandrixgaebxmllilist
+LandrixGaebXmlModel: tlandrixgaebxmlultc destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlultc field classattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlultc field styleattr: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlultc function hasli(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlultc function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlultc procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlultc property li read
+LandrixGaebXmlModel: tlandrixgaebxmlultc property li: tlandrixgaebxmllitclist
+LandrixGaebXmlModel: tlandrixgaebxmlvatpart destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlvatpart field totalnetpart: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlvatpart field vatamount: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlvatpart field vatpcnt: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlvatpart function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlvatpart procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlvatpartlist function add(): tlandrixgaebxmlvatpart
+LandrixGaebXmlModel: tlandrixgaebxmlvatpartlist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlvatpart (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlvatpartlist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlvatpartlist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlvatpartlist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlvatpartlist property items[tlandrixgaeblistindex]: tlandrixgaebxmlvatpart
+LandrixGaebXmlModel: tlandrixgaebxmlwgchange destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlwgchange field lblrefwage: tlandrixgaebstring
+LandrixGaebXmlModel: tlandrixgaebxmlwgchange field redpricecomp: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlwgchange function hasrefgroup(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlwgchange function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlwgchange procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlwgchange property refgroup read
+LandrixGaebXmlModel: tlandrixgaebxmlwgchange property refgroup: tlandrixgaebxmlwgchangerefgrouplist
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgroup destructor destroy(); override
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgroup field wgchangerate: tlandrixgaebdecimal
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgroup function addrefboq(): tlandrixgaebxmlrefboq
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgroup function addrefitem(): tlandrixgaebxmlrefitem
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgroup function addreflotgrno(): tlandrixgaebxmlreflotgrp
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgroup function addreflotno(): tlandrixgaebxmlrefboqctgy
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgroup function haschildren(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgroup function isempty(): boolean; override
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgroup procedure clear(); override
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgroup property children read
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgroup property children: tlandrixgaebxmlnodelist
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgrouplist function add(): tlandrixgaebxmlwgchangerefgroup
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgrouplist function getitem(tlandrixgaeblistindex): tlandrixgaebxmlwgchangerefgroup (protected)
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgrouplist function isempty(): boolean
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgrouplist property items[tlandrixgaeblistindex] default property
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgrouplist property items[tlandrixgaeblistindex] read
+LandrixGaebXmlModel: tlandrixgaebxmlwgchangerefgrouplist property items[tlandrixgaeblistindex]: tlandrixgaebxmlwgchangerefgroup
+LandrixGaebXmlReader: function landrixgaebxmlreadbuffer(pointer, integer, tlandrixgaebdiagnostics, out tlandrixgaebdetection): tlandrixgaebxmlgaeb
+LandrixGaebXmlReader: function landrixgaebxmlreadfile(const string, tlandrixgaebdiagnostics, int64, out tlandrixgaebdetection): tlandrixgaebxmlgaeb
+LandrixGaebXmlReader: function landrixgaebxmlreadstream(tstream, tlandrixgaebdiagnostics, int64, out tlandrixgaebdetection): tlandrixgaebxmlgaeb
+LandrixGaebXmlWriter: function landrixgaebxmlwritecollect(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, const tlandrixgaebxmlwriteoptions, tlandrixgaebdiagnostics, out integer, out integer): tlandrixxmlutf8
+LandrixGaebXmlWriter: function landrixgaebxmlwriteutf8(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, const tlandrixgaebxmlwriteoptions, tlandrixgaebdiagnostics): tlandrixxmlutf8
+LandrixGaebXmlWriter: procedure landrixgaebxmlwritefile(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, const string, const tlandrixgaebxmlwriteoptions, tlandrixgaebdiagnostics)
+LandrixGaebXmlWriter: procedure landrixgaebxmlwritestream(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, tstream, const tlandrixgaebxmlwriteoptions, tlandrixgaebdiagnostics)
+LandrixXmlBase: class elandrixxmlerror(exception)
+LandrixXmlBase: class tlandrixxmlbuffer(tobject)
+LandrixXmlBase: const landrixxmlhashseed (expression)
+LandrixXmlBase: const landrixxmlmaxcodepoint (integer)
+LandrixXmlBase: const landrixxmlnamespacexml (string)
+LandrixXmlBase: const landrixxmlnamespacexmlns (string)
+LandrixXmlBase: const landrixxmlversion (string)
+LandrixXmlBase: elandrixxmlerror constructor createat(tlandrixxmlerrorcode, const string, integer, integer, int64)
+LandrixXmlBase: elandrixxmlerror constructor createcode(tlandrixxmlerrorcode, const string)
+LandrixXmlBase: elandrixxmlerror property code read
+LandrixXmlBase: elandrixxmlerror property code: tlandrixxmlerrorcode
+LandrixXmlBase: elandrixxmlerror property column read
+LandrixXmlBase: elandrixxmlerror property column: integer
+LandrixXmlBase: elandrixxmlerror property line read
+LandrixXmlBase: elandrixxmlerror property line: integer
+LandrixXmlBase: elandrixxmlerror property offset read
+LandrixXmlBase: elandrixxmlerror property offset: int64
+LandrixXmlBase: enum tlandrixxmlerrorcode
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecarithmetic
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecconversion
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecencoding
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecgeneral
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecinvalidargument
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecinvalidchar
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecinvalidoperation
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecinvalidunicode
+LandrixXmlBase: enum tlandrixxmlerrorcode value xeclimit
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecnamespace
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecnone
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecregex
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecschema
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecsyntax
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecunexpectedelement
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecunsupported
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecwrite
+LandrixXmlBase: enum tlandrixxmlerrorcode value xecxpath
+LandrixXmlBase: function landrixxmlbuftoutf8(pansichar, integer): tlandrixxmlutf8
+LandrixXmlBase: function landrixxmlcheckname(pansichar, integer): integer
+LandrixXmlBase: function landrixxmldecodeutf8(pansichar, integer, out cardinal): integer
+LandrixXmlBase: function landrixxmlencodeutf8(cardinal, pansichar): integer
+LandrixXmlBase: function landrixxmlescapeformessage(const tlandrixxmlutf8, integer): string
+LandrixXmlBase: function landrixxmlhashbytes(pansichar, integer, cardinal): cardinal
+LandrixXmlBase: function landrixxmlisnamechar(cardinal): boolean
+LandrixXmlBase: function landrixxmlisnamestartchar(cardinal): boolean
+LandrixXmlBase: function landrixxmlisxmlchar(cardinal): boolean
+LandrixXmlBase: function landrixxmlstringtoutf8(const string): tlandrixxmlutf8
+LandrixXmlBase: function landrixxmlutf8tostring(const tlandrixxmlutf8): string
+LandrixXmlBase: function landrixxmlutf8towide(const tlandrixxmlutf8): tlandrixxmlwide
+LandrixXmlBase: function landrixxmlvalidatebase64buf(pansichar, integer, out integer, out integer): boolean
+LandrixXmlBase: function landrixxmlvalidateutf8(const tlandrixxmlutf8, out integer): boolean
+LandrixXmlBase: function landrixxmlvalidateutf8buf(pansichar, integer, out integer): boolean
+LandrixXmlBase: function landrixxmlwidetoutf8(const tlandrixxmlwide): tlandrixxmlutf8
+LandrixXmlBase: procedure landrixxmlbase64decode(pansichar, integer, tlandrixxmlbuffer)
+LandrixXmlBase: procedure landrixxmlbase64decodetostream(pansichar, integer, tstream)
+LandrixXmlBase: procedure landrixxmlbase64encode(const, integer, tlandrixxmlbuffer)
+LandrixXmlBase: tlandrixxmlbuffer destructor destroy(); override
+LandrixXmlBase: tlandrixxmlbuffer function asutf8(): tlandrixxmlutf8
+LandrixXmlBase: tlandrixxmlbuffer function extend(integer): pansichar
+LandrixXmlBase: tlandrixxmlbuffer procedure append(const, integer)
+LandrixXmlBase: tlandrixxmlbuffer procedure appendascii(const ansistring)
+LandrixXmlBase: tlandrixxmlbuffer procedure appendbyte(byte)
+LandrixXmlBase: tlandrixxmlbuffer procedure appendcodepoint(cardinal)
+LandrixXmlBase: tlandrixxmlbuffer procedure appendutf8(const tlandrixxmlutf8)
+LandrixXmlBase: tlandrixxmlbuffer procedure clear()
+LandrixXmlBase: tlandrixxmlbuffer procedure reserve(integer)
+LandrixXmlBase: tlandrixxmlbuffer procedure truncate(integer)
+LandrixXmlBase: tlandrixxmlbuffer procedure writetostream(tstream)
+LandrixXmlBase: tlandrixxmlbuffer property capacity read
+LandrixXmlBase: tlandrixxmlbuffer property capacity: integer
+LandrixXmlBase: tlandrixxmlbuffer property data read
+LandrixXmlBase: tlandrixxmlbuffer property data: pansichar
+LandrixXmlBase: tlandrixxmlbuffer property size read
+LandrixXmlBase: tlandrixxmlbuffer property size: integer
+LandrixXmlBase: type tlandrixxmlutf8 = ansistring [d6]
+LandrixXmlBase: type tlandrixxmlutf8 = utf8string [d12,d2009,fpc]
+LandrixXmlBase: type tlandrixxmlutf8array = array of tlandrixxmlutf8
+LandrixXmlBase: type tlandrixxmlwide = unicodestring [d12,d2009,fpc]
+LandrixXmlBase: type tlandrixxmlwide = widestring [d6]
+LandrixXmlDecimal: const landrixxmldecimaldivideprecision (integer)
+LandrixXmlDecimal: const landrixxmldecimalmaxexponent (integer)
+LandrixXmlDecimal: enum tlandrixxmldecimalrounding
+LandrixXmlDecimal: enum tlandrixxmldecimalrounding value xdrceiling
+LandrixXmlDecimal: enum tlandrixxmldecimalrounding value xdrdown
+LandrixXmlDecimal: enum tlandrixxmldecimalrounding value xdrfloor
+LandrixXmlDecimal: enum tlandrixxmldecimalrounding value xdrhalfceiling
+LandrixXmlDecimal: enum tlandrixxmldecimalrounding value xdrhalfdown
+LandrixXmlDecimal: enum tlandrixxmldecimalrounding value xdrhalfeven
+LandrixXmlDecimal: function landrixxmldecimalabs(const tlandrixxmldecimal): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimaladd(const tlandrixxmldecimal, const tlandrixxmldecimal): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimalcompare(const tlandrixxmldecimal, const tlandrixxmldecimal): integer
+LandrixXmlDecimal: function landrixxmldecimaldivide(const tlandrixxmldecimal, const tlandrixxmldecimal): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimaldivideintegers(const tlandrixxmldecimal, const tlandrixxmldecimal, out boolean): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimaldividescaled(const tlandrixxmldecimal, const tlandrixxmldecimal, integer, integer): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimalfractiondigits(const tlandrixxmldecimal): integer
+LandrixXmlDecimal: function landrixxmldecimalfromint64(int64): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimalintegerquotient(const tlandrixxmldecimal, const tlandrixxmldecimal): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimalisinteger(const tlandrixxmldecimal): boolean
+LandrixXmlDecimal: function landrixxmldecimaliszero(const tlandrixxmldecimal): boolean
+LandrixXmlDecimal: function landrixxmldecimalmodulo(const tlandrixxmldecimal, const tlandrixxmldecimal): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimalmultiply(const tlandrixxmldecimal, const tlandrixxmldecimal): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimalmultiplypow10(const tlandrixxmldecimal, integer): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimalnegate(const tlandrixxmldecimal): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimalround(const tlandrixxmldecimal, integer, tlandrixxmldecimalrounding): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimalscale(const tlandrixxmldecimal): integer
+LandrixXmlDecimal: function landrixxmldecimalsign(const tlandrixxmldecimal): integer
+LandrixXmlDecimal: function landrixxmldecimalsubtract(const tlandrixxmldecimal, const tlandrixxmldecimal): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmldecimaltotaldigits(const tlandrixxmldecimal): integer
+LandrixXmlDecimal: function landrixxmldecimaltrytoint64(const tlandrixxmldecimal, out int64): boolean
+LandrixXmlDecimal: function landrixxmldecimalzero(): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmlformatdecimal(const tlandrixxmldecimal): tlandrixxmlutf8
+LandrixXmlDecimal: function landrixxmlparsedecimal(const tlandrixxmlutf8): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmlparsedecimalinteger(const tlandrixxmlutf8): tlandrixxmldecimal
+LandrixXmlDecimal: function landrixxmltryparsedecimal(const tlandrixxmlutf8, out tlandrixxmldecimal): boolean
+LandrixXmlDecimal: function landrixxmltryparsedecimalinteger(const tlandrixxmlutf8, out tlandrixxmldecimal): boolean
+LandrixXmlDecimal: record tlandrixxmldecimal
+LandrixXmlDecimal: tlandrixxmldecimal field exponent: integer
+LandrixXmlDecimal: tlandrixxmldecimal field limbs: tlandrixxmldecimallimbs
+LandrixXmlDecimal: tlandrixxmldecimal field negative: boolean
+LandrixXmlDecimal: type tlandrixxmldecimallimbs = array of integer
