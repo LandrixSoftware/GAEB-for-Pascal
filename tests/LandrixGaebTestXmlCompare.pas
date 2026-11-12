@@ -38,12 +38,21 @@ uses
 { Adds one line per difference between A and B to ADiffs (empty if equal). }
 procedure CompareGaebModels(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings);
 
+{ As CompareGaebModels, but skips the text nodes of A (text the reader kept
+  in element-only content, which the writer leaves out) and counts them in
+  ASkipped; everything else is compared as strictly. }
+procedure CompareGaebModelsSkipText(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings; out ASkipped: Integer);
+
 implementation
 
 uses
   SysUtils,
   LandrixXmlBase,
   LandrixGaebXmlBase;
+
+var
+  SkipText: Boolean;
+  Skipped: Integer;
 
 procedure CmpNode(const P: string; A, B: TLandrixGaebXmlNode; D: TStrings); forward;
 
@@ -145,22 +154,49 @@ procedure CmpUlTC(const P: string; A, B: TLandrixGaebXmlUlTC; D: TStrings); forw
 
 procedure CmpChildren(const P: string; A, B: TLandrixGaebXmlNodeList; D: TStrings);
 var
-  I, N: Integer;
+  I, J: Integer;
   Q: string;
 begin
-  if A.Count <> B.Count then
-    D.Add(P + ' (number of children)');
-  N := Integer(A.Count);
-  if Integer(B.Count) < N then
-    N := Integer(B.Count);
-  for I := 0 to N - 1 do
+  { I runs over A, J over B; with SkipText the text nodes of A have no
+    counterpart in B }
+  I := 0;
+  J := 0;
+  while (I < Integer(A.Count)) and (J < Integer(B.Count)) do
   begin
+    if SkipText and (A[I] is TLandrixGaebXmlTextNode) then
+    begin
+      Inc(Skipped);
+      Inc(I);
+      Continue;
+    end;
     Q := P + '/' + LandrixXmlUtf8ToString(A[I].ElementName) + '[' + IntToStr(I + 1) + ']';
-    if (A[I].ClassType <> B[I].ClassType) or (A[I].ElementName <> B[I].ElementName) then
+    if (A[I].ClassType <> B[J].ClassType) or (A[I].ElementName <> B[J].ElementName) then
       D.Add(Q + ' (kind of child)')
     else
-      CmpNode(Q, A[I], B[I], D);
+      CmpNode(Q, A[I], B[J], D);
+    Inc(I);
+    Inc(J);
   end;
+  while SkipText and (I < Integer(A.Count)) and (A[I] is TLandrixGaebXmlTextNode) do
+  begin
+    Inc(Skipped);
+    Inc(I);
+  end;
+  if (I < Integer(A.Count)) or (J < Integer(B.Count)) then
+    D.Add(P + ' (number of children)');
+end;
+
+{ With SkipText: True if AList holds text nodes only (counted as skipped). }
+function OnlySkippedText(AList: TLandrixGaebXmlNodeList): Boolean;
+var
+  I: Integer;
+begin
+  Result := SkipText;
+  for I := 0 to Integer(AList.Count) - 1 do
+    if not (AList[I] is TLandrixGaebXmlTextNode) then
+      Result := False;
+  if Result then
+    Inc(Skipped, Integer(AList.Count));
 end;
 
 procedure CmpNode(const P: string; A, B: TLandrixGaebXmlNode; D: TStrings);
@@ -823,10 +859,10 @@ procedure CmpBoQBody(const P: string; A, B: TLandrixGaebXmlBoQBody; D: TStrings)
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
   if A.HasItemlist <> B.HasItemlist then
     D.Add(P + '/Itemlist (presence)')
   else if A.HasItemlist then
@@ -1057,10 +1093,10 @@ begin
     D.Add(P + '/Style (presence)')
   else if A.HasStyle then
     CmpStyle(P + '/Style', A.Style, B.Style, D);
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpCOInfo(const P: string; A, B: TLandrixGaebXmlCOInfo; D: TStrings);
@@ -1441,10 +1477,10 @@ begin
     D.Add(P + '/@textWidth');
   if A.IsMarkedEmpty('@textWidth') <> B.IsMarkedEmpty('@textWidth') then
     D.Add(P + '/@textWidth (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpFTextTC(const P: string; A, B: TLandrixGaebXmlFTextTC; D: TStrings);
@@ -1459,10 +1495,10 @@ begin
     D.Add(P + '/@textWidth');
   if A.IsMarkedEmpty('@textWidth') <> B.IsMarkedEmpty('@textWidth') then
     D.Add(P + '/@textWidth (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpGAEB(const P: string; A, B: TLandrixGaebXmlGAEB; D: TStrings);
@@ -1899,10 +1935,10 @@ procedure CmpItemlist(const P: string; A, B: TLandrixGaebXmlItemlist; D: TString
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpLblUpComp(const P: string; A, B: TLandrixGaebXmlLblUpComp; D: TStrings);
@@ -1973,10 +2009,10 @@ begin
     D.Add(P + '/@textWidth');
   if A.IsMarkedEmpty('@textWidth') <> B.IsMarkedEmpty('@textWidth') then
     D.Add(P + '/@textWidth (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpMaintInfo(const P: string; A, B: TLandrixGaebXmlMaintInfo; D: TStrings);
@@ -2305,10 +2341,10 @@ begin
     D.Add(P + '/Style (presence)')
   else if A.HasStyle then
     CmpStyle(P + '/Style', A.Style, B.Style, D);
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpOutlineText(const P: string; A, B: TLandrixGaebXmlOutlineText; D: TStrings);
@@ -3151,10 +3187,10 @@ procedure CmpWgChangeRefGroup(const P: string; A, B: TLandrixGaebXmlWgChangeRefG
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
   if not A.WgChangeRate.Equals(B.WgChangeRate) then
     D.Add(P + '/WgChangeRate');
   if A.IsMarkedEmpty('WgChangeRate') <> B.IsMarkedEmpty('WgChangeRate') then
@@ -3173,10 +3209,10 @@ begin
     D.Add(P + '/@style');
   if A.IsMarkedEmpty('@style') <> B.IsMarkedEmpty('@style') then
     D.Add(P + '/@style (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpDivTC(const P: string; A, B: TLandrixGaebXmlDivTC; D: TStrings);
@@ -3191,10 +3227,10 @@ begin
     D.Add(P + '/@style');
   if A.IsMarkedEmpty('@style') <> B.IsMarkedEmpty('@style') then
     D.Add(P + '/@style (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpLi(const P: string; A, B: TLandrixGaebXmlLi; D: TStrings);
@@ -3209,10 +3245,10 @@ begin
     D.Add(P + '/@style');
   if A.IsMarkedEmpty('@style') <> B.IsMarkedEmpty('@style') then
     D.Add(P + '/@style (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpLiTC(const P: string; A, B: TLandrixGaebXmlLiTC; D: TStrings);
@@ -3227,10 +3263,10 @@ begin
     D.Add(P + '/@style');
   if A.IsMarkedEmpty('@style') <> B.IsMarkedEmpty('@style') then
     D.Add(P + '/@style (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpOl(const P: string; A, B: TLandrixGaebXmlOl; D: TStrings);
@@ -3309,10 +3345,10 @@ begin
     D.Add(P + '/@style');
   if A.IsMarkedEmpty('@style') <> B.IsMarkedEmpty('@style') then
     D.Add(P + '/@style (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpPMLText(const P: string; A, B: TLandrixGaebXmlPMLText; D: TStrings);
@@ -3327,10 +3363,10 @@ begin
     D.Add(P + '/@style');
   if A.IsMarkedEmpty('@style') <> B.IsMarkedEmpty('@style') then
     D.Add(P + '/@style (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpPTC(const P: string; A, B: TLandrixGaebXmlPTC; D: TStrings);
@@ -3345,10 +3381,10 @@ begin
     D.Add(P + '/@style');
   if A.IsMarkedEmpty('@style') <> B.IsMarkedEmpty('@style') then
     D.Add(P + '/@style (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpSpan(const P: string; A, B: TLandrixGaebXmlSpan; D: TStrings);
@@ -3507,10 +3543,10 @@ begin
     D.Add(P + '/@valign');
   if A.IsMarkedEmpty('@valign') <> B.IsMarkedEmpty('@valign') then
     D.Add(P + '/@valign (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpTdTC(const P: string; A, B: TLandrixGaebXmlTdTC; D: TStrings);
@@ -3541,10 +3577,10 @@ begin
     D.Add(P + '/@valign');
   if A.IsMarkedEmpty('@valign') <> B.IsMarkedEmpty('@valign') then
     D.Add(P + '/@valign (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpTh(const P: string; A, B: TLandrixGaebXmlTh; D: TStrings);
@@ -3567,10 +3603,10 @@ begin
     D.Add(P + '/@valign');
   if A.IsMarkedEmpty('@valign') <> B.IsMarkedEmpty('@valign') then
     D.Add(P + '/@valign (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpTr(const P: string; A, B: TLandrixGaebXmlTr; D: TStrings);
@@ -3593,10 +3629,10 @@ begin
     D.Add(P + '/@valign');
   if A.IsMarkedEmpty('@valign') <> B.IsMarkedEmpty('@valign') then
     D.Add(P + '/@valign (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpTrTC(const P: string; A, B: TLandrixGaebXmlTrTC; D: TStrings);
@@ -3619,10 +3655,10 @@ begin
     D.Add(P + '/@valign');
   if A.IsMarkedEmpty('@valign') <> B.IsMarkedEmpty('@valign') then
     D.Add(P + '/@valign (empty mark)');
-  if A.HasChildren <> B.HasChildren then
-    D.Add(P + ' (children present)')
-  else if A.HasChildren then
-    CmpChildren(P, A.Children, B.Children, D);
+  if A.HasChildren and B.HasChildren then
+    CmpChildren(P, A.Children, B.Children, D)
+  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then
+    D.Add(P + ' (children present)');
 end;
 
 procedure CmpUl(const P: string; A, B: TLandrixGaebXmlUl; D: TStrings);
@@ -3683,7 +3719,20 @@ end;
 
 procedure CompareGaebModels(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings);
 begin
+  SkipText := False;
   CmpGAEB('/GAEB', A, B, ADiffs);
+end;
+
+procedure CompareGaebModelsSkipText(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings; out ASkipped: Integer);
+begin
+  SkipText := True;
+  Skipped := 0;
+  try
+    CmpGAEB('/GAEB', A, B, ADiffs);
+  finally
+    SkipText := False;
+  end;
+  ASkipped := Skipped;
 end;
 
 end.

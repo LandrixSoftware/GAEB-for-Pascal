@@ -81,8 +81,9 @@ __recovery/
 # GAEB-Spezifikation und Schemas (urheberrechtlich geschuetzt, nur lokal)
 Specification/
 
-# Lokales Backlog (nie committen)
+# Lokales Backlog und Erledigtes daraus (nie committen)
 BACKLOG.md
+CHANGELOG.md
 
 # Echte GAEB-Dateien (ggf. Kundendaten), nur lokal
 tests/data/local/

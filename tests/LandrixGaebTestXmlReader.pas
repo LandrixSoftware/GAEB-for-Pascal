@@ -30,12 +30,14 @@ implementation
 uses
   SysUtils,
   Classes,
+  LandrixXmlBase,
   LandrixGaebTypes,
   LandrixGaebDiagnostics,
   LandrixGaebDetect,
   LandrixGaebXmlBase,
   LandrixGaebXmlModel,
   LandrixGaebXmlReader,
+  LandrixGaebXmlWriter,
   LandrixGaebTestFramework;
 
 const
@@ -208,6 +210,9 @@ var
   G: TLandrixGaebXmlGAEB;
   S: AnsiString;
   P: TLandrixGaebXmlPTC;
+  Options: TLandrixGaebXmlWriteOptions;
+  Output: TLandrixXmlUtf8;
+  E, W: Integer;
 begin
   Diags := TLandrixGaebDiagnostics.Create;
   G := nil;
@@ -219,6 +224,19 @@ begin
       Children[0] as TLandrixGaebXmlPTC;
     Check(P.Children[0] is TLandrixGaebXmlTextNode, 'kept as text node, not repaired');
     Check(TLandrixGaebXmlTextNode(P.Children[0]).Text = 'raw', 'text node content');
+    { the schema has no text there: the writer leaves it out and says so }
+    Diags.Clear;
+    Options := LandrixGaebXmlDefaultWriteOptions;
+    Options.Mode := gwmBestEffort;
+    Options.Check := False;
+    Output := LandrixGaebXmlWriteCollect(G, LandrixGaebTarget(gv33, ge2021_05, gp83), Options, Diags, E, W);
+    CheckEquals(1, Diags.CountOf('GAEB-WRT-004'), 'text node left out and reported: ' + Diags.ToText);
+    Check(Pos(TLandrixXmlUtf8('raw'), Output) = 0, 'text node not written');
+    Check(Pos(TLandrixXmlUtf8('<span>a</span>'), Output) > 0, 'the rest of the paragraph written');
+    Options.Mode := gwmNormal;
+    Diags.Clear;
+    LandrixGaebXmlWriteCollect(G, LandrixGaebTarget(gv33, ge2021_05, gp83), Options, Diags, E, W);
+    Check(E > 0, 'an error in the default mode');
   finally
     G.Free;
     Diags.Free;

@@ -2273,12 +2273,21 @@ uses
 { Adds one line per difference between A and B to ADiffs (empty if equal). }
 procedure CompareGaebModels(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings);
 
+{ As CompareGaebModels, but skips the text nodes of A (text the reader kept
+  in element-only content, which the writer leaves out) and counts them in
+  ASkipped; everything else is compared as strictly. }
+procedure CompareGaebModelsSkipText(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings; out ASkipped: Integer);
+
 implementation
 
 uses
   SysUtils,
   LandrixXmlBase,
   LandrixGaebXmlBase;
+
+var
+  SkipText: Boolean;
+  Skipped: Integer;
 
 procedure CmpNode(const P: string; A, B: TLandrixGaebXmlNode; D: TStrings); forward;
 """)
@@ -2288,22 +2297,49 @@ procedure CmpNode(const P: string; A, B: TLandrixGaebXmlNode; D: TStrings); forw
     w("""
 procedure CmpChildren(const P: string; A, B: TLandrixGaebXmlNodeList; D: TStrings);
 var
-  I, N: Integer;
+  I, J: Integer;
   Q: string;
 begin
-  if A.Count <> B.Count then
-    D.Add(P + ' (number of children)');
-  N := Integer(A.Count);
-  if Integer(B.Count) < N then
-    N := Integer(B.Count);
-  for I := 0 to N - 1 do
+  { I runs over A, J over B; with SkipText the text nodes of A have no
+    counterpart in B }
+  I := 0;
+  J := 0;
+  while (I < Integer(A.Count)) and (J < Integer(B.Count)) do
   begin
+    if SkipText and (A[I] is TLandrixGaebXmlTextNode) then
+    begin
+      Inc(Skipped);
+      Inc(I);
+      Continue;
+    end;
     Q := P + '/' + LandrixXmlUtf8ToString(A[I].ElementName) + '[' + IntToStr(I + 1) + ']';
-    if (A[I].ClassType <> B[I].ClassType) or (A[I].ElementName <> B[I].ElementName) then
+    if (A[I].ClassType <> B[J].ClassType) or (A[I].ElementName <> B[J].ElementName) then
       D.Add(Q + ' (kind of child)')
     else
-      CmpNode(Q, A[I], B[I], D);
+      CmpNode(Q, A[I], B[J], D);
+    Inc(I);
+    Inc(J);
   end;
+  while SkipText and (I < Integer(A.Count)) and (A[I] is TLandrixGaebXmlTextNode) do
+  begin
+    Inc(Skipped);
+    Inc(I);
+  end;
+  if (I < Integer(A.Count)) or (J < Integer(B.Count)) then
+    D.Add(P + ' (number of children)');
+end;
+
+{ With SkipText: True if AList holds text nodes only (counted as skipped). }
+function OnlySkippedText(AList: TLandrixGaebXmlNodeList): Boolean;
+var
+  I: Integer;
+begin
+  Result := SkipText;
+  for I := 0 to Integer(AList.Count) - 1 do
+    if not (AList[I] is TLandrixGaebXmlTextNode) then
+      Result := False;
+  if Result then
+    Inc(Skipped, Integer(AList.Count));
 end;
 
 procedure CmpNode(const P: string; A, B: TLandrixGaebXmlNode; D: TStrings);
@@ -2382,16 +2418,29 @@ end;
                     cmp_proc(model.emit[m["type"]]), label, m["name"], m["name"]))
                 w("  end;")
             elif k == "children":
-                w("  if A.HasChildren <> B.HasChildren then")
-                w("    D.Add(P + ' (children present)')")
-                w("  else if A.HasChildren then")
-                w("    CmpChildren(P, A.Children, B.Children, D);")
+                w("  if A.HasChildren and B.HasChildren then")
+                w("    CmpChildren(P, A.Children, B.Children, D)")
+                w("  else if B.HasChildren or (A.HasChildren and not OnlySkippedText(A.Children)) then")
+                w("    D.Add(P + ' (children present)');")
         w("end;")
         w("")
     root = model.emit["tgGAEB"]
     w("procedure CompareGaebModels(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings);")
     w("begin")
+    w("  SkipText := False;")
     w("  %s('/GAEB', A, B, ADiffs);" % cmp_proc(root))
+    w("end;")
+    w("")
+    w("procedure CompareGaebModelsSkipText(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings; out ASkipped: Integer);")
+    w("begin")
+    w("  SkipText := True;")
+    w("  Skipped := 0;")
+    w("  try")
+    w("    %s('/GAEB', A, B, ADiffs);" % cmp_proc(root))
+    w("  finally")
+    w("    SkipText := False;")
+    w("  end;")
+    w("  ASkipped := Skipped;")
     w("end;")
     w("")
     w("end.")

@@ -96,6 +96,29 @@ begin
       Inc(Result);
 end;
 
+{ Text nodes the reader kept in element-only content (GAEB-XML-007, an
+  error of the input): the schema has no place for them, so the writer
+  leaves them out (GAEB-WRT-004). }
+function KeptTexts(ADiags: TLandrixGaebDiagnostics): Integer;
+var
+  I: TLandrixGaebListIndex;
+begin
+  Result := 0;
+  for I := 0 to ADiags.Count - 1 do
+    if (ADiags[I].RuleId = 'GAEB-XML-007') and (Pos(TLandrixGaebString('kept'), ADiags[I].Message) > 0) then
+      Inc(Result);
+end;
+
+function DroppedTexts(ADiags: TLandrixGaebDiagnostics): Integer;
+var
+  I: TLandrixGaebListIndex;
+begin
+  Result := 0;
+  for I := 0 to ADiags.Count - 1 do
+    if (ADiags[I].RuleId = 'GAEB-WRT-004') and (Pos(TLandrixGaebString('text node'), ADiags[I].Message) > 0) then
+      Inc(Result);
+end;
+
 function SameTarget(const A, B: TLandrixGaebTarget): Boolean;
 begin
   Result := (A.Version = B.Version) and (A.Edition = B.Edition) and (A.Phase = B.Phase);
@@ -105,8 +128,11 @@ end;
   files go through), reads the output again and compares both models.
   Model equality alone does not show that the input was kept: AReadLosses
   counts the warnings and errors of the first read (an element the reader
-  dropped is missing in both models), AWriteLosses those of the writer. }
-procedure RoundTrip(const ASource: TLandrixXmlUtf8; ADiffs: TStrings; out AReadLosses, AWriteLosses: Integer);
+  dropped is missing in both models), AWriteLosses those of the writer
+  except the text nodes of AKeptTexts, which the writer leaves out
+  (ADroppedTexts) and the comparison skips (ASkippedTexts). }
+procedure RoundTrip(const ASource: TLandrixXmlUtf8; ADiffs: TStrings; out AReadLosses, AWriteLosses,
+  AKeptTexts, ADroppedTexts, ASkippedTexts: Integer);
 var
   A, B: TLandrixGaebXmlGAEB;
   T, T2: TLandrixGaebTarget;
@@ -123,16 +149,18 @@ begin
   try
     A := ReadModel(ASource, Diags, T);
     AReadLosses := Problems(Diags);
+    AKeptTexts := KeptTexts(Diags);
     Diags.Clear;
     Output := LandrixGaebXmlWriteUtf8(A, WriteTarget(T), Options, Diags);
-    AWriteLosses := Problems(Diags);
+    ADroppedTexts := DroppedTexts(Diags);
+    AWriteLosses := Problems(Diags) - ADroppedTexts;
     B := ReadModel(Output, nil, T2);
     if not SameTarget(T2, WriteTarget(T)) then
       ADiffs.Add('/GAEB (target of the output)')
     else if not SameTarget(T2, T) and (T.Edition = ge2019_11) and (T2.Edition = ge2021_05) then
       { 3.3/2019-11 written as 2021-05: VersDate is the one of the target }
       B.GAEBInfo.VersDate := A.GAEBInfo.VersDate;
-    CompareGaebModels(A, B, ADiffs);
+    CompareGaebModelsSkipText(A, B, ADiffs, ASkippedTexts);
   finally
     B.Free;
     A.Free;
@@ -214,12 +242,68 @@ begin
   end;
 end;
 
+{ ---- text the reader kept in element-only content ---- }
+
+{ An X83 3.3 document with one item whose first long text paragraph holds
+  AParagraph. }
+function ParagraphDoc(const AParagraph: AnsiString): TLandrixXmlUtf8;
+begin
+  Result := TLandrixXmlUtf8('<?xml version="1.0" encoding="UTF-8"?>' +
+    '<GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3">' +
+    '<GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate>' +
+    '<Date>2026-10-21</Date><ProgSystem>Test</ProgSystem></GAEBInfo>' +
+    '<PrjInfo><NamePrj>P</NamePrj></PrjInfo><Award><DP>83</DP>' +
+    '<BoQ ID="B1"><BoQInfo><Name>LV</Name><LblBoQ>Test</LblBoQ><OutlCompl>AllTxt</OutlCompl>' +
+    '<BoQBkdn><Type>Item</Type><Length>4</Length><Num>Yes</Num></BoQBkdn></BoQInfo>' +
+    '<BoQBody><Itemlist><Item ID="I1" RNoPart="0010"><Qty>12.500</Qty><QU>m</QU>' +
+    '<Description><CompleteText><DetailTxt><Text><p>' + AParagraph + '</p>' +
+    '</Text></DetailTxt><OutlineText><OutlTxt><TextOutlTxt><p><span>Kurz</span></p></TextOutlTxt>' +
+    '</OutlTxt></OutlineText></CompleteText></Description></Item></Itemlist></BoQBody></BoQ>' +
+    '</Award></GAEB>');
+end;
+
+procedure TestKeptText;
+var
+  Diffs: TStringList;
+  ReadLosses, WriteLosses, Kept, Dropped, Skipped: Integer;
+  A, B: TLandrixGaebXmlGAEB;
+  T: TLandrixGaebTarget;
+begin
+  Diffs := TStringList.Create;
+  try
+    RoundTrip(ParagraphDoc('<span>a</span>raw<span>b</span>'), Diffs, ReadLosses, WriteLosses, Kept, Dropped, Skipped);
+    CheckEquals(1, Kept, 'text between spans kept by the reader');
+    CheckEquals(1, Dropped, 'left out by the writer');
+    CheckEquals(1, Skipped, 'skipped by the comparison');
+    CheckEquals(0, WriteLosses, 'no other loss');
+    CheckEquals(0, Diffs.Count, 'both spans survive: ' + Diffs.Text);
+    Diffs.Clear;
+    RoundTrip(ParagraphDoc('&#160;'), Diffs, ReadLosses, WriteLosses, Kept, Dropped, Skipped);
+    CheckEquals(1, Kept, 'a paragraph of a no-break space only');
+    CheckEquals(1, Skipped, 'skipped');
+    CheckEquals(0, Diffs.Count, 'the empty paragraph survives: ' + Diffs.Text);
+    { a span lost beside the text node is still a difference }
+    Diffs.Clear;
+    A := ReadModel(ParagraphDoc('<span>a</span>raw<span>b</span>'), nil, T);
+    B := ReadModel(ParagraphDoc('<span>a</span>'), nil, T);
+    try
+      CompareGaebModelsSkipText(A, B, Diffs, Skipped);
+      Check(Diffs.Count > 0, 'a lost span is found');
+    finally
+      B.Free;
+      A.Free;
+    end;
+  finally
+    Diffs.Free;
+  end;
+end;
+
 { ---- synthetic documents ---- }
 
 procedure CheckFolder(const ASub: string);
 var
   Files, Diffs: TStringList;
-  I, ReadLosses, WriteLosses: Integer;
+  I, ReadLosses, WriteLosses, KeptCount, DroppedCount, SkippedCount: Integer;
   Name: string;
 begin
   Files := TStringList.Create;
@@ -233,7 +317,8 @@ begin
       if (Name = 'expected.txt') or (Pos('-invalid', Name) > 0) then
         Continue;
       Diffs.Clear;
-      RoundTrip(ReadFileBytes(Files[I]), Diffs, ReadLosses, WriteLosses);
+      RoundTrip(ReadFileBytes(Files[I]), Diffs, ReadLosses, WriteLosses, KeptCount, DroppedCount, SkippedCount);
+      CheckEquals(0, DroppedCount + SkippedCount, ASub + '/' + Name + ': no text node left out');
       CheckEquals(0, ReadLosses, ASub + '/' + Name + ': read without losses');
       CheckEquals(0, WriteLosses, ASub + '/' + Name + ': written without losses');
       CheckEquals(0, Diffs.Count, ASub + '/' + Name + ': the model survives the round trip: ' + Diffs.Text);
@@ -258,6 +343,7 @@ procedure TestLocal;
 var
   Files, Diffs: TStringList;
   I, Compared, Equal, Failed, ReadLosses, WriteLosses, ReadLossFiles, WriteLossCount: Integer;
+  KeptCount, DroppedCount, SkippedCount, TextFiles, TextMismatch: Integer;
   Source: TLandrixXmlUtf8;
   Det: TLandrixGaebDetection;
   FirstDiff, FirstFailure: string;
@@ -272,6 +358,8 @@ begin
   Failed := 0;
   ReadLossFiles := 0;
   WriteLossCount := 0;
+  TextFiles := 0;
+  TextMismatch := 0;
   FirstDiff := '';
   FirstFailure := '';
   Files := TStringList.Create;
@@ -290,10 +378,14 @@ begin
         Continue;
       Inc(Compared);
       Diffs.Clear;
-      RoundTrip(Source, Diffs, ReadLosses, WriteLosses);
+      RoundTrip(Source, Diffs, ReadLosses, WriteLosses, KeptCount, DroppedCount, SkippedCount);
       if ReadLosses > 0 then
         Inc(ReadLossFiles);
       Inc(WriteLossCount, WriteLosses);
+      if KeptCount > 0 then
+        Inc(TextFiles);
+      if (DroppedCount <> KeptCount) or (SkippedCount <> KeptCount) then
+        Inc(TextMismatch);
       if Diffs.Count = 0 then
         Inc(Equal)
       else if FirstDiff = '' then
@@ -312,10 +404,12 @@ begin
   end;
   WriteLn('  Local.RoundTrip: ', Compared, ' file(s), ', Equal, ' with equal models, ', ReadLossFiles,
     ' with warnings or errors of the reader (losses before the round trip), ', WriteLossCount,
-    ' loss(es) of the writer, ', Failed, ' failed');
+    ' loss(es) of the writer, ', TextFiles, ' with text in element-only content (reported by the reader, left out by the writer), ',
+    Failed, ' failed');
   Check(Compared > 0, 'local files found');
   CheckEquals(0, Failed, 'no exception (first: ' + FirstFailure + ')');
   CheckEquals(0, WriteLossCount, 'the writer loses nothing the reader kept');
+  CheckEquals(0, TextMismatch, 'the writer leaves out exactly the text nodes the reader reported, nothing else');
   CheckEquals(Compared, Equal, 'every model survives the round trip (first difference: ' + FirstDiff + ')');
 end;
 
@@ -412,6 +506,7 @@ procedure Register;
 begin
   RegisterTest('RoundTrip.Compare', TestCompare);
   RegisterTest('RoundTrip.Synthetic', TestSynthetic);
+  RegisterTest('RoundTrip.KeptText', TestKeptText);
   RegisterTest('Local.RoundTrip', TestLocal);
   RegisterTest('Local.FaultyXml', TestLocalFaulty);
 end;
