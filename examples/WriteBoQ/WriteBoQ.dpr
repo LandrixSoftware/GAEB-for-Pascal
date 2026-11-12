@@ -14,8 +14,7 @@
 
 { Creates a new bill of quantities and writes it as a request (X83, GAEB DA
   XML 3.3): the document frame through the syntax model, categories, items,
-  quantities and units through the business facade, texts through the
-  syntax model. The writer checks the output against the schema of the
+  quantities, units and texts through the business facade. The writer checks the output against the schema of the
   target and refuses an invalid document.
 
   Usage: WriteBoQ <output folder>       writes <output folder>/request.x83 }
@@ -49,15 +48,12 @@ begin
     raise Exception.Create('not a decimal: ' + AText);
 end;
 
-{ The short text (outline text) and the long text (detail text) of an item,
-  each one paragraph. }
+{ The short text (outline text) and the long text (detail text) of an item;
+  every line of a text becomes a paragraph. }
 procedure SetTexts(AItem: TLandrixGaebItem; const AShort, ALong: TLandrixGaebString);
-var
-  Text: TLandrixGaebXmlCompleteText;
 begin
-  Text := TLandrixGaebXmlItem(AItem.SyntaxNode).Description.CompleteText;
-  Text.DetailTxt.AddText.AddP.AddSpan.Value := ALong;
-  Text.OutlineText.OutlTxt.AddTextOutlTxt.AddP.AddSpan.Value := AShort;
+  AItem.SetShortText(AShort);
+  AItem.SetLongText(ALong);
 end;
 
 { A breakdown level of the ordinal number (OZ). }

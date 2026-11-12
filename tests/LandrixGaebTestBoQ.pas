@@ -921,6 +921,74 @@ begin
   end;
 end;
 
+{ Errors when writing ABill with the default options (output checked). }
+function WriteErrors(ABill: TLandrixGaebBillOfQuantities): Integer;
+var
+  E, W: Integer;
+begin
+  LandrixGaebXmlWriteCollect(ABill.Document, ABill.OutputTarget, LandrixGaebXmlDefaultWriteOptions,
+    nil, E, W);
+  Result := E;
+end;
+
+procedure TestTexts;
+var
+  B: TLandrixGaebBillOfQuantities;
+  It, NewIt: TLandrixGaebItem;
+  Output: TLandrixXmlUtf8;
+begin
+  B := Load(DataDir('process') + 'request.x83');
+  try
+    It := B.AllItems[0] as TLandrixGaebItem;
+    It.SetShortText('Neuer Kurztext');
+    CheckEqualsStr('Neuer Kurztext', S(It.ShortText), 'short text replaced');
+    It.SetLongText('Zeile eins' + #13#10 + 'Zeile zwei');
+    CheckEqualsStr('Zeile eins' + #10 + 'Zeile zwei', S(It.LongText), 'one paragraph per line');
+    NewIt := B.AddItem(B.Root[0] as TLandrixGaebCategory, '0040');
+    NewIt.SetQty(DecOf('1.000'));
+    NewIt.QU := 'St';
+    Check(NewIt.ShortText = '', 'a new item has no short text');
+    NewIt.SetShortText('Kurz');
+    NewIt.SetLongText('Lang');
+    CheckEqualsStr('Kurz', S(NewIt.ShortText), 'short text created');
+    CheckEqualsStr('Lang', S(NewIt.LongText), 'long text created');
+    CheckEquals(0, WriteErrors(B), 'texts written and checked');
+    Output := Written(B);
+    Check(Pos(TLandrixXmlUtf8('Neuer Kurztext'), Output) > 0, 'short text written');
+    Check(Pos(TLandrixXmlUtf8('<p><span>Zeile zwei</span></p>'), Output) > 0, 'paragraph written');
+    Check(Pos(TLandrixXmlUtf8('Leistung eins'), Output) = 0, 'old text gone');
+    NewIt.SetLongText('eins' + #10 + #10 + 'drei');
+    CheckEqualsStr('eins' + #10 + 'drei', S(NewIt.LongText), 'the plain text skips empty paragraphs');
+    CheckEquals(0, WriteErrors(B), 'empty paragraph written and checked');
+    Check(Pos(TLandrixXmlUtf8('<p/>'), Written(B)) > 0, 'empty paragraph written');
+    NewIt.SetLongText('');
+    Check(NewIt.LongText = '', 'long text removed');
+    Check(NewIt.DetailTextNode = nil, 'no detail text left');
+    CheckEqualsStr('Kurz', S(NewIt.ShortText), 'short text kept');
+    NewIt.SetShortText('');
+    Check(NewIt.OutlineTextNode = nil, 'no outline text left');
+    Check(not TLandrixGaebXmlItem(NewIt.SyntaxNode).HasDescription, 'empty description dropped');
+    TLandrixGaebXmlItem(NewIt.SyntaxNode).Description.CompleteText.Present := True;
+    NewIt.SetLongText('');
+    Check(not TLandrixGaebXmlItem(NewIt.SyntaxNode).HasDescription, 'an empty marked container dropped too');
+    NewIt.SetLongText('ende' + #13);
+    CheckEqualsStr('ende' + #13, S(NewIt.LongText), 'a CR without LF stays');
+  finally
+    B.Free;
+  end;
+  B := Load(DataDir('legacy') + '29-complements.x83');
+  try
+    It := B.AllItems[0] as TLandrixGaebItem;
+    CheckEquals(4, It.ComplementCount, 'complements before');
+    It.SetLongText('ohne Ergaenzung');
+    Check(It.ComplementCount < 4, 'complements of the long text gone');
+    It.SetShortText('kurz');
+    CheckEquals(0, It.ComplementCount, 'no complement left');
+  finally
+    B.Free;
+  end;
+end;
+
 procedure Register;
 begin
   RegisterTest('BoQ.ReadOnly', TestReadOnly);
@@ -933,6 +1001,7 @@ begin
   RegisterTest('BoQ.WriteValues', TestWriteValues);
   RegisterTest('BoQ.LoadSave', TestLoadSave);
   RegisterTest('BoQ.Structure', TestStructure);
+  RegisterTest('BoQ.Texts', TestTexts);
 end;
 
 end.

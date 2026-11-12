@@ -574,6 +574,7 @@ type
     function Item: TLandrixGaebXmlItem;
     function GetQU: TLandrixGaebString;
     procedure SetQU(const AValue: TLandrixGaebString);
+    procedure TextsChanging;
   protected
     procedure GetTexts(out AComplete: TLandrixGaebXmlCompleteText; out AOutline: TLandrixGaebXmlOutlineText); override;
   public
@@ -603,6 +604,23 @@ type
     function IT: TLandrixGaebDecimal;
     procedure SetIT(const AValue: TLandrixGaebDecimal);
     procedure ClearIT;
+    { Replace the outline text (short text) or the detail text (long text)
+      by AText: one paragraph per line (lines separated by LF, a CR before
+      it is dropped), without formatting. The short text is replaced where
+      ShortText reads it, else created in CompleteText. '' removes the
+      text. Text complements of the replaced text are lost; all complement
+      views of the item obtained before (of both texts) are freed. Not
+      checked here: the writer checks the text against the target.
+      DE: Ersetzen den Kurztext oder den Langtext durch AText: ein Absatz je
+      Zeile (Zeilen durch LF getrennt, ein CR davor entfaellt), ohne
+      Formatierung. Der Kurztext wird dort ersetzt, wo ShortText ihn liest,
+      sonst in CompleteText angelegt. '' entfernt den Text.
+      Textergaenzungen des ersetzten Textes gehen verloren; alle vorher
+      geholten Ergaenzungssichten der Position (beider Texte) werden
+      freigegeben. Hier nicht geprueft: der Writer prueft den Text gegen das
+      Ziel. }
+    procedure SetShortText(const AText: TLandrixGaebString);
+    procedure SetLongText(const AText: TLandrixGaebString);
     { Kinds: alternative (ALNGroupNo, ALNSerNo; base with serial 0),
       eventual (Provis), lump sum, hourly work, not applicable, not offered
       (X84), quantity to be determined by the bidder.
@@ -1845,6 +1863,134 @@ begin
   AOutline := nil;
   if Item.HasDescription then
     DescriptionTexts(Item.Description, AComplete, AOutline);
+end;
+
+{ Next line of AText from APos (1-based) on: up to the next LF, a CR before
+  it dropped; APos moves behind the LF, beyond the end after the last line. }
+function NextLine(const AText: TLandrixGaebString; var APos: Integer): TLandrixGaebString;
+var
+  Start: Integer;
+begin
+  Start := APos;
+  while (APos <= Length(AText)) and (AText[APos] <> #10) do
+    Inc(APos);
+  Result := Copy(AText, Start, APos - Start);
+  if (APos <= Length(AText)) and (Result <> '') and (Result[Length(Result)] = #13) then
+    SetLength(Result, Length(Result) - 1);
+  Inc(APos);
+end;
+
+{ Clears ANode if nothing is left in it, so that it is not written. }
+procedure ClearIfEmpty(ANode: TLandrixGaebXmlNode);
+begin
+  if ANode.IsEmpty then
+    ANode.Clear;
+end;
+
+{ After a text was removed: drops the containers left empty, also those
+  that were empty before. }
+procedure ClearEmptyDescription(AItem: TLandrixGaebXmlItem);
+var
+  D: TLandrixGaebXmlDescription;
+begin
+  if not AItem.HasDescription then
+    Exit;
+  D := AItem.Description;
+  if D.HasCompleteText then
+  begin
+    if D.CompleteText.HasOutlineText then
+      ClearIfEmpty(D.CompleteText.OutlineText);
+    ClearIfEmpty(D.CompleteText);
+  end;
+  if D.HasOutlineText then
+    ClearIfEmpty(D.OutlineText);
+  ClearIfEmpty(D);
+end;
+
+procedure TLandrixGaebItem.TextsChanging;
+begin
+  { complement views of both texts and the index of IDs (complements carry
+    IDs) are rebuilt on next use }
+  FreeAndNil(FComplements);
+  Bill.FIds.Free;
+  Bill.FIds := nil;
+  Bill.FOtherId.Free;
+  Bill.FOtherId := nil;
+end;
+
+procedure TLandrixGaebItem.SetShortText(const AText: TLandrixGaebString);
+var
+  C: TLandrixGaebXmlCompleteText;
+  O, Target: TLandrixGaebXmlOutlineText;
+  T: TLandrixGaebXmlMLText;
+  P: TLandrixGaebXmlPMLText;
+  Line: TLandrixGaebString;
+  I: Integer;
+begin
+  TextsChanging;
+  GetTexts(C, O);
+  { the same choice as OutlineOf }
+  if (C <> nil) and C.HasOutlineText and C.OutlineText.HasOutlTxt then
+    Target := C.OutlineText
+  else if (O <> nil) and O.HasOutlTxt then
+    Target := O
+  else if AText = '' then
+  begin
+    ClearEmptyDescription(Item);
+    Exit;
+  end
+  else
+    Target := Item.Description.CompleteText.OutlineText;
+  Target.OutlTxt.Clear;
+  if AText = '' then
+  begin
+    ClearEmptyDescription(Item);
+    Exit;
+  end;
+  T := Target.OutlTxt.AddTextOutlTxt;
+  I := 1;
+  while I <= Length(AText) + 1 do
+  begin
+    Line := NextLine(AText, I);
+    P := T.AddP;
+    if Line <> '' then
+      P.AddSpan.Value := Line
+    else
+      P.Present := True;
+  end;
+end;
+
+procedure TLandrixGaebItem.SetLongText(const AText: TLandrixGaebString);
+var
+  C: TLandrixGaebXmlCompleteText;
+  O: TLandrixGaebXmlOutlineText;
+  T: TLandrixGaebXmlFTextTC;
+  P: TLandrixGaebXmlPTC;
+  Line: TLandrixGaebString;
+  I: Integer;
+begin
+  TextsChanging;
+  GetTexts(C, O);
+  if AText = '' then
+  begin
+    if (C <> nil) and C.HasDetailTxt then
+      C.DetailTxt.Clear;
+    ClearEmptyDescription(Item);
+    Exit;
+  end;
+  C := Item.Description.CompleteText;
+  C.DetailTxt.Clear;
+  T := C.DetailTxt.AddText;
+  I := 1;
+  while I <= Length(AText) + 1 do
+  begin
+    Line := NextLine(AText, I);
+    P := T.AddP;
+    if Line <> '' then
+      P.AddSpan.Value := Line
+    else
+      P.Present := True;
+  end;
 end;
 
 function TLandrixGaebItem.Qty: TLandrixGaebDecimal;

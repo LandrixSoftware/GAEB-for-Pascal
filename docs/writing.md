@@ -21,8 +21,10 @@ and `Diags` names every finding with its path.
   checked when writing: never rounded, a value with more significant digits than the target
   allows is refused (see `UPFracDig` below), trailing zeros beyond the digits of the target
   are dropped.
-- Texts: `Category.SetLbl`; text complements of the bidder with `SetBodyText` and
-  `SetBodyNumber`. Texts of items go through the syntax model (see the example `WriteBoQ`).
+- Texts: `Category.SetLbl`; `Item.SetShortText` and `Item.SetLongText` replace the text by one
+  paragraph per line, without formatting (text complements in the replaced text are lost; `''`
+  removes the text); text complements of the bidder with `SetBodyText` and `SetBodyNumber`.
+  Formatted texts (lists, tables, complements) go through the syntax model.
 - Structure: `Bill.AddCategory`, `Bill.AddItem`, `Bill.Remove`. Other views stay valid; if
   such a change fails (memory), all views are freed as by `Refresh`. A change made directly in
   the syntax model needs `Bill.Refresh`, which frees all views.

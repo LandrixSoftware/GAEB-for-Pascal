@@ -21,8 +21,10 @@ und `Diags` nennt jeden Befund mit seinem Pfad.
   wird beim Schreiben geprüft: nie gerundet, ein Wert mit mehr werttragenden Stellen, als das Ziel
   erlaubt, wird abgelehnt (siehe `UPFracDig` unten), Nullen am Ende über die Stellen des Ziels
   hinaus entfallen.
-- Texte: `Category.SetLbl`; Textergänzungen des Bieters mit `SetBodyText` und `SetBodyNumber`.
-  Texte von Positionen gehen über das Syntaxmodell (siehe das Beispiel `WriteBoQ`).
+- Texte: `Category.SetLbl`; `Item.SetShortText` und `Item.SetLongText` ersetzen den Text durch einen
+  Absatz je Zeile, ohne Formatierung (Textergänzungen im ersetzten Text gehen verloren; `''` entfernt
+  den Text); Textergänzungen des Bieters mit `SetBodyText` und `SetBodyNumber`. Formatierte Texte
+  (Listen, Tabellen, Ergänzungen) gehen über das Syntaxmodell.
 - Struktur: `Bill.AddCategory`, `Bill.AddItem`, `Bill.Remove`. Andere Sichten bleiben gültig;
   scheitert eine solche Änderung (Speicher), sind wie nach `Refresh` alle Sichten freigegeben. Eine
   Änderung direkt im Syntaxmodell braucht `Bill.Refresh`, das alle Sichten freigibt.
