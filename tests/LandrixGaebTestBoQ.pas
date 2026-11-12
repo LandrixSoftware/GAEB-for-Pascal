@@ -189,6 +189,9 @@ begin
     D := Sub.UP;
     for J := 1 to 6 do
       D := Sub.UPComp(J);
+    for J := 0 to Sub.ComplementCount - 1 do
+      Dummy := Dummy + Sub.Complements(J).MarkLbl + Sub.Complements(J).CaptionText +
+        Sub.Complements(J).BodyText + Sub.Complements(J).TailText;
   end;
   if (Dummy = #0) and D.HasValue and Q.Qty.HasValue and (R.Node = nil) then
     Check(False, 'never');

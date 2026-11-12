@@ -352,6 +352,7 @@ type
     function GetPath: TLandrixGaebString;
     function GetOZ: TLandrixGaebString;
     function GetIndex: TLandrixGaebString;
+    function GetOZKey: TLandrixGaebString;
   protected
     { The complete text and the outline text of the node (nil if absent).
       DE: Vollstaendiger Text und Kurztext des Knotens (nil, wenn nicht
@@ -385,6 +386,18 @@ type
     { RNoIndex of an item or markup item. DE: RNoIndex einer Position oder
       Zuschlagsposition. }
     property Index: TLandrixGaebString read GetIndex;
+    { Key of OZ and index for matching two documents: equal for the nodes
+      that the pair rules and LandrixGaebProcess match (numeric parts by
+      value, categories and items never equal); '' for remarks and
+      execution descriptions. A key to compare, not for display; its form
+      may change between releases.
+      DE: Schluessel aus OZ und Index fuer die Zuordnung zweier Dokumente:
+      gleich fuer die Knoten, die die Paarregeln und LandrixGaebProcess
+      einander zuordnen (Ziffernteile nach Wert, Bereiche und Positionen
+      nie gleich); '' bei Bemerkungen und Ausfuehrungsbeschreibungen. Ein
+      Schluessel zum Vergleichen, nicht zur Anzeige; seine Form kann sich
+      zwischen Versionen aendern. }
+    property OZKey: TLandrixGaebString read GetOZKey;
     { Plain text of the outline text (short text) and of the detail text
       (long text); for display only, not a format to parse.
       DE: Klartext des Kurztextes und des Langtextes; nur zur Anzeige, kein
@@ -495,11 +508,15 @@ type
     FItem: TLandrixGaebItem;
     FSyntaxNode: TLandrixGaebXmlSubDescr;
     FPosition: Integer;
+    FComplements: TObjectList;
     function GetQU: TLandrixGaebString;
     procedure SetQU(const AValue: TLandrixGaebString);
   public
     { Created by the item only. DE: Nur von der Position angelegt. }
     constructor Create(AItem: TLandrixGaebItem; ASyntaxNode: TLandrixGaebXmlSubDescr; APosition: Integer);
+    { Frees the view and its complement views. DE: Gibt die Sicht und ihre
+      Ergaenzungssichten frei. }
+    destructor Destroy; override;
     { The item. DE: Die Position. }
     property Item: TLandrixGaebItem read FItem;
     { The element of the syntax model. DE: Das Element des Syntaxmodells. }
@@ -529,6 +546,10 @@ type
     function LongText: TLandrixGaebString;
     function DetailTextNode: TLandrixGaebXmlNode;
     function OutlineTextNode: TLandrixGaebXmlNode;
+    { Text complements as at TLandrixGaebNode. DE: Textergaenzungen wie bei
+      TLandrixGaebNode. }
+    function ComplementCount: Integer;
+    function Complements(AIndex: Integer): TLandrixGaebTextComplement;
   end;
 
   { An item: quantities, prices, kinds and texts. Decimal values are read
@@ -646,6 +667,10 @@ type
     procedure SetMarkupPcnt(const AValue: TLandrixGaebDecimal);
     procedure SetITMarkup(const AValue: TLandrixGaebDecimal);
     procedure SetIT(const AValue: TLandrixGaebDecimal);
+    { Discount in percent. DE: Nachlass in Prozent. }
+    function DiscountPcnt: TLandrixGaebDecimal;
+    procedure SetDiscountPcnt(const AValue: TLandrixGaebDecimal);
+    procedure ClearDiscountPcnt;
     { As at TLandrixGaebItem. DE: Wie bei TLandrixGaebItem. }
     function AlternativeSerial: TLandrixGaebString;
     function IsAlternative: Boolean;
@@ -864,6 +889,12 @@ type
       Zuschlagspositionen in Dokumentreihenfolge. }
     property Root: TLandrixGaebNodeList read FRoot;
     property AllItems: TLandrixGaebNodeList read FAllItems;
+    { All nodes (categories, items, markup items, remarks, execution
+      descriptions) in document order.
+      DE: Alle Knoten (Bereiche, Positionen, Zuschlagspositionen,
+      Bemerkungen, Ausfuehrungsbeschreibungen) in Dokumentreihenfolge. }
+    function NodeCount: Integer;
+    function Nodes(AIndex: Integer): TLandrixGaebNode;
     { Finds a category (ACategory) or an item or markup item by OZ and
       index; numeric parts by value ('10' finds '0010'). gfrAmbiguous if
       the document has the OZ twice (ANode is then the first).
@@ -1399,6 +1430,13 @@ begin
   Result := TreeNodeOf(FTreeNode).Index;
 end;
 
+function TLandrixGaebNode.GetOZKey: TLandrixGaebString;
+begin
+  Result := '';
+  if Kind in [gnkCategory, gnkItem, gnkMarkupItem] then
+    Result := LandrixGaebMatchKey(TreeNodeOf(FTreeNode));
+end;
+
 procedure TLandrixGaebNode.GetTexts(out AComplete: TLandrixGaebXmlCompleteText;
   out AOutline: TLandrixGaebXmlOutlineText);
 begin
@@ -1472,22 +1510,30 @@ begin
     Result := LandrixGaebPlainText(DetailTextNode);
 end;
 
-function TLandrixGaebNode.ComplementCount: Integer;
+{ Views of the text complements of a detail and an outline text (owned
+  list). }
+function CollectComplements(ADetail, AOutline: TLandrixGaebXmlNode): TObjectList;
 var
   C: TComplementCollector;
 begin
-  if FComplements = nil then
-  begin
-    FComplements := TObjectList.Create;
-    C := TComplementCollector.Create;
-    try
-      C.FList := FComplements;
-      VisitNode(DetailTextNode, C);
-      VisitNode(OutlineTextNode, C);
-    finally
-      C.Free;
-    end;
+  Result := TObjectList.Create;
+  C := TComplementCollector.Create;
+  try
+    C.FList := Result;
+    VisitNode(ADetail, C);
+    VisitNode(AOutline, C);
+  except
+    C.Free;
+    Result.Free;
+    raise;
   end;
+  C.Free;
+end;
+
+function TLandrixGaebNode.ComplementCount: Integer;
+begin
+  if FComplements = nil then
+    FComplements := CollectComplements(DetailTextNode, OutlineTextNode);
   Result := Integer(FComplements.Count);
 end;
 
@@ -1987,6 +2033,26 @@ begin
   FPosition := APosition;
 end;
 
+destructor TLandrixGaebSubDescription.Destroy;
+begin
+  FComplements.Free;
+  inherited Destroy;
+end;
+
+function TLandrixGaebSubDescription.ComplementCount: Integer;
+begin
+  if FComplements = nil then
+    FComplements := CollectComplements(DetailTextNode, OutlineTextNode);
+  Result := Integer(FComplements.Count);
+end;
+
+function TLandrixGaebSubDescription.Complements(AIndex: Integer): TLandrixGaebTextComplement;
+begin
+  if (AIndex < 0) or (AIndex >= ComplementCount) then
+    raise ELandrixGaebError.Create('complement index out of range');
+  Result := TLandrixGaebTextComplement(FComplements[AIndex]);
+end;
+
 function TLandrixGaebSubDescription.Path: TLandrixGaebString;
 begin
   Result := FItem.Path + '/SubDescr[' + LandrixXmlUtf8ToWide(LandrixXmlStringToUtf8(IntToStr(FPosition))) + ']';
@@ -2148,6 +2214,21 @@ end;
 procedure TLandrixGaebMarkupItem.SetMarkupPcnt(const AValue: TLandrixGaebDecimal);
 begin
   Markup.Markup := AValue;
+end;
+
+function TLandrixGaebMarkupItem.DiscountPcnt: TLandrixGaebDecimal;
+begin
+  Result := Markup.DiscountPcnt;
+end;
+
+procedure TLandrixGaebMarkupItem.SetDiscountPcnt(const AValue: TLandrixGaebDecimal);
+begin
+  Markup.DiscountPcnt := AValue;
+end;
+
+procedure TLandrixGaebMarkupItem.ClearDiscountPcnt;
+begin
+  Markup.DiscountPcnt.Clear;
 end;
 
 procedure TLandrixGaebMarkupItem.SetITMarkup(const AValue: TLandrixGaebDecimal);
@@ -2830,6 +2911,16 @@ begin
     B.Children.Delete(I);
   end;
   Rebuild;
+end;
+
+function TLandrixGaebBillOfQuantities.NodeCount: Integer;
+begin
+  Result := Integer(FNodes.Count);
+end;
+
+function TLandrixGaebBillOfQuantities.Nodes(AIndex: Integer): TLandrixGaebNode;
+begin
+  Result := TLandrixGaebNode(FNodes[AIndex]);
 end;
 
 function TLandrixGaebBillOfQuantities.FindByOZ(const AOZ, AIndex: TLandrixGaebString; ACategory: Boolean;
