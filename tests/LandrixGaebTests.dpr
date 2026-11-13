@@ -36,6 +36,7 @@ uses
   LandrixGaebTestSelf,
   LandrixGaebTestTypes,
   LandrixGaebTestDetect,
+  LandrixGaebTestDA2000Parser,
   LandrixGaebTestXmlModel,
   LandrixGaebTestXmlReader,
   LandrixGaebTestXmlWriter,
@@ -65,6 +66,7 @@ begin
   LandrixGaebTestSelf.Register;
   LandrixGaebTestTypes.Register;
   LandrixGaebTestDetect.Register;
+  LandrixGaebTestDA2000Parser.Register;
   LandrixGaebTestXmlModel.Register;
   LandrixGaebTestXmlReader.Register;
   LandrixGaebTestXmlWriter.Register;
