@@ -431,6 +431,7 @@ LandrixGaebDiagnostics: tlandrixgaebdiagnostic field offset: int64
 LandrixGaebDiagnostics: tlandrixgaebdiagnostic field path: tlandrixgaebstring
 LandrixGaebDiagnostics: tlandrixgaebdiagnostic field ruleid: string
 LandrixGaebDiagnostics: tlandrixgaebdiagnostic field severity: tlandrixgaebseverity
+LandrixGaebDiagnostics: tlandrixgaebdiagnostic field xsdcode: string
 LandrixGaebDiagnostics: tlandrixgaebdiagnostics function addat(const string, tlandrixgaebseverity, const tlandrixgaebstring, integer, integer, int64, const string): tlandrixgaebdiagnostic
 LandrixGaebDiagnostics: tlandrixgaebdiagnostics function adddiagnostic(const string, tlandrixgaebseverity, const string): tlandrixgaebdiagnostic
 LandrixGaebDiagnostics: tlandrixgaebdiagnostics function countof(const string): integer
@@ -2181,6 +2182,19 @@ LandrixGaebXmlWriter: function landrixgaebxmlwritecollect(tlandrixgaebxmlgaeb, c
 LandrixGaebXmlWriter: function landrixgaebxmlwriteutf8(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, const tlandrixgaebxmlwriteoptions, tlandrixgaebdiagnostics): tlandrixxmlutf8
 LandrixGaebXmlWriter: procedure landrixgaebxmlwritefile(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, const string, const tlandrixgaebxmlwriteoptions, tlandrixgaebdiagnostics)
 LandrixGaebXmlWriter: procedure landrixgaebxmlwritestream(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, tstream, const tlandrixgaebxmlwriteoptions, tlandrixgaebdiagnostics)
+LandrixGaebXmlXsd: class tlandrixgaebxmlxsdschemas(tobject)
+LandrixGaebXmlXsd: function landrixgaebxmlxsdvalidatebill(tlandrixgaebxmlxsdschemas, tlandrixgaebbillofquantities, tlandrixgaebdiagnostics): boolean
+LandrixGaebXmlXsd: function landrixgaebxmlxsdvalidatebuffer(tlandrixgaebxmlxsdschemas, pointer, integer, tlandrixgaebdiagnostics, out tlandrixgaebdetection): boolean
+LandrixGaebXmlXsd: function landrixgaebxmlxsdvalidatefile(tlandrixgaebxmlxsdschemas, const string, tlandrixgaebdiagnostics, int64, out tlandrixgaebdetection): boolean
+LandrixGaebXmlXsd: function landrixgaebxmlxsdvalidatemodel(tlandrixgaebxmlxsdschemas, tlandrixgaebxmlgaeb, const tlandrixgaebtarget, tlandrixgaebdiagnostics): boolean
+LandrixGaebXmlXsd: function landrixgaebxmlxsdvalidatestream(tlandrixgaebxmlxsdschemas, tstream, tlandrixgaebdiagnostics, int64, out tlandrixgaebdetection): boolean
+LandrixGaebXmlXsd: function landrixgaebxmlxsdvalidatetarget(tlandrixgaebxmlxsdschemas, pointer, integer, const tlandrixgaebtarget, tlandrixgaebdiagnostics): boolean
+LandrixGaebXmlXsd: tlandrixgaebxmlxsdschemas constructor create(const string)
+LandrixGaebXmlXsd: tlandrixgaebxmlxsdschemas destructor destroy(); override
+LandrixGaebXmlXsd: tlandrixgaebxmlxsdschemas function hastarget(const tlandrixgaebtarget): boolean
+LandrixGaebXmlXsd: tlandrixgaebxmlxsdschemas function verify(tlandrixgaebdiagnostics): boolean
+LandrixGaebXmlXsd: tlandrixgaebxmlxsdschemas property folder read
+LandrixGaebXmlXsd: tlandrixgaebxmlxsdschemas property folder: string
 LandrixXmlBase: class elandrixxmlerror(exception)
 LandrixXmlBase: class tlandrixxmlbuffer(tobject)
 LandrixXmlBase: const landrixxmlhashseed (expression)
