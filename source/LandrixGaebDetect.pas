@@ -35,6 +35,8 @@
     GAEB-DET-008 fatal    XML is not well-formed
     GAEB-DET-009 warning  DP or GAEBInfo/Version not found at the beginning
     GAEB-DET-010 information  schema edition not recognised from VersDate
+    GAEB-DET-011 warning  DP, Version or VersDate holds child elements instead
+                          of a value (not used for the detection)
 
   DE: Die Meldungen oben haben dieselben Regelkennungen; die Texte sind
   englisch und enthalten keinen Dateiinhalt. }
@@ -350,6 +352,25 @@ var
   Local: TLandrixXmlUtf8;
   NsVersionValue: TLandrixGaebVersion;
   DPPhase: TLandrixGaebPhase;
+
+  { The value of the current element; an element with child elements is
+    well-formed XML but no value: GAEB-DET-011, '' }
+  function ElementText(const AName: string): string;
+  begin
+    try
+      Result := LandrixXmlUtf8ToString(Reader.ReadElementTextUtf8);
+    except
+      on E: ELandrixXmlError do
+      begin
+        if E.Code <> xecUnexpectedElement then
+          raise;
+        AddDiag(ADiagnostics, 'GAEB-DET-011', gsWarning, E.Line, E.Column, E.Offset,
+          'element ' + AName + ' holds child elements instead of a value; not used for the detection');
+        Result := '';
+      end;
+    end;
+  end;
+
 begin
   RootSeen := False;
   InInfo := False;
@@ -400,14 +421,14 @@ begin
               end
               else if (Reader.Depth = 2) and InInfo and (Local = 'DP') then
                 { 3.3 X61 (beta) carries DP in GAEBInfo }
-                DPText := LandrixXmlUtf8ToString(Reader.ReadElementTextUtf8)
+                DPText := ElementText('DP')
               else if (Reader.Depth = 2) and InInfo and (Local = 'Version') then
-                VersionText := LandrixXmlUtf8ToString(Reader.ReadElementTextUtf8)
+                VersionText := ElementText('Version')
               else if (Reader.Depth = 2) and InInfo and (Local = 'VersDate') then
-                VersDateText := LandrixXmlUtf8ToString(Reader.ReadElementTextUtf8)
+                VersDateText := ElementText('VersDate')
               else if (Reader.Depth = 2) and (not InInfo) and (Local = 'DP') then
               begin
-                DPText := LandrixXmlUtf8ToString(Reader.ReadElementTextUtf8);
+                DPText := ElementText('DP');
                 Done := True;
               end;
             end;

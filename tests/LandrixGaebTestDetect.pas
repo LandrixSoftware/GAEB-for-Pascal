@@ -172,6 +172,38 @@ begin
   end;
 end;
 
+{ Version, VersDate or DP with child elements: well-formed XML, but no
+  value; reported with GAEB-DET-011, never as not well-formed. }
+procedure TestXmlValueWithChildren;
+var
+  Diags: TLandrixGaebDiagnostics;
+  R: TLandrixGaebDetection;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    R := Detect(Xml('http://www.gaeb.de/GAEB_DA_XML/DA83/3.3', '<b/>3.3', '2021-05', '83'), Diags);
+    Check(R.Accepted, 'Version with a child: accepted');
+    CheckEquals(0, Diags.CountOf('GAEB-DET-008'), 'Version with a child: not reported as not well-formed');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-011'), 'Version with a child: GAEB-DET-011');
+    Check((R.Target.Version = gv33) and (R.Target.Phase = gp83), 'Version with a child: namespace and DP decide');
+    Diags.Clear;
+    R := Detect(Xml('http://www.gaeb.de/GAEB_DA_XML/DA83/3.3', '3.3', '<b>2021-05</b>', '83'), Diags);
+    Check(R.Accepted, 'VersDate with a child: accepted');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-011'), 'VersDate with a child: GAEB-DET-011');
+    Diags.Clear;
+    R := Detect(Xml('http://www.gaeb.de/GAEB_DA_XML/DA83/3.3', '3.3', '2021-05', '<b>83</b>'), Diags);
+    Check(R.Accepted, 'DP with a child: accepted');
+    CheckEquals(0, Diags.CountOf('GAEB-DET-008'), 'DP with a child: not reported as not well-formed');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-011'), 'DP with a child: GAEB-DET-011');
+    Diags.Clear;
+    R := Detect(Xml('http://www.gaeb.de/GAEB_DA_XML/200407', '<b/>', '2009-12', '83'), Diags);
+    CheckEquals(0, Diags.CountOf('GAEB-DET-008'), '3.1 Version with a child: not reported as not well-formed');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-011'), '3.1 Version with a child: GAEB-DET-011');
+  finally
+    Diags.Free;
+  end;
+end;
+
 procedure TestXml31;
 var
   Diags: TLandrixGaebDiagnostics;
@@ -591,6 +623,7 @@ begin
   RegisterTest('Detect.XmlDPDecidesSubPhase', TestXmlDPDecidesSubPhase);
   RegisterTest('Detect.XmlMismatches', TestXmlMismatches);
   RegisterTest('Detect.Xml31', TestXml31);
+  RegisterTest('Detect.XmlValueWithChildren', TestXmlValueWithChildren);
   RegisterTest('Detect.XmlDPLocations', TestXmlDPLocations);
   RegisterTest('Detect.XmlTruncatedPrefix', TestXmlTruncatedPrefix);
   RegisterTest('Detect.XmlRejected', TestXmlRejected);
