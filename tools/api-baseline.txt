@@ -400,6 +400,16 @@ LandrixGaebBoQ: tlandrixgaebvatpart field totalnet: tlandrixgaebdecimal
 LandrixGaebBoQ: tlandrixgaebvatpart field vatamount: tlandrixgaebdecimal
 LandrixGaebBoQ: tlandrixgaebvatpart field vatpcnt: tlandrixgaebdecimal
 LandrixGaebBoQ: type tlandrixgaebnodekinds = set of tlandrixgaebnodekind
+LandrixGaebConversion: enum tlandrixgaebconversionstate
+LandrixGaebConversion: enum tlandrixgaebconversionstate value gcrfailed
+LandrixGaebConversion: enum tlandrixgaebconversionstate value gcrnotrun
+LandrixGaebConversion: enum tlandrixgaebconversionstate value gcrpassed
+LandrixGaebConversion: function landrixgaebcheckconversion(tlandrixgaebbillofquantities, const tlandrixgaebtarget, tlandrixgaebdiagnostics, tstream): tlandrixgaebconversionresult
+LandrixGaebConversion: record tlandrixgaebconversionresult
+LandrixGaebConversion: tlandrixgaebconversionresult field outputtarget: tlandrixgaebtarget
+LandrixGaebConversion: tlandrixgaebconversionresult field rules: tlandrixgaebconversionstate
+LandrixGaebConversion: tlandrixgaebconversionresult field structure: tlandrixgaebconversionstate
+LandrixGaebConversion: tlandrixgaebconversionresult field writing: tlandrixgaebconversionstate
 LandrixGaebDetect: const landrixgaebdefaultmaxsize (integer)
 LandrixGaebDetect: enum tlandrixgaebformat
 LandrixGaebDetect: enum tlandrixgaebformat value gfda2000
