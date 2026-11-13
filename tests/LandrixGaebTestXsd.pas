@@ -18,6 +18,10 @@
   from Specification/ and skip when it is missing. Local files under
   tests/data/local are only counted, never printed.
 
+  Files of GAEB DA XML 3.0 and 3.1 have no content model check; they are
+  validated through LandrixGaebXmlXsd only (committed samples, targeted
+  invalid ones and the local corpus).
+
   With the parameter -export=<folder> every document validated here is
   also written to that folder (numbered, never named after its source),
   with a line in index.txt: file, schema below Specification/, the verdict
@@ -230,8 +234,9 @@ begin
   end;
 end;
 
-{ Writes a validated document and its index line when exporting. }
-procedure ExportDocument(const ASource: TLandrixXmlUtf8; AIndex: Integer; AValid: Boolean);
+{ Writes a validated document and its index line when exporting; ASchema
+  is the main schema below Specification/. }
+procedure ExportDocumentAs(const ASource: TLandrixXmlUtf8; const ASchema: string; AValid: Boolean);
 const
   Verdicts: array[Boolean] of string = ('invalid', 'valid');
   Origins: array[Boolean] of string = ('repo', 'local');
@@ -250,8 +255,56 @@ begin
   finally
     F.Free;
   end;
-  AppendLine(ExportFolder + 'index.txt', LandrixXmlStringToUtf8(Name + #9 + SchemaPath(AIndex) + #9 +
+  AppendLine(ExportFolder + 'index.txt', LandrixXmlStringToUtf8(Name + #9 + ASchema + #9 +
     Verdicts[AValid] + #9 + Origins[ExportLocal]));
+end;
+
+procedure ExportDocument(const ASource: TLandrixXmlUtf8; AIndex: Integer; AValid: Boolean);
+begin
+  ExportDocumentAs(ASource, SchemaPath(AIndex), AValid);
+end;
+
+{ The main schema of a 3.0/3.1 target below Specification/ (the layout of
+  the GAEB packages there), '' for any other target. }
+function Schema3xPath(const ATarget: TLandrixGaebTarget): string;
+begin
+  Result := '';
+  if ATarget.Version = gv30 then
+    Result := 'XML-3.0/Schema/GAEB_DA_XML.xsd'
+  else if (ATarget.Version = gv31) and (ATarget.Edition = ge2007_11) then
+  begin
+    if ATarget.Phase = gp84 then
+      Result := 'XML-3.1/2007-11-20/Schema/GAEB_DA_XML_84.xsd'
+    else
+      Result := 'XML-3.1/2007-11-20/Schema/GAEB_DA_XML.xsd';
+  end
+  else if (ATarget.Version = gv31) and (ATarget.Edition = ge2009_12) then
+  begin
+    if ATarget.Phase = gp84 then
+      Result := 'XML-3.1/2009-12/Schema/GAEB_DA_XML_84 3.1 2009-12.xsd'
+    else
+      Result := 'XML-3.1/2009-12/Schema/GAEB_DA_XML 3.1 2009-12.xsd';
+  end;
+end;
+
+{ Validates a 3.0/3.1 document through LandrixGaebXmlXsd and exports it with
+  the verdict; ADetection gets the detected target. A document that is not
+  well-formed counts as invalid. }
+function Xsd3xValid(const ASource: TLandrixXmlUtf8; ADiagnostics: TLandrixGaebDiagnostics;
+  out ADetection: TLandrixGaebDetection): Boolean;
+begin
+  try
+    Result := LandrixGaebXmlXsdValidateBuffer(ApiSchemasOf, Pointer(ASource), Integer(Length(ASource)),
+      ADiagnostics, ADetection);
+  except
+    on ELandrixXmlError do
+    begin
+      ADetection := LandrixGaebDetectBuffer(Pointer(ASource), Integer(Length(ASource)), False, nil);
+      ExportDocumentAs(ASource, Schema3xPath(ADetection.Target), False);
+      raise;
+    end;
+  end;
+  ExportDocumentAs(ASource, Schema3xPath(ADetection.Target), Result);
 end;
 
 function XsdValidate(const ASource: TLandrixXmlUtf8; AIndex: Integer; out AError: string): Boolean;
@@ -613,10 +666,39 @@ begin
   end;
 end;
 
+{ A local 3.0/3.1 file: validated when its schema set is known (not the
+  trade phases, not DA 88). True if it was validated; AValid gets the
+  verdict. }
+function Local3x(const ASource: TLandrixXmlUtf8; out AValid: Boolean): Boolean;
+var
+  Det: TLandrixGaebDetection;
+  Diags: TLandrixGaebDiagnostics;
+begin
+  AValid := False;
+  Det := LandrixGaebDetectBuffer(Pointer(ASource), Integer(Length(ASource)), False, nil);
+  Result := Det.Accepted and (Det.Format = gfXml) and (Det.Target.Version in [gv30, gv31]) and
+    ApiSchemasOf.HasTarget(Det.Target);
+  if not Result then
+    Exit;
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    try
+      AValid := Xsd3xValid(ASource, Diags, Det);
+    except
+      on ELandrixXmlError do
+        AValid := False;
+    end;
+    CheckEquals(0, Diags.CountOf('GAEB-XSD-003'), 'local 3.0/3.1: the schema files are the GAEB files');
+  finally
+    Diags.Free;
+  end;
+end;
+
 procedure TestLocal;
 var
   Files: TStringList;
   I, T, Checked, Agree, Valid, Written, WrittenValid, Failed, Converted, ConvertedValid: Integer;
+  Checked3x, Valid3x: Integer;
   Source, Output: TLandrixXmlUtf8;
   XsdError, FirstFailure: string;
   XsdOk, CheckOk: Boolean;
@@ -641,6 +723,8 @@ begin
   Failed := 0;
   Converted := 0;
   ConvertedValid := 0;
+  Checked3x := 0;
+  Valid3x := 0;
   FirstFailure := '';
   ExportLocal := True;
   Files := TStringList.Create;
@@ -652,7 +736,15 @@ begin
       Source := ReadFileBytes(Files[I]);
       T := TargetOfSource(Source);
       if T < 0 then
+      begin
+        if Local3x(Source, XsdOk) then
+        begin
+          Inc(Checked3x);
+          if XsdOk then
+            Inc(Valid3x);
+        end;
         Continue;
+      end;
       Inc(Checked);
       LocalVerdicts(Source, T, XsdOk, CheckOk);
       if XsdOk then
@@ -698,7 +790,8 @@ begin
   end;
   WriteLn('  Local.Xsd: ', Checked, ' file(s), ', Valid, ' XSD-valid, check agrees on ', Agree,
     '; ', Written, ' written, ', WrittenValid, ' of them XSD-valid; ', Converted, ' converted 3.2 -> 3.3, ',
-    ConvertedValid, ' of them XSD-valid; ', Failed, ' failed');
+    ConvertedValid, ' of them XSD-valid; ', Checked3x, ' file(s) 3.0/3.1, ', Valid3x, ' of them XSD-valid; ',
+    Failed, ' failed');
   Check(Checked > 0, 'local files found');
   CheckEquals(0, Failed, 'no exception (first: ' + FirstFailure + ')');
   CheckEquals(Checked, Agree, 'the check agrees with the XSD on every local file');
@@ -801,7 +894,7 @@ var
 begin
   Diags := TLandrixGaebDiagnostics.Create;
   try
-    Ok := LandrixGaebXmlXsdValidateBuffer(ApiSchemasOf, Pointer(ASource), Integer(Length(ASource)), Diags, Det);
+    Ok := Xsd3xValid(ASource, Diags, Det);
     Check((Det.Target.Version = AVersion) and (Det.Target.Edition = AEdition) and (Det.Target.Phase = APhase),
       AContext + ': detected target');
     Check(Ok = AValid, AContext + ': verdict: ' + Diags.ToText);
@@ -841,6 +934,12 @@ begin
   CheckLegacy(ReplaceFirst(ReplaceFirst(Version3x('v30.x81'), '<NamePrj>', '<NameProject>'),
     '</NamePrj>', '</NameProject>'), gv30, ge2004_07, gp81,
     False, '3.0 X81 with an unknown element');
+  CheckLegacy(ReplaceFirst(Version3x('v31-2009-12.x84'), 'ID="I2"', 'ID="I1"'), gv31, ge2009_12, gp84,
+    False, '3.1/2009-12 X84 with a repeated ID');
+  CheckLegacy(ReplaceFirst(Bid2007, '<Type>BoQLevel</Type>', '<Type>Level</Type>'), gv31, ge2007_11, gp84,
+    False, '3.1/2007-11 X84 with a value outside the enumeration');
+  CheckLegacy(ReplaceFirst(Request2007, '<BoQInfo>', '<BoQInfo>text'), gv31, ge2007_11, gp83,
+    False, '3.1/2007-11 X83 with text in element content');
   { a model or a bill is written: 3.x cannot be written }
   Source := Version3x('v31-2009-12.x83');
   G := LandrixGaebXmlReadBuffer(Pointer(Source), Integer(Length(Source)), nil, Det);

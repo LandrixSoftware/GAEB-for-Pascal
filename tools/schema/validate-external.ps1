@@ -47,6 +47,18 @@ function Get-SchemaSet([string]$RelPath) {
   $set = New-Object System.Xml.Schema.XmlSchemaSet
   $set.XmlResolver = New-Object System.Xml.XmlUrlResolver
   $set.add_ValidationEventHandler({ param($s, $e) $errors.Add("$($e.Severity): $($e.Message)") }.GetNewClosure())
+  # 3.0/3.1 import xml.xsd and the xmldsig schema from their folder; both
+  # carry a DOCTYPE (xmldsig a DTD), which the import would reject. They are
+  # added first with the DTD skipped, as the LandrixXml reader does.
+  $mainText = [System.IO.File]::ReadAllText($path)
+  foreach ($next in @('xml.xsd', 'xmldsig-core-schema.xsd')) {
+    $nextPath = Join-Path (Split-Path $path) $next
+    if (-not ($mainText.Contains("schemaLocation=`"$next`"") -and (Test-Path $nextPath))) { continue }
+    $nextSettings = New-Object System.Xml.XmlReaderSettings
+    $nextSettings.DtdProcessing = [System.Xml.DtdProcessing]::Ignore
+    $nextReader = [System.Xml.XmlReader]::Create($nextPath, $nextSettings)
+    try { [void]$set.Add([NullString]::Value, $nextReader) } finally { $nextReader.Close() }
+  }
   $settings = New-Object System.Xml.XmlReaderSettings
   $settings.DtdProcessing = [System.Xml.DtdProcessing]::Prohibit
   $reader = [System.Xml.XmlReader]::Create($path, $settings)
