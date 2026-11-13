@@ -207,6 +207,22 @@ try {
 
   # ---- 4. full matrix ----
   Add-Section 'Matrix (tools/build.ps1 -Full)'
+  # the matrix runs WSL and several compilers at once; with little free
+  # memory WSL crashed once and FPC Win32 ran out of memory (not the library:
+  # its peak stays below 100 MB; the crash came with 3.3 GB of free commit):
+  # warn, the run goes on
+  try {
+    $os = Get-CimInstance Win32_OperatingSystem
+    $freePhysical = [math]::Floor($os.FreePhysicalMemory / 1KB)
+    $freeCommit = [math]::Floor($os.FreeVirtualMemory / 1KB)
+    Add-Line "Memory before the matrix: $freePhysical MB physical, $freeCommit MB commit free"
+    if ($freeCommit -lt 6144) {
+      $Warnings.Add("little free commit memory before the matrix ($freeCommit MB); close other programs and agents")
+      Write-Host "  little free commit memory ($freeCommit MB): close other programs and agents" -ForegroundColor Yellow
+    }
+  } catch {
+    $Warnings.Add('free memory not known (query failed)')
+  }
   $matrixStart = Get-Date
   $r = Invoke-Logged 'build.ps1' { pwsh -NoProfile -File tools/build.ps1 -Toolchains $Toolchains -Full }
   $current = ''
