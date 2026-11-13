@@ -191,6 +191,15 @@ begin
     Check(not Run(Doc(Item('ID="I1" RNoPart="0010"', '<Qty>1<b/></Qty><QU>m</QU>')), Diags),
       'element in simple content');
     CheckEquals(1, Diags.CountOf('GAEB-CHK-001'), 'child of a simple element: ' + Diags.ToText);
+    { rule 8 of the item table (a change order item has CONo) is part of the
+      schema: CONo and COStatus only come together }
+    Check(Run(Doc(Item('ID="I1" RNoPart="0010"', '<CONo>1</CONo><COStatus>Recog</COStatus><Qty>1</Qty>' +
+      '<QU>m</QU>' + Desc)), Diags), 'change order item: ' + Diags.ToText);
+    Check(not Run(Doc(Item('ID="I1" RNoPart="0010"', '<COStatus>Recog</COStatus><Qty>1</Qty><QU>m</QU>' +
+      Desc)), Diags), 'COStatus without CONo');
+    CheckEquals(1, Diags.CountOf('GAEB-CHK-001'), 'COStatus without CONo: ' + Diags.ToText);
+    Check(not Run(Doc(Item('ID="I1" RNoPart="0010"', '<CONo>1</CONo><Qty>1</Qty><QU>m</QU>' + Desc)), Diags),
+      'CONo without COStatus');
   finally
     Diags.Free;
   end;
