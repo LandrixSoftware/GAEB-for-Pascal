@@ -124,6 +124,9 @@ function Invoke-Examples([string]$Name, [string]$Base, $Result) {
   Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $exOut
   New-Item -ItemType Directory -Force $exOut | Out-Null
   $failed = 0
+  # an example listed twice (other arguments) is compiled once: a second
+  # compile can find its executable still held by the virus scanner
+  $compiled = @{}
   foreach ($ex in $Examples) {
     $dpr = "examples/$($ex.Name)/$($ex.Name).dpr"
     if (-not (Test-Path $dpr)) {
@@ -132,6 +135,12 @@ function Invoke-Examples([string]$Name, [string]$Base, $Result) {
       continue
     }
     $runCmd = $null
+    if ($compiled.ContainsKey($ex.Name)) {
+      if ($Base -match '^fpc\d+-linux$') {
+        $argText = ($ex.Args | ForEach-Object { "'$_'" }) -join ' '
+        $runCmd = { & wsl.exe -e bash -lc "cd '$WslRoot/$exOut' && './$($ex.Name)' $argText" }
+      }
+    } else {
     switch -Regex ($Base) {
       '^fpc(\d+)-linux$' {
         $fpc = "~/.local/bin/fpc$($Matches[1])"
@@ -168,6 +177,8 @@ function Invoke-Examples([string]$Name, [string]$Base, $Result) {
       Write-Host "FAIL example $($ex.Name): build" -ForegroundColor Red
       $failed++
       continue
+    }
+    $compiled[$ex.Name] = $true
     }
     if ($runCmd) {
       $runLog = & $runCmd 2>&1

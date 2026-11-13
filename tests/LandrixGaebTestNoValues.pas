@@ -81,7 +81,10 @@ begin
   for I := 0 to High(LandrixGaebXmlGrammarTexts) do
     if LandrixGaebXmlGrammarTexts[I] = S then
       Exit;
-  Result := S = LandrixGaebXmlGrammarRootName;
+  { the versions 3.0 and 3.1 are read but have no grammar; like the version
+    enumerations of 3.2 and 3.3 they are vocabulary (and appear in validator
+    codes such as cvc-type.3.1.3) }
+  Result := (S = LandrixGaebXmlGrammarRootName) or (S = '3.0') or (S = '3.1');
 end;
 
 function TrimUtf8(const S: TLandrixXmlUtf8): TLandrixXmlUtf8;

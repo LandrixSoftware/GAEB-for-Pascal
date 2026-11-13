@@ -23,6 +23,10 @@
      them).
   Exit code 0 if no stage found an error, 1 otherwise.
 
+  For a file of GAEB DA XML 3.0 or 3.1, which is read only, stages 1 and 2
+  are not available; -xsd=<folder> validates it against its original
+  schemas.
+
   With -convert=3.2|3.3 the file is not checked as it is but as it would
   be saved in that version (same phase), for example a file of GAEB DA XML
   3.0 or 3.1, which is read only (LandrixGaebConversion): writing (losses),
@@ -92,6 +96,21 @@ var
   Det: TLandrixGaebDetection;
   Ok: Boolean;
 begin
+  { GAEB DA XML 3.0 and 3.1 are read only: no content model check and no
+    business rules of their own (-convert= checks them as 3.2 or 3.3), but
+    the XSD validation against their original schemas }
+  Det := LandrixGaebDetectFile(AFileName, nil, 0);
+  if Det.Accepted and (Det.Format = gfXml) and (Det.Target.Version in [gv30, gv31]) then
+  begin
+    WriteLn(AFileName, ': GAEB DA XML ', TargetText(Det.Target));
+    WriteLn('  content model check and business rules: not available for this version (see -convert=)');
+    if ASchemas <> nil then
+      WriteLn('  XSD validation: ', Passed(LandrixGaebXmlXsdValidateFile(ASchemas, AFileName, ADiagnostics, 0,
+        Det)));
+    Result := LandrixGaebXmlReadFile(AFileName, ADiagnostics, 0, Det);
+    ATarget := Det.Target;
+    Exit;
+  end;
   Ok := LandrixGaebXmlCheckFile(AFileName, ADiagnostics, 0, Det);
   WriteLn(AFileName, ': GAEB DA XML ', TargetText(Det.Target));
   WriteLn('  content model check: ', Passed(Ok));
@@ -207,8 +226,11 @@ begin
       if Length(Files) = 2 then
       begin
         Second := CheckFile(Files[1], Diags, Schemas, SecondTarget);
-        WriteLn('pair rules: ', Passed(LandrixGaebCheckPair(First, FirstTarget, Second, SecondTarget,
-          Diags)));
+        if (FirstTarget.Version in [gv30, gv31]) or (SecondTarget.Version in [gv30, gv31]) then
+          WriteLn('pair rules: not available for this version')
+        else
+          WriteLn('pair rules: ', Passed(LandrixGaebCheckPair(First, FirstTarget, Second, SecondTarget,
+            Diags)));
       end;
     finally
       Schemas.Free;

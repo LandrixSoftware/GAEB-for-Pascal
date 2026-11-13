@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Writes source/LandrixGaebXmlXsdSums.pas: the SHA-256 of every schema file
 of the published contexts in tools/schema/manifest.json (main schemas and
-their Lib files), for the checksum check of LandrixGaebXmlXsd. The schemas
-themselves are not part of the repository; only their names and checksums
-are.
+their Lib files) and of the validation sets of GAEB DA XML 3.0 and 3.1
+(main schema, xml.xsd and xmldsig-core-schema.xsd per set), for the
+checksum check of LandrixGaebXmlXsd. The schemas themselves are not part
+of the repository; only their names and checksums are.
 
 Usage:
   python tools/schema/gen-xsd-sums.py           write the unit
@@ -42,11 +43,13 @@ HEADER = """{
   und erneut ausfuehren. }
 
 { SHA-256 of the official GAEB DA XML schema files of every published
-  target (main schema and Lib file), as published by GAEB. Only names and
+  target (main schema and Lib file), as published by GAEB, and of the
+  schema sets of GAEB DA XML 3.0 and 3.1 (validation only). Only names and
   checksums, not the schemas.
   DE: SHA-256 der offiziellen GAEB-DA-XML-Schemadateien jedes
   veroeffentlichten Ziels (Hauptschema und Lib-Datei), wie vom GAEB
-  veroeffentlicht. Nur Namen und Pruefsummen, nicht die Schemas. }
+  veroeffentlicht, und der Schemasaetze von GAEB DA XML 3.0 und 3.1 (nur
+  zur Pruefung). Nur Namen und Pruefsummen, nicht die Schemas. }
 
 { API: internal. May change in any release, also after 1.0; use the
   stable units instead (see README).
@@ -84,6 +87,71 @@ def files():
     return sorted(result.items())
 
 
+SHA = r"^[0-9a-f]{64}$"
+SET_NAME = r"^[A-Za-z0-9_. \-]+$"
+
+
+def sets():
+    m = json.load(io.open(MANIFEST, encoding="utf-8"))
+    result = []
+    for v in m.get("validationSets", []):
+        f = v["files"]
+        for name in (v["main"], "xml.xsd", "xmldsig-core-schema.xsd"):
+            if name not in f or not re.match(SHA, f[name]) or not re.match(SET_NAME, name):
+                raise SystemExit("gen-xsd-sums: unexpected entry %s in %s" % (name, v["id"]))
+        for dp in v["phases"]:
+            if not re.match(r"^[0-9]{2}$", dp):
+                raise SystemExit("gen-xsd-sums: unexpected phase %s in %s" % (dp, v["id"]))
+        if not re.match(r"^3\.[01]$", v["version"]) or not re.match(r"^[0-9]{4}-[0-9]{2}$", v["edition"]):
+            raise SystemExit("gen-xsd-sums: unexpected version or edition in %s" % v["id"])
+        result.append(v)
+    return result
+
+
+def pascal_array(name, comment, values):
+    kind = "Boolean" if isinstance(values[0], bool) else "string"
+    items = []
+    for v in values:
+        if isinstance(v, bool):
+            items.append("    %s" % ("True" if v else "False"))
+        else:
+            items.append("    '%s'" % v)
+    return ("  { %s }\n  %s: array[0..%d] of %s = (\n%s\n  );\n"
+            % (comment, name, len(values) - 1, kind, ",\n".join(items)))
+
+
+def set_text():
+    vs = sets()
+    if not vs:
+        return ""
+    parts = [
+        "  { Schema sets of GAEB DA XML 3.0 and 3.1 (validation only): one main\n"
+        "    schema each, with xml.xsd and xmldsig-core-schema.xsd next to it.\n"
+        "    DE: Schemasaetze von GAEB DA XML 3.0 und 3.1 (nur zur Pruefung): je\n"
+        "    ein Hauptschema, daneben xml.xsd und xmldsig-core-schema.xsd. }\n"
+        "  LandrixGaebXsdSetCount = %d;\n" % len(vs),
+        pascal_array("LandrixGaebXsdSetVersions", "Version. DE: Version.", [v["version"] for v in vs]),
+        pascal_array("LandrixGaebXsdSetEditions", "Edition. DE: Ausgabe.", [v["edition"] for v in vs]),
+        pascal_array("LandrixGaebXsdSetPhases", "Phases (DP), each enclosed in blanks.\n"
+                     "    DE: Phasen (DP), jede in Leerzeichen eingeschlossen.",
+                     [" " + " ".join(v["phases"]) + " " for v in vs]),
+        pascal_array("LandrixGaebXsdSetMains", "Main schema. DE: Hauptschema.", [v["main"] for v in vs]),
+        pascal_array("LandrixGaebXsdSetMainSums", "SHA-256 of the main schema.\n"
+                     "    DE: SHA-256 des Hauptschemas.", [v["files"][v["main"]] for v in vs]),
+        pascal_array("LandrixGaebXsdSetXmlSums", "SHA-256 of xml.xsd. DE: SHA-256 von xml.xsd.",
+                     [v["files"]["xml.xsd"] for v in vs]),
+        pascal_array("LandrixGaebXsdSetDsigSums", "SHA-256 of xmldsig-core-schema.xsd.\n"
+                     "    DE: SHA-256 von xmldsig-core-schema.xsd.",
+                     [v["files"]["xmldsig-core-schema.xsd"] for v in vs]),
+        pascal_array("LandrixGaebXsdSetOfficial", "True if GAEB offers the files (gaeb.de); False\n"
+                     "    for a reference copy of an older GAEB distribution.\n"
+                     "    DE: True, wenn das GAEB die Dateien anbietet (gaeb.de); False\n"
+                     "    fuer eine Referenzkopie einer aelteren GAEB-Distribution.",
+                     [bool(v["official"]) for v in vs]),
+    ]
+    return "\n" + "\n".join(parts)
+
+
 def unit_text():
     items = files()
     n = len(items)
@@ -99,6 +167,7 @@ def unit_text():
     out.append("  LandrixGaebXsdSumValues: array[0..%d] of string = (\n" % (n - 1))
     out.append(",\n".join("    '%s'" % sha for _, sha in items))
     out.append("\n  );\n")
+    out.append(set_text())
     out.append(FOOTER)
     return "".join(out)
 

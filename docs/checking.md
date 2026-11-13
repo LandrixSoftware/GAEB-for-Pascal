@@ -41,9 +41,10 @@ gaeb.de into a folder of your own, for example with
 pwsh tools/fetch-gaeb-xsd.ps1 -Folder C:\GAEB\Schemas
 ```
 
-The script fetches the packages for GAEB DA XML 3.2 (2013-10) and 3.3 (2021-05) and checks every
-file against the SHA-256 the library knows. GAEB no longer offers 3.3 edition 2019-11; copy those
-schemas into the folder yourself if you need them.
+The script fetches the packages for GAEB DA XML 3.2 (2013-10), 3.3 (2021-05) and 3.1 (2007-11 and
+2009-12) and checks every file against the SHA-256 the library knows. GAEB no longer offers 3.3
+edition 2019-11 and 3.0 (2004-07); copy those schemas into the folder yourself if you need them
+(3.0: `GAEB_DA_XML.xsd` with its `xml.xsd` and `xmldsig-core-schema.xsd` in a folder of its own).
 
 ```pascal
 Schemas := TLandrixGaebXmlXsdSchemas.Create('C:\GAEB\Schemas');
@@ -58,6 +59,15 @@ end;
 
 - A main schema (`GAEB_DA_XML_84_3.3_2021-05.xsd`) is searched by name anywhere below the
   folder; its Lib file must lie next to it. A main schema found twice is an error.
+- Files of GAEB DA XML 3.0 and 3.1 (from 1.2.0) are validated as they are read, against their
+  own original schemas: `ValidateFile`, `ValidateStream`, `ValidateBuffer` and `ValidateTarget`.
+  One main schema serves several phases (X84 has its own); `xml.xsd` and
+  `xmldsig-core-schema.xsd` must lie next to it. 3.0 and 3.1 (2007-11) both name their main
+  schema `GAEB_DA_XML.xsd`: such a file is only used if it is the GAEB file of the version, a
+  changed one is never assigned to a version by guessing. The checksums of 3.0 are those of a
+  reference copy of an older GAEB distribution. `ValidateModel` and `ValidateBill` write first,
+  and 3.0/3.1 cannot be written: they raise for these targets (a bill read from 3.x is validated
+  as its `OutputTarget`, 3.3).
 - A missing or unloadable schema raises `ELandrixGaebError`; `False` always means the document
   is invalid. `HasTarget` asks without loading.
 - Findings are `GAEB-XSD-001` (error); the validator code (Xerces, e.g.

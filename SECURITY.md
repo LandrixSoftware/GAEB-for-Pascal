@@ -44,7 +44,10 @@ nicht.
 
 Der Schemaordner der XSD-Prüfung (`LandrixGaebXmlXsd`) ist dagegen vertrauenswürdige Eingabe der
 Anwendung: Er sollte nur die offiziellen GAEB-Schemas enthalten und nicht von Dritten
-beschreibbar sein. Schemadokumente werden nur aus diesem Ordner gelesen, nie aus dem Netz.
+beschreibbar sein. Schemadokumente werden nur aus diesem Ordner gelesen, nie aus dem Netz. Die
+Schemas von GAEB DA XML 3.0 und 3.1 importieren `xmldsig-core-schema.xsd`, das mit einer
+Dokumenttyp-Deklaration beginnt; der XML-Leser überspringt sie, Entitäten daraus werden nicht
+aufgelöst.
 
 ## English
 
@@ -87,4 +90,6 @@ Validation does not replace these checks.
 
 The schema folder of the XSD validation (`LandrixGaebXmlXsd`), in contrast, is trusted input of
 the application: it should hold only the official GAEB schemas and not be writable by third
-parties. Schema documents are read only from that folder, never from the network.
+parties. Schema documents are read only from that folder, never from the network. The schemas of
+GAEB DA XML 3.0 and 3.1 import `xmldsig-core-schema.xsd`, which starts with a document type
+declaration; the XML reader skips it, entities from it are not resolved.

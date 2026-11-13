@@ -41,9 +41,11 @@ gaeb.de in einen eigenen Ordner, zum Beispiel mit
 pwsh tools/fetch-gaeb-xsd.ps1 -Folder C:\GAEB\Schemas
 ```
 
-Das Skript holt die Pakete für GAEB DA XML 3.2 (2013-10) und 3.3 (2021-05) und prüft jede Datei
-gegen die SHA-256, die die Bibliothek kennt. Die Ausgabe 2019-11 von 3.3 bietet der GAEB nicht
-mehr an; wer sie braucht, legt die Schemas selbst in den Ordner.
+Das Skript holt die Pakete für GAEB DA XML 3.2 (2013-10), 3.3 (2021-05) und 3.1 (2007-11 und
+2009-12) und prüft jede Datei gegen die SHA-256, die die Bibliothek kennt. Die Ausgabe 2019-11 von
+3.3 und 3.0 (2004-07) bietet der GAEB nicht mehr an; wer sie braucht, legt die Schemas selbst in
+den Ordner (3.0: `GAEB_DA_XML.xsd` mit seiner `xml.xsd` und `xmldsig-core-schema.xsd` in einem
+eigenen Ordner).
 
 ```pascal
 Schemas := TLandrixGaebXmlXsdSchemas.Create('C:\GAEB\Schemas');
@@ -59,6 +61,15 @@ end;
 - Ein Hauptschema (`GAEB_DA_XML_84_3.3_2021-05.xsd`) wird über seinen Namen irgendwo unterhalb
   des Ordners gesucht; seine Lib-Datei muss daneben liegen. Ein doppelt gefundenes Hauptschema
   ist ein Fehler.
+- Dateien in GAEB DA XML 3.0 und 3.1 (ab 1.2.0) werden so geprüft, wie sie gelesen werden, gegen
+  ihre eigenen Originalschemas: `ValidateFile`, `ValidateStream`, `ValidateBuffer` und
+  `ValidateTarget`. Ein Hauptschema gilt für mehrere Phasen (X84 hat ein eigenes); `xml.xsd` und
+  `xmldsig-core-schema.xsd` müssen daneben liegen. 3.0 und 3.1 (2007-11) nennen ihr Hauptschema
+  beide `GAEB_DA_XML.xsd`: eine solche Datei wird nur verwendet, wenn sie die GAEB-Datei der
+  Version ist, eine geänderte wird nie durch Raten einer Version zugeordnet. Die Prüfsummen von
+  3.0 sind die einer Referenzkopie einer älteren GAEB-Distribution. `ValidateModel` und
+  `ValidateBill` schreiben zuerst, und 3.0/3.1 lassen sich nicht schreiben: sie lösen für diese
+  Ziele eine Ausnahme aus (ein aus 3.x gelesenes LV wird als sein `OutputTarget`, 3.3, geprüft).
 - Ein fehlendes oder nicht ladbares Schema löst `ELandrixGaebError` aus; `False` heißt immer,
   dass das Dokument ungültig ist. `HasTarget` fragt, ohne zu laden.
 - Befunde sind `GAEB-XSD-001` (Fehler); der Code des Validators (Xerces, z. B.

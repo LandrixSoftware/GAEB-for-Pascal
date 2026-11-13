@@ -1,5 +1,5 @@
 {
- "comment": "Input of extract-gaeb-xsd.py. The schemas are not part of the repository (no licence for redistribution); they are read from the local Specification/ folder and verified with these checksums. Each context is one version, schema edition and exchange phase; publish = false marks generator test cases whose output is not published (3.4 beta).",
+ "comment": "Input of extract-gaeb-xsd.py. The schemas are not part of the repository (no licence for redistribution); they are read from the local Specification/ folder and verified with these checksums. Each context is one version, schema edition and exchange phase; publish = false marks generator test cases whose output is not published (3.4 beta). validationSets: the schema files of GAEB DA XML 3.0 and 3.1, used only for the XSD validation of LandrixGaebXmlXsd (not extracted); official = false marks a reference copy that GAEB no longer offers.",
  "root": "Specification",
  "contexts": [
   {
@@ -416,6 +416,107 @@
    "files": {
     "GAEB_DA_XML_87_3.4_2026-03.xsd": "cde296384182cebe6cf712db8ef0162dad65e35626d7fb9a1cbb73cd9c2404ef",
     "GAEB_DA_XML_Lib_3.4_2026-03.xsd": "f7065795c155f81b7be7062cf7715d9f24afb453d989b1985d7cd24612040bec"
+   }
+  }
+ ],
+ "validationSets": [
+  {
+   "id": "3.0-2004-07",
+   "version": "3.0",
+   "edition": "2004-07",
+   "phases": [
+    "81",
+    "82",
+    "83",
+    "84",
+    "85",
+    "86"
+   ],
+   "folder": "XML-3.0/Schema",
+   "main": "GAEB_DA_XML.xsd",
+   "official": false,
+   "source": "older GAEB distribution, no longer offered on gaeb.de",
+   "files": {
+    "GAEB_DA_XML.xsd": "3057d46204c9457dda423c6a2c6e99aa0bfab7a82044c47063bd7766a170b733",
+    "xml.xsd": "4d3f3e05f33df495f814edf5d35c5052fb1a13668b052e122704cd8279e53111",
+    "xmldsig-core-schema.xsd": "a85a9a5d0553e26da176dca42d8b58b27874f3753dedd995ce84f1bb8479ae2f"
+   }
+  },
+  {
+   "id": "3.1-2007-11",
+   "version": "3.1",
+   "edition": "2007-11",
+   "phases": [
+    "81",
+    "82",
+    "83",
+    "85",
+    "86"
+   ],
+   "folder": "XML-3.1/2007-11-20/Schema",
+   "main": "GAEB_DA_XML.xsd",
+   "official": true,
+   "source": "gaeb.de: schema_gaeb-da-xml-3.1_20-11-2007_X81-X83_u_X85-X88.zip",
+   "files": {
+    "GAEB_DA_XML.xsd": "8db4edb24c6f5390650b527abe38d82e32dea2011e7f904234cf073fd6693817",
+    "xml.xsd": "068d7ed95badc1ccf1be78b47e97a3ad9f7d10e17d3d3d684606e62a85de20ed",
+    "xmldsig-core-schema.xsd": "51f45a96104c905697c5a708357c10e4311c04ff048dd78eeb5a264f835d0614"
+   }
+  },
+  {
+   "id": "3.1-2007-11-84",
+   "version": "3.1",
+   "edition": "2007-11",
+   "phases": [
+    "84"
+   ],
+   "folder": "XML-3.1/2007-11-20/Schema",
+   "main": "GAEB_DA_XML_84.xsd",
+   "official": true,
+   "source": "gaeb.de: schema_gaeb-da-xml-3.1_20-11-2007_X84.zip (xml.xsd and xmldsig from the X81-X83 package)",
+   "files": {
+    "GAEB_DA_XML_84.xsd": "be4e7389e38386d1d0203b60180967ed52f2b540c05ca80d76cd4b200fcd0927",
+    "xml.xsd": "068d7ed95badc1ccf1be78b47e97a3ad9f7d10e17d3d3d684606e62a85de20ed",
+    "xmldsig-core-schema.xsd": "51f45a96104c905697c5a708357c10e4311c04ff048dd78eeb5a264f835d0614"
+   }
+  },
+  {
+   "id": "3.1-2009-12",
+   "version": "3.1",
+   "edition": "2009-12",
+   "phases": [
+    "81",
+    "82",
+    "83",
+    "85",
+    "86",
+    "87"
+   ],
+   "folder": "XML-3.1/2009-12/Schema",
+   "main": "GAEB_DA_XML 3.1 2009-12.xsd",
+   "official": true,
+   "source": "gaeb.de: Schema_GAEB_DA_XML_3.1_2009-12_X81-X83_u_X85-X87.zip",
+   "files": {
+    "GAEB_DA_XML 3.1 2009-12.xsd": "4baa2b88e489ca9797ad63e8e6ee5af6fd2d93a312bd9b9a8b6ad660a48438c3",
+    "xml.xsd": "068d7ed95badc1ccf1be78b47e97a3ad9f7d10e17d3d3d684606e62a85de20ed",
+    "xmldsig-core-schema.xsd": "af234e51dee3dbc3be288c79abdca95208e228f400259c8a485099bfb75eb88f"
+   }
+  },
+  {
+   "id": "3.1-2009-12-84",
+   "version": "3.1",
+   "edition": "2009-12",
+   "phases": [
+    "84"
+   ],
+   "folder": "XML-3.1/2009-12/Schema",
+   "main": "GAEB_DA_XML_84 3.1 2009-12.xsd",
+   "official": true,
+   "source": "gaeb.de: Schema_GAEB_DA_XML_3.1_2009-12_X84.zip",
+   "files": {
+    "GAEB_DA_XML_84 3.1 2009-12.xsd": "f26d50c58c478fd7599c2a1f87a5d30451dce538ced3a4292c05e4e4200611de",
+    "xml.xsd": "068d7ed95badc1ccf1be78b47e97a3ad9f7d10e17d3d3d684606e62a85de20ed",
+    "xmldsig-core-schema.xsd": "af234e51dee3dbc3be288c79abdca95208e228f400259c8a485099bfb75eb88f"
    }
   }
  ]

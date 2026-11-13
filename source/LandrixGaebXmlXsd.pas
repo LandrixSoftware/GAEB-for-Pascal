@@ -17,7 +17,12 @@
   TLandrixGaebXmlXsdSchemas takes them from a folder of the user (the
   official packages from gaeb.de unpacked into it; tools/fetch-gaeb-xsd.ps1
   downloads and verifies them). Targets: GAEB DA XML 3.2 (2013-10) and 3.3
-  (2019-11, 2021-05), phases 80 to 87.
+  (2019-11, 2021-05), phases 80 to 87; for documents as they are read
+  (ValidateBuffer, ValidateStream, ValidateFile, ValidateTarget) also
+  GAEB DA XML 3.0 (2004-07) and 3.1 (2007-11, 2009-12) in the phases the
+  library reads. GAEB offers the 3.1 schemas on gaeb.de, not those of 3.0:
+  their checksums are those of a reference copy of an older GAEB
+  distribution.
 
   The XSD validation complements the check of LandrixGaebXmlCheck (content
   models generated from the same schemas, faster, part of every write); it
@@ -27,8 +32,8 @@
     GAEB-XSD-002  warning  part of the document was not validated (the
                            validator stopped after too many errors, or a
                            schema construct it does not support)
-    GAEB-XSD-003  warning  a schema file differs from the official GAEB file
-                           (validation still uses it)
+    GAEB-XSD-003  warning  a schema file differs from the official (3.0:
+                           the known) GAEB file (validation still uses it)
     GAEB-XSD-004  error    Verify: a schema file is missing or found twice
   A missing or unloadable schema raises ELandrixGaebError: False always
   means "the document is invalid". Positions are those of the validator
@@ -45,7 +50,12 @@
   Bibliothek: TLandrixGaebXmlXsdSchemas nimmt sie aus einem Ordner des
   Nutzers (die offiziellen Pakete von gaeb.de darin entpackt;
   tools/fetch-gaeb-xsd.ps1 laedt und prueft sie). Ziele: GAEB DA XML 3.2
-  (2013-10) und 3.3 (2019-11, 2021-05), Phasen 80 bis 87.
+  (2013-10) und 3.3 (2019-11, 2021-05), Phasen 80 bis 87; fuer Dokumente,
+  wie sie gelesen werden (ValidateBuffer, ValidateStream, ValidateFile,
+  ValidateTarget), auch GAEB DA XML 3.0 (2004-07) und 3.1 (2007-11,
+  2009-12) in den Phasen, die die Bibliothek liest. Das GAEB bietet die
+  Schemas von 3.1 auf gaeb.de an, die von 3.0 nicht: deren Pruefsummen sind
+  die einer Referenzkopie einer aelteren GAEB-Distribution.
 
   Die XSD-Pruefung ergaenzt die Pruefung von LandrixGaebXmlCheck
   (Inhaltsmodelle aus denselben Schemas erzeugt, schneller, Teil jedes
@@ -56,8 +66,9 @@
     GAEB-XSD-002  Warnung  ein Teil des Dokuments wurde nicht geprueft (der
                            Validator hat nach zu vielen Fehlern aufgehoert,
                            oder ein Schemakonstrukt, das er nicht kennt)
-    GAEB-XSD-003  Warnung  eine Schemadatei weicht von der offiziellen
-                           GAEB-Datei ab (geprueft wird trotzdem damit)
+    GAEB-XSD-003  Warnung  eine Schemadatei weicht von der offiziellen (3.0:
+                           der bekannten) GAEB-Datei ab (geprueft wird
+                           trotzdem damit)
     GAEB-XSD-004  Fehler   Verify: eine Schemadatei fehlt oder liegt doppelt
                            vor
   Ein fehlendes oder nicht ladbares Schema loest ELandrixGaebError aus:
@@ -99,13 +110,23 @@ type
     its Lib file must lie next to it, as in the official packages. A main
     schema found twice is an error. The folder is trusted: links inside it
     are not checked when a schema refers to another file.
+    GAEB DA XML 3.0 and 3.1 keep the published names (one main schema for
+    several phases, X84 apart; xml.xsd and xmldsig-core-schema.xsd next to
+    it). 3.0 and 3.1 (2007-11) both name their main schema GAEB_DA_XML.xsd:
+    a file of that name is only taken if its SHA-256 is that of the GAEB
+    file of the version, a changed one is not used (never guessed).
     DE: Die GAEB-Schemas aus einem Ordner des Nutzers. Ein Hauptschema
     (GAEB_DA_XML_<DP>_<Version>_<Ausgabe>.xsd) wird ueber seinen Dateinamen
     irgendwo unterhalb des Ordners gesucht (acht Ebenen tief, nicht ueber
     Links); seine Lib-Datei muss daneben liegen, wie in den offiziellen
     Paketen. Ein doppelt gefundenes Hauptschema ist ein Fehler. Der Ordner
     ist vertrauenswuerdig: Links in ihm werden nicht geprueft, wenn ein
-    Schema auf eine andere Datei verweist. }
+    Schema auf eine andere Datei verweist. GAEB DA XML 3.0 und 3.1 behalten
+    die veroeffentlichten Namen (ein Hauptschema fuer mehrere Phasen, X84
+    eigens; xml.xsd und xmldsig-core-schema.xsd daneben). 3.0 und 3.1
+    (2007-11) nennen ihr Hauptschema beide GAEB_DA_XML.xsd: eine Datei
+    dieses Namens wird nur genommen, wenn ihre SHA-256 die der GAEB-Datei
+    der Version ist, eine geaenderte wird nicht verwendet (nie geraten). }
   TLandrixGaebXmlXsdSchemas = class(TObject)
   private
     FFolder: string;
@@ -117,8 +138,9 @@ type
     procedure BuildIndex;
     procedure Scan(const ARel: string; ADepth: Integer);
     procedure Entries(const AName: string; AList: TStrings);
+    function Locate(ASlot: Integer; const ATarget: TLandrixGaebTarget; out ARel: string): string;
     function Schema(const ATarget: TLandrixGaebTarget): TObject;
-    function ChecksumNote(const ARel: string; const ATarget: TLandrixGaebTarget): string;
+    function ChecksumNote(const ARel: string; ASlot: Integer): string;
   public
     { AFolder must exist (ELandrixGaebError otherwise); nothing is read
       before the first use.
@@ -133,14 +155,19 @@ type
       nicht. }
     function HasTarget(const ATarget: TLandrixGaebTarget): Boolean;
     { Reads the folder again and compares every schema file of the targets
-      found with the SHA-256 of the official GAEB file: GAEB-XSD-003 for a differing file,
-      GAEB-XSD-004 for a missing Lib file, a main schema found twice or a
+      found with the SHA-256 of the official GAEB file: GAEB-XSD-003 for a
+      differing file (also a GAEB_DA_XML.xsd that is no known GAEB file and
+      therefore not used), GAEB-XSD-004 for a missing Lib file (3.0/3.1:
+      xml.xsd or xmldsig-core-schema.xsd), a main schema found twice or a
       folder without any. True if all match. ADiagnostics may be nil.
       DE: Liest den Ordner neu ein und vergleicht jede Schemadatei der
-      gefundenen Ziele mit der SHA-256 der offiziellen GAEB-Datei: GAEB-XSD-003 fuer eine abweichende Datei,
-      GAEB-XSD-004 fuer eine fehlende Lib-Datei, ein doppelt gefundenes
-      Hauptschema oder einen Ordner ohne Schema. True, wenn alles stimmt.
-      ADiagnostics darf nil sein. }
+      gefundenen Ziele mit der SHA-256 der offiziellen GAEB-Datei:
+      GAEB-XSD-003 fuer eine abweichende Datei (auch eine GAEB_DA_XML.xsd,
+      die keine bekannte GAEB-Datei ist und daher nicht verwendet wird),
+      GAEB-XSD-004 fuer eine fehlende Lib-Datei (3.0/3.1: xml.xsd oder
+      xmldsig-core-schema.xsd), ein doppelt gefundenes Hauptschema oder
+      einen Ordner ohne Schema. True, wenn alles stimmt. ADiagnostics darf
+      nil sein. }
     function Verify(ADiagnostics: TLandrixGaebDiagnostics): Boolean;
     { The folder as an absolute path with trailing delimiter.
       DE: Der Ordner als absoluter Pfad mit abschliessendem Trenner. }
@@ -183,14 +210,14 @@ function LandrixGaebXmlXsdValidateTarget(ASchemas: TLandrixGaebXmlXsdSchemas; Bu
 { Validates a model for ATarget: writes it (mode gwmNormal, without the
   check of LandrixGaebXmlCheck, nothing is raised for problems) and
   validates the output. True if neither the writer nor the validation found
-  an error. Raises like LandrixGaebXmlWriteCollect for a target that cannot
-  be written (3.3/2019-11).
+  an error. Raises ELandrixGaebError for a target that cannot be written
+  (3.3/2019-11, 3.0, 3.1) before a schema is loaded.
   DE: Prueft ein Modell fuer ATarget: schreibt es (Modus gwmNormal, ohne
   die Pruefung von LandrixGaebXmlCheck, fuer Probleme wird nichts
   ausgeloest) und prueft die Ausgabe. True, wenn weder der Schreiber noch
-  die Pruefung einen Fehler gefunden hat. Loest wie
-  LandrixGaebXmlWriteCollect aus fuer ein Ziel, das nicht geschrieben werden
-  kann (3.3/2019-11). }
+  die Pruefung einen Fehler gefunden hat. Loest ELandrixGaebError aus fuer
+  ein Ziel, das nicht geschrieben werden kann (3.3/2019-11, 3.0, 3.1),
+  bevor ein Schema geladen wird. }
 function LandrixGaebXmlXsdValidateModel(ASchemas: TLandrixGaebXmlXsdSchemas; ADocument: TLandrixGaebXmlGAEB;
   const ATarget: TLandrixGaebTarget; ADiagnostics: TLandrixGaebDiagnostics): Boolean;
 
@@ -218,8 +245,10 @@ uses
   LandrixGaebXmlXsdSums;
 
 const
-  { the published targets: three editions, eight phases }
-  SlotCount = 24;
+  { the published targets: three editions, eight phases; then one slot per
+    schema set of 3.0/3.1 (one schema for several phases) }
+  TargetSlots = 24;
+  SlotCount = TargetSlots + LandrixGaebXsdSetCount;
   MaxScanDepth = 8;
   { the attribute of links, skipped by the scan: a reparse point (junction,
     symbolic link) on Windows, faSymLink of Free Pascal on Unix (reported
@@ -258,12 +287,69 @@ end;
 
 { ---- targets ---- }
 
-{ 0..23 for the published targets, -1 otherwise. }
+{ The schema set of 3.0/3.1 for ATarget, -1 if none. }
+function SetOf(const ATarget: TLandrixGaebTarget): Integer;
+var
+  I: Integer;
+  Version, Edition, Phase: string;
+begin
+  Result := -1;
+  if not (ATarget.Version in [gv30, gv31]) or not LandrixGaebTargetIsSupported(ATarget, False) then
+    Exit;
+  Version := LandrixXmlUtf8ToString(LandrixGaebVersionToText(ATarget.Version));
+  Edition := LandrixXmlUtf8ToString(LandrixGaebEditionToText(ATarget.Edition));
+  Phase := ' ' + LandrixXmlUtf8ToString(LandrixGaebPhaseToDP(ATarget.Phase)) + ' ';
+  for I := 0 to LandrixGaebXsdSetCount - 1 do
+    if (LandrixGaebXsdSetVersions[I] = Version) and (LandrixGaebXsdSetEditions[I] = Edition) and
+      (Pos(Phase, LandrixGaebXsdSetPhases[I]) > 0) then
+    begin
+      Result := I;
+      Exit;
+    end;
+end;
+
+{ True if another schema set has the same main schema name as ASet. }
+function SetNameShared(ASet: Integer): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 0 to LandrixGaebXsdSetCount - 1 do
+    if (I <> ASet) and (LandrixGaebXsdSetMains[I] = LandrixGaebXsdSetMains[ASet]) then
+    begin
+      Result := True;
+      Exit;
+    end;
+end;
+
+{ True if AName is the main schema of a schema set. }
+function IsSetMain(const AName: string): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 0 to LandrixGaebXsdSetCount - 1 do
+    if LandrixGaebXsdSetMains[I] = AName then
+    begin
+      Result := True;
+      Exit;
+    end;
+end;
+
+{ 0..23 for the published targets, TargetSlots + set for 3.0/3.1, -1
+  otherwise. }
 function TargetSlot(const ATarget: TLandrixGaebTarget): Integer;
 var
   E, P: Integer;
 begin
   Result := -1;
+  if ATarget.Version in [gv30, gv31] then
+  begin
+    E := SetOf(ATarget);
+    if E >= 0 then
+      Result := TargetSlots + E;
+    Exit;
+  end;
   if (ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) then
     E := 0
   else if (ATarget.Version = gv33) and (ATarget.Edition = ge2019_11) then
@@ -325,6 +411,28 @@ function LibFileName(const ATarget: TLandrixGaebTarget): string;
 begin
   Result := 'GAEB_DA_XML_Lib_' + VersionText(ATarget) + '_' + EditionText(ATarget) + '.xsd';
 end;
+
+{ The main schema of a slot. }
+function SlotMain(ASlot: Integer; const ATarget: TLandrixGaebTarget): string;
+begin
+  if ASlot >= TargetSlots then
+    Result := LandrixGaebXsdSetMains[ASlot - TargetSlots]
+  else
+    Result := MainFileName(ATarget);
+end;
+
+{ "official", or "known" for a reference copy (3.0). }
+function DiffersText(ASet: Integer): string;
+begin
+  if (ASet >= 0) and not LandrixGaebXsdSetOfficial[ASet] then
+    Result := 'schema file differs from the known GAEB file: '
+  else
+    Result := 'schema file differs from the official GAEB file: ';
+end;
+
+const
+  XmlXsdName = 'xml.xsd';
+  DsigXsdName = 'xmldsig-core-schema.xsd';
 
 { ---- checksums ---- }
 
@@ -411,7 +519,7 @@ begin
         if ADepth < MaxScanDepth then
           Scan(ARel + SR.Name + PathDelim, ADepth + 1);
       end
-      else if OfficialSum(SR.Name) <> '' then
+      else if (OfficialSum(SR.Name) <> '') or IsSetMain(SR.Name) then
         FIndex.Add(SR.Name + '=' + ARel + SR.Name);
     until FindNext(SR) <> 0;
   finally
@@ -446,48 +554,98 @@ begin
   end;
 end;
 
-function TLandrixGaebXmlXsdSchemas.HasTarget(const ATarget: TLandrixGaebTarget): Boolean;
+{ Finds the main schema of ASlot: '' and its path relative to Folder in
+  ARel, or why it cannot be used. A name that several schema sets share
+  (GAEB_DA_XML.xsd) only counts where the file is the GAEB file of the set. }
+function TLandrixGaebXmlXsdSchemas.Locate(ASlot: Integer; const ATarget: TLandrixGaebTarget;
+  out ARel: string): string;
 var
   Paths: TStringList;
+  Main: string;
+  I, SetIndex: Integer;
+  Shared: Boolean;
 begin
-  Result := False;
-  if TargetSlot(ATarget) < 0 then
-    Exit;
+  Result := '';
+  ARel := '';
   BuildIndex;
+  Main := SlotMain(ASlot, ATarget);
+  SetIndex := ASlot - TargetSlots;
+  Shared := (SetIndex >= 0) and SetNameShared(SetIndex);
   Paths := TStringList.Create;
   try
-    Entries(MainFileName(ATarget), Paths);
-    Result := Paths.Count = 1;
+    Entries(Main, Paths);
+    if Shared then
+      for I := Paths.Count - 1 downto 0 do
+        if FileSum(FFolder, Paths[I]) <> LandrixGaebXsdSetMainSums[SetIndex] then
+          Paths.Delete(I);
+    if Paths.Count = 0 then
+    begin
+      Result := 'schema ' + Main + ' for ' + TargetText(ATarget) + ' not found in the schema folder';
+      if Shared then
+        Result := Result + ' (a file of this name is only used if it is the GAEB file of that version)';
+    end
+    else if Paths.Count > 1 then
+      Result := 'schema ' + Main + ' found more than once in the schema folder: ' + Paths[0] + ', ' + Paths[1]
+    else
+      ARel := Paths[0];
   finally
     Paths.Free;
   end;
 end;
 
-{ A note for GAEB-XSD-003 if the main schema at ARel or its Lib file
-  differs from the official file, '' otherwise. }
-function TLandrixGaebXmlXsdSchemas.ChecksumNote(const ARel: string; const ATarget: TLandrixGaebTarget): string;
+function TLandrixGaebXmlXsdSchemas.HasTarget(const ATarget: TLandrixGaebTarget): Boolean;
 var
-  LibRel: string;
+  Slot: Integer;
+  Rel: string;
 begin
-  Result := '';
-  if FileSum(FFolder, ARel) <> OfficialSum(MainFileName(ATarget)) then
-    Result := ARel;
-  LibRel := ExtractFilePath(ARel) + LibFileName(ATarget);
-  if FileExists(FFolder + LibRel) and (FileSum(FFolder, LibRel) <> OfficialSum(LibFileName(ATarget))) then
+  Slot := TargetSlot(ATarget);
+  Result := (Slot >= 0) and (Locate(Slot, ATarget, Rel) = '');
+end;
+
+{ A note for GAEB-XSD-003 if the main schema at ARel or a file next to it
+  (Lib file; 3.0/3.1: xml.xsd and xmldsig-core-schema.xsd) differs from the
+  GAEB file, '' otherwise. }
+function TLandrixGaebXmlXsdSchemas.ChecksumNote(const ARel: string; ASlot: Integer): string;
+var
+  Dir, Note: string;
+  SetIndex: Integer;
+  T: TLandrixGaebTarget;
+
+  procedure Compare(const ARelFile, ASum: string);
   begin
-    if Result <> '' then
-      Result := Result + ', ';
-    Result := Result + LibRel;
+    if FileExists(FFolder + ARelFile) and (FileSum(FFolder, ARelFile) <> ASum) then
+    begin
+      if Note <> '' then
+        Note := Note + ', ';
+      Note := Note + ARelFile;
+    end;
   end;
-  if Result <> '' then
-    Result := 'schema file differs from the official GAEB file: ' + Result;
+
+begin
+  Note := '';
+  Dir := ExtractFilePath(ARel);
+  SetIndex := ASlot - TargetSlots;
+  if SetIndex >= 0 then
+  begin
+    Compare(ARel, LandrixGaebXsdSetMainSums[SetIndex]);
+    Compare(Dir + XmlXsdName, LandrixGaebXsdSetXmlSums[SetIndex]);
+    Compare(Dir + DsigXsdName, LandrixGaebXsdSetDsigSums[SetIndex]);
+  end
+  else
+  begin
+    T := SlotTarget(ASlot);
+    Compare(ARel, OfficialSum(MainFileName(T)));
+    Compare(Dir + LibFileName(T), OfficialSum(LibFileName(T)));
+  end;
+  if Note <> '' then
+    Note := DiffersText(SetIndex) + Note;
+  Result := Note;
 end;
 
 function TLandrixGaebXmlXsdSchemas.Schema(const ATarget: TLandrixGaebTarget): TObject;
 var
   Slot: Integer;
-  Paths: TStringList;
-  Main, Rel, Note: string;
+  Rel, Note, Problem: string;
   Loaded: TLandrixXmlXsdSchemaSet;
 begin
   Slot := TargetSlot(ATarget);
@@ -495,21 +653,9 @@ begin
     raise ELandrixGaebError.Create('no XSD validation for ' + TargetText(ATarget));
   if FSchemas[Slot] = nil then
   begin
-    BuildIndex;
-    Main := MainFileName(ATarget);
-    Paths := TStringList.Create;
-    try
-      Entries(Main, Paths);
-      if Paths.Count = 0 then
-        raise ELandrixGaebError.Create('schema ' + Main + ' for ' + TargetText(ATarget) +
-          ' not found in the schema folder');
-      if Paths.Count > 1 then
-        raise ELandrixGaebError.Create('schema ' + Main + ' found more than once in the schema folder: ' +
-          Paths[0] + ', ' + Paths[1]);
-      Rel := Paths[0];
-    finally
-      Paths.Free;
-    end;
+    Problem := Locate(Slot, ATarget, Rel);
+    if Problem <> '' then
+      raise ELandrixGaebError.Create(Problem);
     try
       Loaded := LandrixXmlXsdLoadSchema(FFolder + Rel, TLandrixXmlXsdResolver(FResolver));
     except
@@ -528,7 +674,7 @@ begin
       if Loaded.Warnings.Count > 0 then
         raise ELandrixGaebError.Create('schema ' + Rel +
           ' is incomplete: a schema document it refers to is not found inside the schema folder');
-      Note := ChecksumNote(Rel, ATarget);
+      Note := ChecksumNote(Rel, Slot);
     except
       Loaded.Free;
       raise;
@@ -542,11 +688,11 @@ end;
 
 function TLandrixGaebXmlXsdSchemas.Verify(ADiagnostics: TLandrixGaebDiagnostics): Boolean;
 var
-  Ok: Boolean;
-  Slot, Found: Integer;
+  Ok, Known: Boolean;
+  Slot, Found, SetIndex, I, J: Integer;
   T: TLandrixGaebTarget;
   Paths, Reported: TStringList;
-  Main, Rel, LibRel: string;
+  Main, Rel: string;
 
   procedure Report(const ARuleId: string; ASeverity: TLandrixGaebSeverity; const AMessage: string);
   begin
@@ -555,13 +701,33 @@ var
       ADiagnostics.AddDiagnostic(ARuleId, ASeverity, AMessage);
   end;
 
-  procedure CheckSum(const ARelFile, AName: string);
+  { a file next to two main schemas (3.1: 2007-11 and 2009-12 in one
+    folder) is compared with the checksum each of them expects }
+  procedure CheckSum(const ARelFile, ASum: string; ASet: Integer);
   begin
-    if Reported.IndexOf(ARelFile) >= 0 then
+    if Reported.IndexOf(ARelFile + '=' + ASum) >= 0 then
       Exit;
-    Reported.Add(ARelFile);
-    if FileSum(FFolder, ARelFile) <> OfficialSum(AName) then
-      Report('GAEB-XSD-003', gsWarning, 'schema file differs from the official GAEB file: ' + ARelFile);
+    Reported.Add(ARelFile + '=' + ASum);
+    if FileSum(FFolder, ARelFile) <> ASum then
+      Report('GAEB-XSD-003', gsWarning, DiffersText(ASet) + ARelFile);
+  end;
+
+  { a file next to the main schema at ARel: missing is GAEB-XSD-004 }
+  procedure CheckNext(const ARel, AName, ASum: string; ASet: Integer);
+  var
+    NextRel: string;
+  begin
+    NextRel := ExtractFilePath(ARel) + AName;
+    if not FileExists(FFolder + NextRel) then
+    begin
+      if Reported.IndexOf(NextRel) < 0 then
+      begin
+        Reported.Add(NextRel);
+        Report('GAEB-XSD-004', gsError, 'schema file missing: ' + NextRel + ' (needed by ' + ARel + ')');
+      end;
+    end
+    else
+      CheckSum(NextRel, ASum, ASet);
   end;
 
 begin
@@ -573,7 +739,7 @@ begin
   Paths := TStringList.Create;
   Reported := TStringList.Create;
   try
-    for Slot := 0 to SlotCount - 1 do
+    for Slot := 0 to TargetSlots - 1 do
     begin
       T := SlotTarget(Slot);
       Main := MainFileName(T);
@@ -588,19 +754,55 @@ begin
         Continue;
       end;
       Rel := Paths[0];
-      CheckSum(Rel, Main);
-      LibRel := ExtractFilePath(Rel) + LibFileName(T);
-      if not FileExists(FFolder + LibRel) then
-      begin
-        if Reported.IndexOf(LibRel) < 0 then
-        begin
-          Reported.Add(LibRel);
-          Report('GAEB-XSD-004', gsError, 'schema file missing: ' + LibRel + ' (needed by ' + Rel + ')');
-        end;
-      end
-      else
-        CheckSum(LibRel, LibFileName(T));
+      CheckSum(Rel, OfficialSum(Main), -1);
+      CheckNext(Rel, LibFileName(T), OfficialSum(LibFileName(T)), -1);
     end;
+    { 3.0/3.1: a shared name only counts where the file is the GAEB file of
+      the set }
+    for SetIndex := 0 to LandrixGaebXsdSetCount - 1 do
+    begin
+      Main := LandrixGaebXsdSetMains[SetIndex];
+      Entries(Main, Paths);
+      if SetNameShared(SetIndex) then
+        for I := Paths.Count - 1 downto 0 do
+          if FileSum(FFolder, Paths[I]) <> LandrixGaebXsdSetMainSums[SetIndex] then
+            Paths.Delete(I);
+      if Paths.Count = 0 then
+        Continue;
+      Inc(Found);
+      if Paths.Count > 1 then
+      begin
+        Report('GAEB-XSD-004', gsError, 'schema ' + Main + ' found more than once in the schema folder: ' +
+          Paths[0] + ', ' + Paths[1]);
+        Continue;
+      end;
+      Rel := Paths[0];
+      CheckSum(Rel, LandrixGaebXsdSetMainSums[SetIndex], SetIndex);
+      CheckNext(Rel, XmlXsdName, LandrixGaebXsdSetXmlSums[SetIndex], SetIndex);
+      CheckNext(Rel, DsigXsdName, LandrixGaebXsdSetDsigSums[SetIndex], SetIndex);
+    end;
+    { a file with a shared name that is the GAEB file of no set is not used }
+    for SetIndex := 0 to LandrixGaebXsdSetCount - 1 do
+      if SetNameShared(SetIndex) then
+      begin
+        Entries(LandrixGaebXsdSetMains[SetIndex], Paths);
+        for I := 0 to Paths.Count - 1 do
+        begin
+          if Reported.IndexOf(Paths[I]) >= 0 then
+            Continue;
+          Known := False;
+          for J := 0 to LandrixGaebXsdSetCount - 1 do
+            if (LandrixGaebXsdSetMains[J] = LandrixGaebXsdSetMains[SetIndex]) and
+              (FileSum(FFolder, Paths[I]) = LandrixGaebXsdSetMainSums[J]) then
+              Known := True;
+          if not Known then
+          begin
+            Reported.Add(Paths[I]);
+            Report('GAEB-XSD-003', gsWarning, 'schema file is no known GAEB file of its name and is not used: ' +
+              Paths[I]);
+          end;
+        end;
+      end;
     if Found = 0 then
       Report('GAEB-XSD-004', gsError, 'no GAEB DA XML schema found in the schema folder');
   finally
@@ -803,6 +1005,13 @@ begin
   Result := ValidateLoaded(ASchemas, Buffer, Size, ATarget, ADiagnostics);
 end;
 
+{ A target that cannot be written raises before a schema is loaded. }
+procedure RejectUnwritable(const ATarget: TLandrixGaebTarget);
+begin
+  if not LandrixGaebTargetIsSupported(ATarget, True) then
+    raise ELandrixGaebError.Create(TargetText(ATarget) + ' is not supported for writing');
+end;
+
 function LandrixGaebXmlXsdValidateModel(ASchemas: TLandrixGaebXmlXsdSchemas; ADocument: TLandrixGaebXmlGAEB;
   const ATarget: TLandrixGaebTarget; ADiagnostics: TLandrixGaebDiagnostics): Boolean;
 var
@@ -813,6 +1022,7 @@ var
 begin
   if ASchemas = nil then
     raise ELandrixGaebError.Create('no schemas given');
+  RejectUnwritable(ATarget);
   { load the schema first: a missing schema raises before any writing }
   ASchemas.Schema(ATarget);
   Options := LandrixGaebXmlDefaultWriteOptions;
@@ -835,6 +1045,7 @@ begin
   if ASchemas = nil then
     raise ELandrixGaebError.Create('no schemas given');
   Target := ABill.OutputTarget;
+  RejectUnwritable(Target);
   ASchemas.Schema(Target);
   Options := ABill.WriteOptions;
   Options.Check := False;

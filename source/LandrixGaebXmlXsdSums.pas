@@ -19,11 +19,13 @@
   und erneut ausfuehren. }
 
 { SHA-256 of the official GAEB DA XML schema files of every published
-  target (main schema and Lib file), as published by GAEB. Only names and
+  target (main schema and Lib file), as published by GAEB, and of the
+  schema sets of GAEB DA XML 3.0 and 3.1 (validation only). Only names and
   checksums, not the schemas.
   DE: SHA-256 der offiziellen GAEB-DA-XML-Schemadateien jedes
   veroeffentlichten Ziels (Hauptschema und Lib-Datei), wie vom GAEB
-  veroeffentlicht. Nur Namen und Pruefsummen, nicht die Schemas. }
+  veroeffentlicht, und der Schemasaetze von GAEB DA XML 3.0 und 3.1 (nur
+  zur Pruefung). Nur Namen und Pruefsummen, nicht die Schemas. }
 
 { API: internal. May change in any release, also after 1.0; use the
   stable units instead (see README).
@@ -101,6 +103,90 @@ const
     'f8d736e96f3f2e1ba6e97aa0492dedad1c2064fafc502a7f70466b34b67d1f77',
     '733d1765d220259c371b1ca3ae449ce6227596d845fe1eb28d7f0feafec0ff1e',
     'a00cad3a5bfaf079de936393c0827c2387d4b9407c113359cca4b493903388ec'
+  );
+
+  { Schema sets of GAEB DA XML 3.0 and 3.1 (validation only): one main
+    schema each, with xml.xsd and xmldsig-core-schema.xsd next to it.
+    DE: Schemasaetze von GAEB DA XML 3.0 und 3.1 (nur zur Pruefung): je
+    ein Hauptschema, daneben xml.xsd und xmldsig-core-schema.xsd. }
+  LandrixGaebXsdSetCount = 5;
+
+  { Version. DE: Version. }
+  LandrixGaebXsdSetVersions: array[0..4] of string = (
+    '3.0',
+    '3.1',
+    '3.1',
+    '3.1',
+    '3.1'
+  );
+
+  { Edition. DE: Ausgabe. }
+  LandrixGaebXsdSetEditions: array[0..4] of string = (
+    '2004-07',
+    '2007-11',
+    '2007-11',
+    '2009-12',
+    '2009-12'
+  );
+
+  { Phases (DP), each enclosed in blanks.
+    DE: Phasen (DP), jede in Leerzeichen eingeschlossen. }
+  LandrixGaebXsdSetPhases: array[0..4] of string = (
+    ' 81 82 83 84 85 86 ',
+    ' 81 82 83 85 86 ',
+    ' 84 ',
+    ' 81 82 83 85 86 87 ',
+    ' 84 '
+  );
+
+  { Main schema. DE: Hauptschema. }
+  LandrixGaebXsdSetMains: array[0..4] of string = (
+    'GAEB_DA_XML.xsd',
+    'GAEB_DA_XML.xsd',
+    'GAEB_DA_XML_84.xsd',
+    'GAEB_DA_XML 3.1 2009-12.xsd',
+    'GAEB_DA_XML_84 3.1 2009-12.xsd'
+  );
+
+  { SHA-256 of the main schema.
+    DE: SHA-256 des Hauptschemas. }
+  LandrixGaebXsdSetMainSums: array[0..4] of string = (
+    '3057d46204c9457dda423c6a2c6e99aa0bfab7a82044c47063bd7766a170b733',
+    '8db4edb24c6f5390650b527abe38d82e32dea2011e7f904234cf073fd6693817',
+    'be4e7389e38386d1d0203b60180967ed52f2b540c05ca80d76cd4b200fcd0927',
+    '4baa2b88e489ca9797ad63e8e6ee5af6fd2d93a312bd9b9a8b6ad660a48438c3',
+    'f26d50c58c478fd7599c2a1f87a5d30451dce538ced3a4292c05e4e4200611de'
+  );
+
+  { SHA-256 of xml.xsd. DE: SHA-256 von xml.xsd. }
+  LandrixGaebXsdSetXmlSums: array[0..4] of string = (
+    '4d3f3e05f33df495f814edf5d35c5052fb1a13668b052e122704cd8279e53111',
+    '068d7ed95badc1ccf1be78b47e97a3ad9f7d10e17d3d3d684606e62a85de20ed',
+    '068d7ed95badc1ccf1be78b47e97a3ad9f7d10e17d3d3d684606e62a85de20ed',
+    '068d7ed95badc1ccf1be78b47e97a3ad9f7d10e17d3d3d684606e62a85de20ed',
+    '068d7ed95badc1ccf1be78b47e97a3ad9f7d10e17d3d3d684606e62a85de20ed'
+  );
+
+  { SHA-256 of xmldsig-core-schema.xsd.
+    DE: SHA-256 von xmldsig-core-schema.xsd. }
+  LandrixGaebXsdSetDsigSums: array[0..4] of string = (
+    'a85a9a5d0553e26da176dca42d8b58b27874f3753dedd995ce84f1bb8479ae2f',
+    '51f45a96104c905697c5a708357c10e4311c04ff048dd78eeb5a264f835d0614',
+    '51f45a96104c905697c5a708357c10e4311c04ff048dd78eeb5a264f835d0614',
+    'af234e51dee3dbc3be288c79abdca95208e228f400259c8a485099bfb75eb88f',
+    'af234e51dee3dbc3be288c79abdca95208e228f400259c8a485099bfb75eb88f'
+  );
+
+  { True if GAEB offers the files (gaeb.de); False
+    for a reference copy of an older GAEB distribution.
+    DE: True, wenn das GAEB die Dateien anbietet (gaeb.de); False
+    fuer eine Referenzkopie einer aelteren GAEB-Distribution. }
+  LandrixGaebXsdSetOfficial: array[0..4] of Boolean = (
+    False,
+    True,
+    True,
+    True,
+    True
   );
 
 implementation

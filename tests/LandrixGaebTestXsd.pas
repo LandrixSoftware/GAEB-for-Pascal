@@ -753,7 +753,7 @@ begin
     finally
       Bill.Free;
     end;
-    Check(RaisesGaebError(ApiSchemasOf, LandrixGaebTarget(gv31, ge2009_12, gp83), ''),
+    Check(RaisesGaebError(ApiSchemasOf, LandrixGaebTarget(gv31, ge2009_12, gp88), ''),
       'a target without XSD validation raises');
     Raised := False;
     try
@@ -766,6 +766,101 @@ begin
     Check(Raised, 'input that is not GAEB raises');
   finally
     Diags.Free;
+  end;
+end;
+
+{ ---- LandrixGaebXmlXsd: GAEB DA XML 3.0 and 3.1 ---- }
+
+function Version3x(const AName: string): TLandrixXmlUtf8;
+begin
+  Result := ReadFileBytes(DataDir('version3x') + AName);
+end;
+
+{ A 3.1 request of edition 2007-11 (any VersDate but 2009-12). }
+function Request2007: TLandrixXmlUtf8;
+begin
+  Result := ReplaceFirst(Version3x('v31-2009-12.x83'), '<VersDate>2009-12</VersDate>',
+    '<VersDate>2007-06</VersDate>');
+end;
+
+{ A 3.1 bid of edition 2007-11. }
+function Bid2007: TLandrixXmlUtf8;
+begin
+  Result := ReplaceFirst(Version3x('v31-2009-12.x84'), '<VersDate>2009-12</VersDate>',
+    '<VersDate>2007-06</VersDate>');
+end;
+
+{ Validates ASource as detected; checks the target, the verdict and that no
+  message quotes a value. }
+procedure CheckLegacy(const ASource: TLandrixXmlUtf8; AVersion: TLandrixGaebVersion;
+  AEdition: TLandrixGaebEdition; APhase: TLandrixGaebPhase; AValid: Boolean; const AContext: string);
+var
+  Diags: TLandrixGaebDiagnostics;
+  Det: TLandrixGaebDetection;
+  Ok: Boolean;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    Ok := LandrixGaebXmlXsdValidateBuffer(ApiSchemasOf, Pointer(ASource), Integer(Length(ASource)), Diags, Det);
+    Check((Det.Target.Version = AVersion) and (Det.Target.Edition = AEdition) and (Det.Target.Phase = APhase),
+      AContext + ': detected target');
+    Check(Ok = AValid, AContext + ': verdict: ' + Diags.ToText);
+    Check(Ok = (Diags.CountOf('GAEB-XSD-001') = 0), AContext + ': GAEB-XSD-001 exactly when invalid');
+    CheckEquals(0, Diags.CountOf('GAEB-XSD-003'), AContext + ': the schema files are the GAEB files');
+    CheckNoFileValues(ASource, Diags, AContext);
+  finally
+    Diags.Free;
+  end;
+end;
+
+procedure TestApiVersion3x;
+var
+  Bill: TLandrixGaebBillOfQuantities;
+  G: TLandrixGaebXmlGAEB;
+  Det: TLandrixGaebDetection;
+  Source: TLandrixXmlUtf8;
+  Raised: Boolean;
+begin
+  if not HaveSchemas then
+    Exit;
+  { Specification/ holds 3.0 and 3.1/2007-11 both as GAEB_DA_XML.xsd }
+  Check(ApiSchemasOf.HasTarget(LandrixGaebTarget(gv30, ge2004_07, gp81)), '3.0 X81 found');
+  Check(ApiSchemasOf.HasTarget(LandrixGaebTarget(gv30, ge2004_07, gp84)), '3.0 X84 found');
+  Check(ApiSchemasOf.HasTarget(LandrixGaebTarget(gv31, ge2007_11, gp83)), '3.1/2007-11 X83 found');
+  Check(ApiSchemasOf.HasTarget(LandrixGaebTarget(gv31, ge2007_11, gp84)), '3.1/2007-11 X84 found');
+  Check(ApiSchemasOf.HasTarget(LandrixGaebTarget(gv31, ge2009_12, gp87)), '3.1/2009-12 X87 found');
+  Check(not ApiSchemasOf.HasTarget(LandrixGaebTarget(gv30, ge2004_07, gp87)), '3.0 X87 is not read');
+  Check(not ApiSchemasOf.HasTarget(LandrixGaebTarget(gv31, ge2007_11, gp87)), '3.1/2007-11 X87 is not read');
+  CheckLegacy(Version3x('v30.x81'), gv30, ge2004_07, gp81, True, '3.0 X81');
+  CheckLegacy(Version3x('v31-2009-12.x83'), gv31, ge2009_12, gp83, True, '3.1/2009-12 X83');
+  CheckLegacy(Version3x('v31-2009-12.x84'), gv31, ge2009_12, gp84, True, '3.1/2009-12 X84');
+  CheckLegacy(Request2007, gv31, ge2007_11, gp83, True, '3.1/2007-11 X83');
+  CheckLegacy(Bid2007, gv31, ge2007_11, gp84, True, '3.1/2007-11 X84');
+  CheckLegacy(ReplaceFirst(Version3x('v31-2009-12.x83'), '<Qty>12.500</Qty>', '<Qty>abc</Qty>'),
+    gv31, ge2009_12, gp83, False, '3.1/2009-12 X83 with an invalid quantity');
+  CheckLegacy(ReplaceFirst(ReplaceFirst(Version3x('v30.x81'), '<NamePrj>', '<NameProject>'),
+    '</NamePrj>', '</NameProject>'), gv30, ge2004_07, gp81,
+    False, '3.0 X81 with an unknown element');
+  { a model or a bill is written: 3.x cannot be written }
+  Source := Version3x('v31-2009-12.x83');
+  G := LandrixGaebXmlReadBuffer(Pointer(Source), Integer(Length(Source)), nil, Det);
+  try
+    Raised := False;
+    try
+      LandrixGaebXmlXsdValidateModel(ApiSchemasOf, G, Det.Target, nil);
+    except
+      on ELandrixGaebError do
+        Raised := True;
+    end;
+    Check(Raised, 'ValidateModel rejects a 3.1 target');
+  finally
+    G.Free;
+  end;
+  Bill := TLandrixGaebBillOfQuantities.LoadFromFile(DataDir('version3x') + 'v31-2009-12.x83', nil, 0);
+  try
+    Check(LandrixGaebXmlXsdValidateBill(ApiSchemasOf, Bill, nil), 'a 3.1 bill validates as its 3.3 output');
+  finally
+    Bill.Free;
   end;
 end;
 
@@ -928,6 +1023,158 @@ begin
   end;
 end;
 
+{ The schema sets of 3.0 and 3.1/2007-11 share the name GAEB_DA_XML.xsd:
+  only the GAEB file of a version is taken, a changed one is not used. }
+procedure TestApiFolderVersion3x;
+var
+  Dir, Src30, Src31, Src3109, Message: string;
+  T30, T31, T31x84: TLandrixGaebTarget;
+  Doc30, Doc31, Bid31: TLandrixXmlUtf8;
+  S: TLandrixGaebXmlXsdSchemas;
+  Diags: TLandrixGaebDiagnostics;
+  G: TLandrixGaebXmlGAEB;
+  Det: TLandrixGaebDetection;
+
+  procedure CopySet(const ASrc, ADest: string; AWith84: Boolean);
+  begin
+    WriteBytes(ADest + 'GAEB_DA_XML.xsd', ReadFileBytes(ASrc + 'GAEB_DA_XML.xsd'));
+    WriteBytes(ADest + 'xml.xsd', ReadFileBytes(ASrc + 'xml.xsd'));
+    WriteBytes(ADest + 'xmldsig-core-schema.xsd', ReadFileBytes(ASrc + 'xmldsig-core-schema.xsd'));
+    if AWith84 then
+      WriteBytes(ADest + 'GAEB_DA_XML_84.xsd', ReadFileBytes(ASrc + 'GAEB_DA_XML_84.xsd'));
+  end;
+
+begin
+  if not HaveSchemas then
+    Exit;
+  Dir := RepositoryRoot + 'build' + PathDelim + 'xsdtest3x' + PathDelim;
+  Src30 := SchemaDir + 'XML-3.0' + PathDelim + 'Schema' + PathDelim;
+  Src31 := SchemaDir + 'XML-3.1' + PathDelim + '2007-11-20' + PathDelim + 'Schema' + PathDelim;
+  T30 := LandrixGaebTarget(gv30, ge2004_07, gp81);
+  T31 := LandrixGaebTarget(gv31, ge2007_11, gp83);
+  T31x84 := LandrixGaebTarget(gv31, ge2007_11, gp84);
+  Src3109 := SchemaDir + 'XML-3.1' + PathDelim + '2009-12' + PathDelim + 'Schema' + PathDelim;
+  Doc30 := Version3x('v30.x81');
+  Doc31 := Request2007;
+  Bid31 := Bid2007;
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    { an unwritable target is rejected before a schema is loaded: in an
+      empty folder loading would fail with "not found" }
+    DeleteTree(Dir);
+    ForceDirectories(Dir);
+    G := LandrixGaebXmlReadBuffer(Pointer(Doc31), Integer(Length(Doc31)), nil, Det);
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Message := '';
+      try
+        LandrixGaebXmlXsdValidateModel(S, G, Det.Target, nil);
+      except
+        on E: ELandrixGaebError do
+          Message := E.Message;
+      end;
+      Check(Pos('not supported for writing', Message) > 0, 'ValidateModel rejects 3.1 before loading: ' +
+        Message);
+    finally
+      S.Free;
+      G.Free;
+    end;
+    DeleteTree(Dir);
+    CopySet(Src30, Dir + 'a' + PathDelim, False);
+    CopySet(Src31, Dir + 'b' + PathDelim, True);
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Check(S.HasTarget(T30) and S.HasTarget(T31) and S.HasTarget(T31x84), 'both sets found by their sums');
+      Check(S.Verify(Diags), 'both sets: Verify passes: ' + Diags.ToText);
+      Check(LandrixGaebXmlXsdValidateTarget(S, Pointer(Doc30), Integer(Length(Doc30)), T30, Diags),
+        '3.0 against its schema: ' + Diags.ToText);
+      Check(LandrixGaebXmlXsdValidateTarget(S, Pointer(Doc31), Integer(Length(Doc31)), T31, Diags),
+        '3.1/2007-11 against its schema: ' + Diags.ToText);
+      Check(LandrixGaebXmlXsdValidateTarget(S, Pointer(Bid31), Integer(Length(Bid31)), T31x84, Diags),
+        '3.1/2007-11 X84 against its schema next to the main package: ' + Diags.ToText);
+      { the schema of 3.0 serves every phase: loaded once, it is used for
+        X83 too, although its files are gone now }
+      DeleteTree(Dir + 'a' + PathDelim);
+      Check(LandrixGaebXmlXsdValidateTarget(S, Pointer(Doc30), Integer(Length(Doc30)),
+        LandrixGaebTarget(gv30, ge2004_07, gp83), Diags), '3.0 X83: the schema loaded for X81 is used');
+      CheckEquals(0, Integer(Diags.Count), 'both sets: no diagnostic');
+    finally
+      S.Free;
+    end;
+    CopySet(Src30, Dir + 'a' + PathDelim, False);
+    { a changed GAEB_DA_XML.xsd of 3.1/2007-11 is not used: never guessed }
+    WriteBytes(Dir + 'b' + PathDelim + 'GAEB_DA_XML.xsd', ReadFileBytes(Src31 + 'GAEB_DA_XML.xsd') +
+      '<!-- changed -->'#10);
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Check(S.HasTarget(T30), 'changed 3.1 main: 3.0 still found');
+      Check(not S.HasTarget(T31), 'changed 3.1 main: not used for 3.1');
+      Check(S.HasTarget(T31x84), 'changed 3.1 main: the X84 schema is still found');
+      Check(RaisesGaebError(S, T31, Doc31), 'changed 3.1 main: validation raises');
+      Diags.Clear;
+      Check(not S.Verify(Diags), 'changed 3.1 main: Verify fails');
+      CheckEquals(1, Diags.CountOf('GAEB-XSD-003'), 'changed 3.1 main: reported once: ' + Diags.ToText);
+    finally
+      S.Free;
+    end;
+    CopySet(Src31, Dir + 'b' + PathDelim, True);
+    { a changed xml.xsd: used with a warning }
+    WriteBytes(Dir + 'b' + PathDelim + 'xml.xsd', ReadFileBytes(Src31 + 'xml.xsd') + '<!-- changed -->'#10);
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Diags.Clear;
+      Check(LandrixGaebXmlXsdValidateTarget(S, Pointer(Doc31), Integer(Length(Doc31)), T31, Diags),
+        'changed xml.xsd: still validated');
+      CheckEquals(1, Diags.CountOf('GAEB-XSD-003'), 'changed xml.xsd: GAEB-XSD-003');
+    finally
+      S.Free;
+    end;
+    CopySet(Src31, Dir + 'b' + PathDelim, True);
+    { 2009-12 next to the files of 2007-11: its xmldsig differs }
+    WriteBytes(Dir + 'b' + PathDelim + 'GAEB_DA_XML 3.1 2009-12.xsd',
+      ReadFileBytes(Src3109 + 'GAEB_DA_XML 3.1 2009-12.xsd'));
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Diags.Clear;
+      Check(not S.Verify(Diags), 'mixed editions: Verify fails');
+      CheckEquals(1, Diags.CountOf('GAEB-XSD-003'), 'mixed editions: the xmldsig of 2007-11 is reported: ' +
+        Diags.ToText);
+    finally
+      S.Free;
+    end;
+    DeleteFile(Dir + 'b' + PathDelim + 'GAEB_DA_XML 3.1 2009-12.xsd');
+    { the X84 package of 2007-11 alone: its imports are missing }
+    WriteBytes(Dir + 'c' + PathDelim + 'GAEB_DA_XML_84.xsd', ReadFileBytes(Src31 + 'GAEB_DA_XML_84.xsd'));
+    DeleteFile(Dir + 'b' + PathDelim + 'GAEB_DA_XML_84.xsd');
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Check(S.HasTarget(T31x84), 'X84 alone: found');
+      Check(RaisesGaebError(S, T31x84, Bid31), 'X84 alone: validation raises');
+      Diags.Clear;
+      Check(not S.Verify(Diags), 'X84 alone: Verify fails');
+      CheckEquals(2, Diags.CountOf('GAEB-XSD-004'), 'X84 alone: xml.xsd and xmldsig missing: ' + Diags.ToText);
+    finally
+      S.Free;
+    end;
+    DeleteTree(Dir + 'c' + PathDelim);
+    CopySet(Src31, Dir + 'b' + PathDelim, True);
+    { xmldsig missing: the schema is incomplete }
+    DeleteFile(Dir + 'b' + PathDelim + 'xmldsig-core-schema.xsd');
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Check(RaisesGaebError(S, T31, Doc31), 'no xmldsig: validation raises');
+      Diags.Clear;
+      Check(not S.Verify(Diags), 'no xmldsig: Verify fails');
+      CheckEquals(1, Diags.CountOf('GAEB-XSD-004'), 'no xmldsig: GAEB-XSD-004 once: ' + Diags.ToText);
+    finally
+      S.Free;
+    end;
+  finally
+    Diags.Free;
+    DeleteTree(Dir);
+  end;
+end;
+
 procedure Register;
 begin
   RegisterTest('Xsd.RuleCases', TestRuleCases);
@@ -938,6 +1185,8 @@ begin
   RegisterTest('Xsd.Agreement', TestAgreement);
   RegisterTest('Xsd.Api.Model', TestApiModel);
   RegisterTest('Xsd.Api.Folder', TestApiFolder);
+  RegisterTest('Xsd.Api.Version3x', TestApiVersion3x);
+  RegisterTest('Xsd.Api.FolderVersion3x', TestApiFolderVersion3x);
   RegisterTest('Local.Xsd', TestLocal);
 end;
 
