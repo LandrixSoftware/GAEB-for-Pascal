@@ -47,7 +47,8 @@ uses
   LandrixGaebTestCoverage,
   LandrixGaebTestRoundTrip,
   LandrixGaebTestProcess,
-  LandrixGaebTestBoQ;
+  LandrixGaebTestBoQ,
+  LandrixGaebTestXml3x;
 
 function FilterParam: string;
 var
@@ -74,5 +75,6 @@ begin
   LandrixGaebTestRoundTrip.Register;
   LandrixGaebTestProcess.Register;
   LandrixGaebTestBoQ.Register;
+  LandrixGaebTestXml3x.Register;
   ExitCode := RunAllTests(FilterParam);
 end.

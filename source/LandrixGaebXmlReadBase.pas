@@ -34,6 +34,10 @@
     GAEB-XML-007 error    text in element-only content (kept as text node
                           in ordered child lists, otherwise dropped)
     GAEB-XML-008 error    element inside a simple element (skipped)
+    GAEB-XML-009 info     GAEB DA XML 3.0/3.1: a list directly inside a
+                          list, read into a new list item (li)
+    GAEB-XML-010 warning  GAEB DA XML 3.0/3.1: element without counterpart
+                          in later versions (Communication), not read
 
   A repeated group (for example CnstSite with its NotifSite) is split at
   its members only; a group that lacks its mandatory member is not reported
@@ -47,7 +51,10 @@
   werden Meldungen mit Elementpfad, Zeile und Spalte; nur nicht
   wohlgeformtes XML bricht ab (ELandrixXmlError mit Position). Die
   Regelkennungen oben gelten unveraendert; die Texte sind englisch und
-  enthalten keinen Dateiinhalt. }
+  enthalten keinen Dateiinhalt. GAEB DA XML 3.0/3.1 wird in dasselbe
+  Modell gelesen (Namespace 200407); eine Liste direkt in einer Liste kommt
+  in einen neuen Listenpunkt (GAEB-XML-009), Elemente ohne Gegenstueck in
+  spaeteren Versionen werden mit GAEB-XML-010 uebersprungen. }
 
 { API: internal. May change in any release, also after 1.0; use the
   stable units instead (see README).
@@ -80,10 +87,12 @@ type
     FNamespace: TLandrixXmlUtf8;
     FDiagnostics: TLandrixGaebDiagnostics;
     FForeign: TStringList;
+    FLegacy: Boolean;
     procedure Report(const ARuleId: string; ASeverity: TLandrixGaebSeverity;
       const AMessage: string);
     function NamespaceIsGaeb(const ASpan: TLandrixXmlSpan): Boolean;
     procedure ReportForeign(const ANamespace: TLandrixXmlUtf8);
+    function IsPrjInfoChild: Boolean;
     procedure CheckNoAttributes;
     function ReadText: TLandrixXmlUtf8;
     procedure ReadDecimal(const AText: TLandrixXmlUtf8; var AValue: TLandrixGaebDecimal;
@@ -119,6 +128,14 @@ type
     { Reports an unknown element and skips it. DE: Meldet ein unbekanntes
       Element und ueberspringt es. }
     procedure UnknownElement;
+    { Reports a list directly inside a list (GAEB DA XML 3.0/3.1) that is
+      read into a new list item.
+      DE: Meldet eine Liste direkt in einer Liste (GAEB DA XML 3.0/3.1),
+      die in einen neuen Listenpunkt gelesen wird. }
+    procedure NestedList;
+    { True when reading GAEB DA XML 3.0 or 3.1 (namespace 200407).
+      DE: True beim Lesen von GAEB DA XML 3.0 oder 3.1 (Namespace 200407). }
+    property Legacy: Boolean read FLegacy;
     { Checks the schema order: AIndex is the position of the element in its
       class, ASingle tells that it may occur once, AHave that it was already
       read. False for a repetition of a single element (also out of order),
@@ -208,6 +225,7 @@ begin
   FDiagnostics := ADiagnostics;
   FForeign := TStringList.Create;
   FForeign.Sorted := True;
+  FLegacy := ANamespace = 'http://www.gaeb.de/GAEB_DA_XML/200407';
 end;
 
 destructor TLandrixGaebXmlReadContext.Destroy;
@@ -278,9 +296,58 @@ end;
 
 procedure TLandrixGaebXmlReadContext.UnknownElement;
 begin
-  Report('GAEB-XML-001', gsError, 'unknown element ' +
-    LandrixXmlUtf8ToString(FReader.LocalNameUtf8) + ' skipped');
+  { an element of GAEB DA XML 3.0/3.1 that later versions dropped }
+  if FLegacy and NameIs('Communication') and IsPrjInfoChild then
+    Report('GAEB-XML-010', gsWarning, 'element Communication of an older schema version has no ' +
+      'counterpart in later versions; not read')
+  else
+    Report('GAEB-XML-001', gsError, 'unknown element ' +
+      LandrixXmlUtf8ToString(FReader.LocalNameUtf8) + ' skipped');
   FReader.Skip;
+end;
+
+{ True if the current element is a child of GAEB/PrjInfo (local names; the
+  path may carry prefixes). }
+function TLandrixGaebXmlReadContext.IsPrjInfoChild: Boolean;
+var
+  Path: string;
+  Steps: TStringList;
+  I, P: Integer;
+begin
+  Path := LandrixXmlUtf8ToString(FReader.ElementPathUtf8);
+  Steps := TStringList.Create;
+  try
+    { '/GAEB/PrjInfo/Communication' gives '', GAEB, PrjInfo, Communication }
+    while Path <> '' do
+    begin
+      P := Pos('/', Path);
+      if P = 0 then
+      begin
+        Steps.Add(Path);
+        Path := '';
+      end
+      else
+      begin
+        Steps.Add(Copy(Path, 1, P - 1));
+        Delete(Path, 1, P);
+      end;
+    end;
+    for I := 0 to Steps.Count - 1 do
+    begin
+      P := Pos(':', Steps[I]);
+      if P > 0 then
+        Steps[I] := Copy(Steps[I], P + 1, MaxInt);
+    end;
+    Result := (Steps.Count = 4) and (Steps[1] = 'GAEB') and (Steps[2] = 'PrjInfo');
+  finally
+    Steps.Free;
+  end;
+end;
+
+procedure TLandrixGaebXmlReadContext.NestedList;
+begin
+  Report('GAEB-XML-009', gsInformation, 'list directly inside a list (older schema version) read ' +
+    'into a new list item');
 end;
 
 function TLandrixGaebXmlReadContext.Order(var ALast: Integer; AIndex: Integer;

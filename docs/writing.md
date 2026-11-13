@@ -68,6 +68,12 @@ An element the target does not know is a loss (`GAEB-WRT-001`): in the default m
 gwmBestEffort` it leaves such elements out and reports them. The meaning of the document stays
 with `Target`: a bid X84 saved as X86 still has unknown count status.
 
+Files in GAEB DA XML 3.0 and 3.1 are saved as 3.3/2021-05. Their data often does not quite fit
+3.3: elements the phase no longer has in 3.3, IDs that are invalid in 3.3, texts longer than
+allowed, missing mandatory data. The library repairs none of this by itself and never shortens;
+it reports every case. With `gwmBestEffort` it writes a 3.3 file with the reported losses; check
+it before passing it on.
+
 ## Write options
 
 Always start from `LandrixGaebXmlDefaultWriteOptions` and change single fields; later

@@ -840,11 +840,12 @@ type
     function Info: TLandrixGaebXmlBoQInfo;
     function Resolve(const AIDRef: TLandrixGaebString; AKinds: TLandrixGaebNodeKinds): TLandrixGaebReference;
   public
-    { Wraps ADocument, a document of ATarget (Target and OutputTarget).
-      With AOwnsDocument the bill frees the document (also if the
+    { Wraps ADocument, a document of ATarget (Target and OutputTarget; for
+      GAEB DA XML 3.0/3.1 OutputTarget is 3.3/2021-05). With AOwnsDocument the bill frees the document (also if the
       constructor fails); without, the document must outlive the bill.
       DE: Umhuellt ADocument, ein Dokument von ATarget (Target und
-      OutputTarget). Mit AOwnsDocument gibt das LV das Dokument frei (auch
+      OutputTarget; fuer GAEB DA XML 3.0/3.1 ist OutputTarget 3.3/2021-05).
+      Mit AOwnsDocument gibt das LV das Dokument frei (auch
       wenn der Konstruktor scheitert); ohne muss das Dokument das LV
       ueberleben. }
     constructor Create(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
@@ -893,7 +894,9 @@ type
     procedure Remove(ANode: TLandrixGaebNode);
     { Reads a GAEB DA XML file (LandrixGaebXmlReadFile; AMaxSize <= 0: the
       default limit) into a new bill that owns the document; Target and
-      OutputTarget are the detected target. ADiagnostics may be nil.
+      OutputTarget are the detected target (GAEB DA XML 3.0/3.1 is read
+      only: OutputTarget is then 3.3/2021-05, noted as information
+      GAEB-BOQ-001). ADiagnostics may be nil.
       Raises ELandrixGaebError for input that is no GAEB DA XML (also XML
       that is not well-formed within the part the detection reads), a
       target that cannot be read and input larger than AMaxSize,
@@ -902,8 +905,9 @@ type
       errors of the runtime library (EFOpenError, EReadError).
       DE: Liest eine GAEB-DA-XML-Datei (LandrixGaebXmlReadFile; AMaxSize
       <= 0: die Standardgrenze) in ein neues LV, das das Dokument besitzt;
-      Target und OutputTarget sind das erkannte Ziel. ADiagnostics darf nil
-      sein. Loest ELandrixGaebError aus fuer Eingaben, die kein GAEB DA XML
+      Target und OutputTarget sind das erkannte Ziel (GAEB DA XML 3.0/3.1
+      wird nur gelesen: OutputTarget ist dann 3.3/2021-05, vermerkt als
+      Hinweis GAEB-BOQ-001). ADiagnostics darf nil sein. Loest ELandrixGaebError aus fuer Eingaben, die kein GAEB DA XML
       sind (auch XML, das in dem Teil, den die Erkennung liest, nicht
       wohlgeformt ist), ein Ziel, das nicht gelesen werden kann, und
       Eingaben ueber AMaxSize, ELandrixXmlError (Unit LandrixXmlBase, mit
@@ -949,11 +953,14 @@ type
       X84 hat unbestimmten Zaehlstatus (siehe TLandrixGaebCountStatus), und
       die Prozessfunktionen pruefen die Phase. Es aendert sich nie. }
     property Target: TLandrixGaebTarget read FTarget;
-    { The target SaveToFile and SaveToStream write for (initially Target);
-      another target converts on saving. A record: assign it as a whole.
+    { The target SaveToFile and SaveToStream write for (initially Target;
+      for GAEB DA XML 3.0 and 3.1, which are read only, 3.3/2021-05 of the
+      same phase); another target converts on saving. A record: assign it
+      as a whole.
       DE: Das Ziel, fuer das SaveToFile und SaveToStream schreiben
-      (anfangs Target); ein anderes Ziel konvertiert beim Speichern. Ein
-      Record: als Ganzes zuweisen. }
+      (anfangs Target; fuer GAEB DA XML 3.0 und 3.1, die nur gelesen
+      werden, 3.3/2021-05 derselben Phase); ein anderes Ziel konvertiert
+      beim Speichern. Ein Record: als Ganzes zuweisen. }
     property OutputTarget: TLandrixGaebTarget read FOutputTarget write FOutputTarget;
     { A number that changes whenever views of nodes are added or freed
       (AddCategory, AddItem, Remove, Refresh). A caller that keeps views
@@ -2866,6 +2873,10 @@ begin
   FDocument := ADocument;
   FTarget := ATarget;
   FOutputTarget := ATarget;
+  { GAEB DA XML 3.0 and 3.1 are read only: saving converts to 3.3/2021-05,
+    which has every phase of them }
+  if ATarget.Version in [gv30, gv31] then
+    FOutputTarget := LandrixGaebTarget(gv33, ge2021_05, ATarget.Phase);
   FOwnsDocument := AOwnsDocument;
   FNodes := TObjectList.Create;
   FRoot := TLandrixGaebNodeList.Create;
@@ -3641,6 +3652,14 @@ begin
   Result := TLandrixGaebLotGroup(FLotGroups[AIndex]);
 end;
 
+{ Notes that a GAEB DA XML 3.0/3.1 bill will be saved as 3.3/2021-05. }
+procedure NoteReadOnly(const ATarget: TLandrixGaebTarget; ADiagnostics: TLandrixGaebDiagnostics);
+begin
+  if (ADiagnostics <> nil) and (ATarget.Version in [gv30, gv31]) then
+    ADiagnostics.AddDiagnostic('GAEB-BOQ-001', gsInformation, 'the schema version of the document is ' +
+      'read only; OutputTarget is GAEB DA XML 3.3 (2021-05)');
+end;
+
 class function TLandrixGaebBillOfQuantities.LoadFromFile(const AFileName: string;
   ADiagnostics: TLandrixGaebDiagnostics; AMaxSize: Int64): TLandrixGaebBillOfQuantities;
 var
@@ -3649,6 +3668,7 @@ var
 begin
   Doc := LandrixGaebXmlReadFile(AFileName, ADiagnostics, AMaxSize, Det);
   Result := TLandrixGaebBillOfQuantities.Create(Doc, Det.Target, True);
+  NoteReadOnly(Det.Target, ADiagnostics);
 end;
 
 class function TLandrixGaebBillOfQuantities.LoadFromStream(AStream: TStream;
@@ -3659,6 +3679,7 @@ var
 begin
   Doc := LandrixGaebXmlReadStream(AStream, ADiagnostics, AMaxSize, Det);
   Result := TLandrixGaebBillOfQuantities.Create(Doc, Det.Target, True);
+  NoteReadOnly(Det.Target, ADiagnostics);
 end;
 
 procedure TLandrixGaebBillOfQuantities.SaveToFile(const AFileName: string; ADiagnostics: TLandrixGaebDiagnostics);

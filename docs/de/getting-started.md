@@ -58,8 +58,24 @@ Lesen, Schreiben und Prüfen decken die Austauschphasen des Leistungsverzeichnis
 | GAEB DA XML 3.3 | 2021-05 | DA 80 bis 87 | DA 80 bis 87 |
 | GAEB DA XML 3.3 | 2019-11 | DA 80 bis 87 | nein (2021-05 schreiben) |
 
-Andere Phasen (etwa Zeitverträge, Mengenermittlung X31, Rechnungen X89), GAEB DA XML 3.0, 3.1 und
-die Beta 3.4, GAEB DA 2000 und GAEB 90 werden erkannt (`LandrixGaebDetectFile`), nicht gelesen.
+GAEB DA XML 3.0 und 3.1 (ab 1.1) werden nur gelesen, in dasselbe Modell:
+
+| Version | Ausgabe | Lesen | Schreiben |
+|---|---|---|---|
+| GAEB DA XML 3.1 | 2009-12 | DA 81 bis 87 | nein (3.3 schreiben) |
+| GAEB DA XML 3.1 | 2007-11 | DA 81 bis 86 | nein (3.3 schreiben) |
+| GAEB DA XML 3.0 | 2004-07 | DA 81 bis 86 | nein (3.3 schreiben) |
+
+Eine 3.1-Datei ist Ausgabe 2009-12, wenn ihr `VersDate` 2009-12 lautet, sonst 2007-11. Geprüft
+werden 3.0 und 3.1 nicht selbst (keine Prüfung der Inhaltsmodelle, keine XSD-Prüfung):
+konvertieren und die Ausgabe prüfen. Die Fassade setzt `OutputTarget` eines solchen LV auf
+3.3/2021-05 derselben Phase. Eine Liste direkt in einer Liste kommt in einen neuen Listenpunkt
+(`GAEB-XML-009`); `Communication` in den Projektangaben hat in späteren Versionen kein Gegenstück
+(`GAEB-XML-010`).
+
+Andere Phasen (etwa Zeitverträge, Mengenermittlung X31, Rechnungen X89), DP 88 und die
+Handelsphasen von 3.1, die Beta 3.4, GAEB DA 2000 und GAEB 90 werden erkannt
+(`LandrixGaebDetectFile`), nicht gelesen.
 
 Ein Ziel nennt Version, Ausgabe und Austauschphase:
 

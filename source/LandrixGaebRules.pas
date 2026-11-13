@@ -113,10 +113,14 @@ function LandrixGaebRuleIndex(const AID: string): Integer;
 
 { Checks the business rules of ATarget's phase on ADocument. True if no
   diagnostic of severity gsError or higher was added. Phases without rules
-  give True. ADiagnostics may be nil.
+  give True. ADiagnostics may be nil. GAEB DA XML 3.0 and 3.1 raise
+  ELandrixGaebError: the rules are those of 3.2 and 3.3; check the
+  converted document.
   DE: Prueft die Geschaeftsregeln der Phase von ATarget an ADocument. True,
   wenn keine Meldung der Schwere gsError oder hoeher hinzukam. Phasen ohne
-  Regeln liefern True. ADiagnostics darf nil sein. }
+  Regeln liefern True. ADiagnostics darf nil sein. GAEB DA XML 3.0 und 3.1
+  loesen ELandrixGaebError aus: die Regeln sind die von 3.2 und 3.3; das
+  konvertierte Dokument pruefen. }
 function LandrixGaebCheckRules(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
   ADiagnostics: TLandrixGaebDiagnostics): Boolean;
 
@@ -124,13 +128,15 @@ function LandrixGaebCheckRules(ADocument: TLandrixGaebXmlGAEB; const ATarget: TL
   categories are matched by OZ. Paths of the diagnostics belong to the
   second document, except for elements that are missing there (then the
   path of the first document; the message says so). Raises
-  ELandrixGaebError for a pair of phases without pair rules.
+  ELandrixGaebError for a pair of phases without pair rules and for GAEB
+  DA XML 3.0 and 3.1.
   DE: Prueft die Paarregeln zweier Dokumente (X83 -> X84, X84 -> X86,
   X86 -> X87).
   Positionen und Kategorien werden ueber die OZ zugeordnet. Die Pfade der
   Meldungen gehoeren zum zweiten Dokument, ausser bei Elementen, die dort
   fehlen (dann der Pfad im ersten Dokument; der Text sagt es). Loest fuer
-  ein Phasenpaar ohne Paarregeln ELandrixGaebError aus. }
+  ein Phasenpaar ohne Paarregeln und fuer GAEB DA XML 3.0 und 3.1
+  ELandrixGaebError aus. }
 function LandrixGaebCheckPair(AFirst: TLandrixGaebXmlGAEB; const AFirstTarget: TLandrixGaebTarget;
   ASecond: TLandrixGaebXmlGAEB; const ASecondTarget: TLandrixGaebTarget;
   ADiagnostics: TLandrixGaebDiagnostics): Boolean;
@@ -1103,11 +1109,22 @@ begin
     CategorySums(nil, 'GAEB-BR-SUM-003');
 end;
 
+{ The rules are those of 3.2 and 3.3: GAEB DA XML 3.0 and 3.1 are checked
+  after the conversion. }
+procedure RejectLegacy(const ATarget: TLandrixGaebTarget);
+begin
+  if ATarget.Version in [gv30, gv31] then
+    raise ELandrixGaebError.Create('no business rules for GAEB DA XML ' +
+      LandrixXmlUtf8ToString(LandrixGaebVersionToText(ATarget.Version)) +
+      '; convert the document to 3.2 or 3.3 and check that');
+end;
+
 function LandrixGaebCheckRules(ADocument: TLandrixGaebXmlGAEB; const ATarget: TLandrixGaebTarget;
   ADiagnostics: TLandrixGaebDiagnostics): Boolean;
 var
   Run: TRuleRun;
 begin
+  RejectLegacy(ATarget);
   Run := TRuleRun.Create(ADocument, ATarget.Phase, ADiagnostics);
   try
     Run.Collect;
@@ -1397,6 +1414,8 @@ function LandrixGaebCheckPair(AFirst: TLandrixGaebXmlGAEB; const AFirstTarget: T
 var
   Run: TPairRun;
 begin
+  RejectLegacy(AFirstTarget);
+  RejectLegacy(ASecondTarget);
   if not ((AFirstTarget.Phase = gp83) and (ASecondTarget.Phase = gp84)) and
     not ((AFirstTarget.Phase = gp84) and (ASecondTarget.Phase = gp86)) and
     not ((AFirstTarget.Phase = gp86) and (ASecondTarget.Phase = gp87)) then

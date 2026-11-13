@@ -4313,6 +4313,22 @@ begin
               ReadLi(C, O.Li.Add);
             end;
           end
+          else if C.Legacy and C.NameIs('ul') then
+          begin
+            if C.Order(Last, 0, False, False) then
+            begin
+              C.NestedList;
+              ReadUl(C, O.Li.Add.AddUl);
+            end;
+          end
+          else if C.Legacy and C.NameIs('ol') then
+          begin
+            if C.Order(Last, 0, False, False) then
+            begin
+              C.NestedList;
+              ReadOl(C, O.Li.Add.AddOl);
+            end;
+          end
           else
             C.UnknownElement;
       xttText, xttCData:
@@ -4360,6 +4376,22 @@ begin
             if C.Order(Last, 0, False, False) then
             begin
               ReadLiTC(C, O.Li.Add);
+            end;
+          end
+          else if C.Legacy and C.NameIs('ul') then
+          begin
+            if C.Order(Last, 0, False, False) then
+            begin
+              C.NestedList;
+              ReadUlTC(C, O.Li.Add.AddUl);
+            end;
+          end
+          else if C.Legacy and C.NameIs('ol') then
+          begin
+            if C.Order(Last, 0, False, False) then
+            begin
+              C.NestedList;
+              ReadOlTC(C, O.Li.Add.AddOl);
             end;
           end
           else
@@ -6799,6 +6831,22 @@ begin
               ReadLi(C, O.Li.Add);
             end;
           end
+          else if C.Legacy and C.NameIs('ul') then
+          begin
+            if C.Order(Last, 0, False, False) then
+            begin
+              C.NestedList;
+              ReadUl(C, O.Li.Add.AddUl);
+            end;
+          end
+          else if C.Legacy and C.NameIs('ol') then
+          begin
+            if C.Order(Last, 0, False, False) then
+            begin
+              C.NestedList;
+              ReadOl(C, O.Li.Add.AddOl);
+            end;
+          end
           else
             C.UnknownElement;
       xttText, xttCData:
@@ -6840,6 +6888,22 @@ begin
             if C.Order(Last, 0, False, False) then
             begin
               ReadLiTC(C, O.Li.Add);
+            end;
+          end
+          else if C.Legacy and C.NameIs('ul') then
+          begin
+            if C.Order(Last, 0, False, False) then
+            begin
+              C.NestedList;
+              ReadUlTC(C, O.Li.Add.AddUl);
+            end;
+          end
+          else if C.Legacy and C.NameIs('ol') then
+          begin
+            if C.Order(Last, 0, False, False) then
+            begin
+              C.NestedList;
+              ReadOlTC(C, O.Li.Add.AddOl);
             end;
           end
           else
@@ -7016,7 +7080,8 @@ begin
     end;
 end;
 
-{ True if the generated model was built from the schema of ATarget. }
+{ True if the generated model was built from the schema of ATarget, or
+  ATarget is GAEB DA XML 3.0 or 3.1, read into the same model. }
 function ModelCoversTarget(const ATarget: TLandrixGaebTarget): Boolean;
 begin
   Result := ((ATarget.Version = gv32) and (ATarget.Edition = ge2013_10) and (ATarget.Phase = gp80)) or
@@ -7042,7 +7107,8 @@ begin
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp84)) or
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp85)) or
     ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp86)) or
-    ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp87));
+    ((ATarget.Version = gv33) and (ATarget.Edition = ge2021_05) and (ATarget.Phase = gp87)) or
+    (ATarget.Version in [gv30, gv31]);
 end;
 
 function RejectMessage(ADiagnostics: TLandrixGaebDiagnostics; AFirst: Integer): string;

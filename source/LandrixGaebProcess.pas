@@ -156,7 +156,9 @@ function LandrixGaebComputeSum(ABill: TLandrixGaebBillOfQuantities; ACategory: T
   Summen, weil die Summe unbekannt ist. }
 function LandrixGaebApplyTotals(ABill: TLandrixGaebBillOfQuantities; AKinds: TLandrixGaebMatching): Integer;
 
-{ Builds the award (X86, version and edition of the request) from a
+{ Builds the award (X86, version and edition of the request; for a
+  request whose version cannot be written, such as GAEB DA XML 3.0/3.1,
+  those of its OutputTarget) from a
   request (X83) and a bid (X84): the request written as X86 and read back
   (texts, quantities, structure, owner; what an X86 does not allow, such
   as OpenDate, is dropped with the writer's GAEB-WRT-001), then from the
@@ -175,7 +177,9 @@ function LandrixGaebApplyTotals(ABill: TLandrixGaebBillOfQuantities; AKinds: TLa
   take nothing over, and GAEB-PRC-004 (markup item of the award without
   Markup or ITMarkup, which an X86 requires). ELandrixGaebError if the
   request is no X83 or the bid no X84. The result owns its document.
-  DE: Setzt den Auftrag (X86, Version und Ausgabe der Anfrage) aus einer
+  DE: Setzt den Auftrag (X86, Version und Ausgabe der Anfrage; bei einer
+  Anfrage, deren Version nicht geschrieben werden kann, etwa GAEB DA
+  XML 3.0/3.1, die ihres OutputTarget) aus einer
   Anfrage (X83) und einem Angebot (X84) zusammen: die Anfrage als X86
   geschrieben und zurueckgelesen (Texte, Mengen, Struktur, Auftraggeber;
   was eine X86 nicht erlaubt, etwa OpenDate, entfaellt mit GAEB-WRT-001
@@ -766,14 +770,19 @@ var
   D: TLandrixGaebDiagnostic;
   Doc: TLandrixGaebXmlGAEB;
   Det: TLandrixGaebDetection;
+  T: TLandrixGaebTarget;
 begin
   Own := TLandrixGaebDiagnostics.Create;
   try
     Options := LandrixGaebXmlDefaultWriteOptions;
     Options.Check := False;
     Options.Indent := False;
-    Buffer := LandrixGaebXmlWriteCollect(ARequest.Document,
-      LandrixGaebTarget(ARequest.Target.Version, ARequest.Target.Edition, gp86), Options, Own, Errors, Warnings);
+    { in the version of the request; a request that cannot be written
+      (e.g. GAEB DA XML 3.0/3.1) in the version of its OutputTarget }
+    T := LandrixGaebTarget(ARequest.Target.Version, ARequest.Target.Edition, gp86);
+    if not LandrixGaebTargetIsSupported(T, True) then
+      T := LandrixGaebTarget(ARequest.OutputTarget.Version, ARequest.OutputTarget.Edition, gp86);
+    Buffer := LandrixGaebXmlWriteCollect(ARequest.Document, T, Options, Own, Errors, Warnings);
     Doc := LandrixGaebXmlReadBuffer(Pointer(Buffer), Integer(Length(Buffer)), Own, Det);
     { the bill owns the document from here on, also if its constructor
       fails }

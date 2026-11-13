@@ -903,6 +903,16 @@ def read_member(m, target, ind):
     return [ind + "%s(C, %s.%s.Add);" % (reader, target, m["name"])]
 
 
+# Lists of GAEB DA XML 3.0/3.1 that may contain lists directly: element name
+# and type of the list read into a new list item.
+NESTED_LISTS = {
+    "tgul": [("ul", "tgul"), ("ol", "tgol")],
+    "tgol": [("ul", "tgul"), ("ol", "tgol")],
+    "tgulTC": [("ul", "tgulTC"), ("ol", "tgolTC")],
+    "tgolTC": [("ul", "tgulTC"), ("ol", "tgolTC")],
+}
+
+
 def gen_read_proc(model, info, w):
     entries = dispatch_entries(model, info)
     groups = {}
@@ -997,6 +1007,21 @@ def gen_read_proc(model, info, w):
             w("              end;")
             w("            end;")
         w("          end")
+    # GAEB DA XML 3.0/3.1 allows a list directly inside a list: read it into
+    # a new list item (li may hold lists); later versions do not allow it
+    schema_name = next(k for k, v in model.emit.items() if v is info)
+    nested = NESTED_LISTS.get(schema_name)
+    if nested and not first:
+        li_index = next(i for i, m, g in entries if element_of(m) == "li")
+        for name, typ in nested:
+            w("          else if C.Legacy and C.NameIs('%s') then" % name)
+            w("          begin")
+            w("            if C.Order(Last, %d, False, False) then" % li_index)
+            w("            begin")
+            w("              C.NestedList;")
+            w("              %s(C, O.Li.Add.Add%s);" % (proc_name(model.emit[typ]), name.capitalize()))
+            w("            end;")
+            w("          end")
     if first:
         w("          C.UnknownElement;")
     else:
@@ -1096,7 +1121,11 @@ uses
             continue
         conds.append("((ATarget.Version = gv%s) and (ATarget.Edition = ge%s) and (ATarget.Phase = gp%s))" % (
             ctx["version"].replace(".", ""), ctx["edition"].replace("-", "_"), ctx["phase"].replace(".", "_")))
-    w("{ True if the generated model was built from the schema of ATarget. }")
+    # 3.0 and 3.1 are read into the same model (input profiles); which of
+    # their phases is readable decides LandrixGaebTargetIsSupported
+    conds.append("(ATarget.Version in [gv30, gv31])")
+    w("{ True if the generated model was built from the schema of ATarget, or")
+    w("  ATarget is GAEB DA XML 3.0 or 3.1, read into the same model. }")
     w("function ModelCoversTarget(const ATarget: TLandrixGaebTarget): Boolean;")
     w("begin")
     w("  Result := " + (" or\n    ".join(conds)) + ";")

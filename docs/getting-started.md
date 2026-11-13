@@ -57,10 +57,20 @@ confirmation):
 | GAEB DA XML 3.2 | 2013-10 | DA 80 to 87 | DA 80 to 87 |
 | GAEB DA XML 3.3 | 2021-05 | DA 80 to 87 | DA 80 to 87 |
 | GAEB DA XML 3.3 | 2019-11 | DA 80 to 87 | no (write 2021-05) |
+| GAEB DA XML 3.1 | 2009-12 | DA 81 to 87, read only (from 1.1) | no (write 3.3) |
+| GAEB DA XML 3.1 | 2007-11 | DA 81 to 86, read only (from 1.1) | no (write 3.3) |
+| GAEB DA XML 3.0 | 2004-07 | DA 81 to 86, read only (from 1.1) | no (write 3.3) |
 
-Other phases (for example time contracts, quantity determination X31, invoices X89), GAEB DA XML
-3.0, 3.1 and the 3.4 beta, GAEB DA 2000 and GAEB 90 are detected (`LandrixGaebDetectFile`),
-not read.
+GAEB DA XML 3.0 and 3.1 are read into the same model; a 3.1 file is edition 2009-12 when its
+`VersDate` is 2009-12, otherwise 2007-11. They are not checked themselves (no content model check,
+no XSD validation): convert them and check the output. The facade sets `OutputTarget` of such a
+bill to 3.3/2021-05 of the same phase. A list directly inside a list is read into a new list item
+(`GAEB-XML-009`); `Communication` in the project information has no counterpart in later versions
+(`GAEB-XML-010`).
+
+Other phases (for example time contracts, quantity determination X31, invoices X89), DP 88 and
+the trade phases of 3.1, the 3.4 beta, GAEB DA 2000 and GAEB 90 are detected
+(`LandrixGaebDetectFile`), not read.
 
 A target names version, edition and exchange phase:
 

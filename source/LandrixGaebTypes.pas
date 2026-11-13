@@ -360,14 +360,17 @@ function LandrixGaebTargetVersDate(const ATarget: TLandrixGaebTarget): TLandrixX
   time-contract phases 83Z, 84Z, 86ZE, 86ZR only 2014-03) and 3.3 (2019-11,
   2021-05; X31 also 2023-01), only phases that exist in that edition.
   Writing: the same without 3.3/2019-11 and without beta phases (61, 84P,
-  98, 99); 3.3/2023-01 X31 is writable. 3.0, 3.1 and the 3.4 beta are not
-  supported yet.
+  98, 99); 3.3/2023-01 X31 is writable. 3.0 (2004-07) and 3.1 (2007-11,
+  2009-12) only for reading, phases 81 to 86 (3.1/2009-12 also 87), into
+  the same model; DP 88, the trade phases of 3.1 and the 3.4 beta are not
+  supported.
   DE: True, wenn die Bibliothek das Ziel unterstuetzt. Lesen: 3.2
   (2013-10; Zeitvertragsphasen auch 2014-03) und 3.3 (2019-11, 2021-05; X31
   auch 2023-01), nur Phasen, die es in der Ausgabe gibt. Schreiben: dasselbe
   ohne 3.3/2019-11 und ohne Beta-Phasen (61, 84P, 98, 99); 3.3/2023-01 X31
-  ist schreibbar. 3.0, 3.1 und die
-  Beta 3.4 werden noch nicht unterstuetzt. }
+  ist schreibbar. 3.0 (2004-07) und 3.1 (2007-11, 2009-12) nur zum Lesen,
+  Phasen 81 bis 86 (3.1/2009-12 auch 87), in dasselbe Modell; DP 88, die
+  Handelsphasen von 3.1 und die Beta 3.4 werden nicht unterstuetzt. }
 function LandrixGaebTargetIsSupported(const ATarget: TLandrixGaebTarget;
   AForWriting: Boolean): Boolean;
 
@@ -407,6 +410,9 @@ const
     gp86, gp86ZE, gp86ZR, gp87, gp89, gp93, gp94, gp96, gp97];
   { 3.3/2021-05 adds 89B and the beta phases 61, 84P, 98, 99. }
   PhasesBeta33: TLandrixGaebPhases = [gp61, gp84P, gp98, gp99];
+  { Phases read from 3.0 and 3.1/2007-11 (88 is not supported); 3.1/2009-12
+    also has 87. }
+  PhasesLegacy: TLandrixGaebPhases = [gp81, gp82, gp83, gp84, gp85, gp86];
 
 function Trimmed(const S: TLandrixXmlUtf8): string;
 var
@@ -786,6 +792,17 @@ function LandrixGaebTargetIsSupported(const ATarget: TLandrixGaebTarget;
   AForWriting: Boolean): Boolean;
 begin
   case ATarget.Version of
+    gv30:
+      Result := (not AForWriting) and (ATarget.Edition = ge2004_07) and (ATarget.Phase in PhasesLegacy);
+    gv31:
+      case ATarget.Edition of
+        ge2007_11:
+          Result := (not AForWriting) and (ATarget.Phase in PhasesLegacy);
+        ge2009_12:
+          Result := (not AForWriting) and (ATarget.Phase in PhasesLegacy + [gp87]);
+      else
+        Result := False;
+      end;
     gv32:
       case ATarget.Edition of
         ge2013_10:

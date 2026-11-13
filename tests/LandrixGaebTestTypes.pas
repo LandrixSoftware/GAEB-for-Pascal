@@ -253,7 +253,18 @@ begin
   Check(LandrixGaebTargetIsSupported(LandrixGaebTarget(gv33, ge2023_01, gp31), True), '3.3/2023-01 X31');
   Check(not LandrixGaebTargetIsSupported(LandrixGaebTarget(gv33, ge2023_01, gp83), False), '2023-01 only X31');
   Check(not LandrixGaebTargetIsSupported(LandrixGaebTarget(gv34, ge2026_03, gp83), False), '3.4 beta not yet');
-  Check(not LandrixGaebTargetIsSupported(LandrixGaebTarget(gv31, ge2009_12, gp83), False), '3.1 not yet');
+  { 3.0 and 3.1: read only, phases 81 to 86, 3.1/2009-12 also 87; no 88, no trade phases }
+  Check(LandrixGaebTargetIsSupported(LandrixGaebTarget(gv31, ge2009_12, gp83), False), '3.1/2009-12 X83 read');
+  Check(not LandrixGaebTargetIsSupported(LandrixGaebTarget(gv31, ge2009_12, gp83), True), '3.1 not written');
+  Check(LandrixGaebTargetIsSupported(LandrixGaebTarget(gv31, ge2009_12, gp87), False), '3.1/2009-12 X87 read');
+  Check(not LandrixGaebTargetIsSupported(LandrixGaebTarget(gv31, ge2007_11, gp87), False), 'no X87 in 3.1/2007-11');
+  Check(LandrixGaebTargetIsSupported(LandrixGaebTarget(gv31, ge2007_11, gp81), False), '3.1/2007-11 X81 read');
+  Check(LandrixGaebTargetIsSupported(LandrixGaebTarget(gv30, ge2004_07, gp86), False), '3.0 X86 read');
+  Check(not LandrixGaebTargetIsSupported(LandrixGaebTarget(gv30, ge2004_07, gp86), True), '3.0 not written');
+  Check(not LandrixGaebTargetIsSupported(LandrixGaebTarget(gv30, ge2004_07, gp88), False), 'no DP 88');
+  Check(not LandrixGaebTargetIsSupported(LandrixGaebTarget(gv30, ge2004_07, gp80), False), 'no X80 in 3.0');
+  Check(not LandrixGaebTargetIsSupported(LandrixGaebTarget(gv31, ge2007_11, gp94), False), 'no trade phases');
+  Check(not LandrixGaebTargetIsSupported(LandrixGaebTarget(gv30, ge2007_11, gp83), False), '3.0 only 2004-07');
   Check(not LandrixGaebTargetIsSupported(LandrixGaebTarget(gv33, geUnknown, gp83), False), 'edition required');
 end;
 

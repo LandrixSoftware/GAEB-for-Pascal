@@ -68,6 +68,12 @@ Ein Element, das das Ziel nicht kennt, ist ein Verlust (`GAEB-WRT-001`): im Stan
 gwmBestEffort` lässt er solche Elemente weg und meldet sie. Die Bedeutung des Dokuments bleibt bei
 `Target`: ein Angebot X84, das als X86 gespeichert wird, hat weiter unbestimmten Zählstatus.
 
+Dateien in GAEB DA XML 3.0 und 3.1 werden als 3.3/2021-05 gespeichert. Ihre Daten passen oft nicht
+ganz zu 3.3: Elemente, die die Phase in 3.3 nicht mehr kennt, IDs, die in 3.3 ungültig sind, Texte
+über der zulässigen Länge, fehlende Pflichtangaben. Die Bibliothek repariert nichts davon
+selbsttätig und kürzt nie; sie meldet jeden Fall. Mit `gwmBestEffort` entsteht eine 3.3-Datei mit
+den gemeldeten Verlusten, die man vor der Weitergabe prüft.
+
 ## Schreiboptionen
 
 Immer mit `LandrixGaebXmlDefaultWriteOptions` beginnen und einzelne Felder ändern; spätere Versionen
