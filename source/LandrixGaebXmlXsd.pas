@@ -348,7 +348,6 @@ function FileSum(const AFolder, ARel: string): string;
 var
   Stream: TFileStream;
   Data: AnsiString;
-  Empty: Byte;
 begin
   Data := '';
   try
@@ -367,10 +366,8 @@ begin
       raise ELandrixGaebError.Create('schema file cannot be read: ' + ARel);
   end;
   if Length(Data) = 0 then
-  begin
-    Empty := 0;
-    Result := LandrixXmlSha256Hex(Empty, 0);
-  end
+    { no byte is read: any variable will do as the buffer }
+    Result := LandrixXmlSha256Hex(Data, 0)
   else
     Result := LandrixXmlSha256Hex(Data[1], Length(Data));
 end;
