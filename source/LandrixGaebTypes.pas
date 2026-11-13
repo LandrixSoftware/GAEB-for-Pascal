@@ -140,6 +140,19 @@ type
     gp97, gp98, gp99);
   TLandrixGaebPhases = set of TLandrixGaebPhase;
 
+  { Character set declared in a GAEB DA 2000 file (GAEBInfo/Zeichensatz):
+    gcsUnknown when the file does not declare one or declares an unknown
+    one. A declaration, not proof of the byte encoding: the reader decides
+    how to decode. Later releases add values: handle unknown values in an
+    else branch and do not store ordinal values.
+    DE: In einer GAEB-DA-2000-Datei angegebener Zeichensatz
+    (GAEBInfo/Zeichensatz): gcsUnknown, wenn die Datei keinen oder einen
+    unbekannten angibt. Eine Angabe, kein Nachweis der Byte-Codierung: wie
+    dekodiert wird, entscheidet der Leser. Spaetere Versionen ergaenzen
+    Werte: unbekannte Werte in einem else-Zweig behandeln, keine
+    Ordinalwerte speichern. }
+  TLandrixGaebCharset = (gcsUnknown, gcsAnsi, gcsOem, gcsUnicode);
+
   { Target of a read, check or write: version, schema edition and exchange
     phase. A record without methods (Delphi 6).
     DE: Ziel eines Lese-, Pruef- oder Schreibvorgangs: Version,

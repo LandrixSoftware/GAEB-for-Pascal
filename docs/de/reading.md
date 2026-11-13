@@ -99,4 +99,7 @@ und Abschluss; ein Bieter füllt sie mit `SetBodyText` oder `SetBodyNumber`.
 
 Ohne Fassade liest `LandrixGaebXmlReadFile` (Unit `LandrixGaebXmlReader`) in ein
 `TLandrixGaebXmlGAEB` und liefert die Erkennung (Format, Ziel). `LandrixGaebDetectFile` (Unit
-`LandrixGaebDetect`) erkennt nur Format und Ziel, auch für GAEB DA 2000 und GAEB 90.
+`LandrixGaebDetect`) erkennt nur Format und Ziel, auch für GAEB DA 2000 und GAEB 90. Für
+GAEB DA 2000 meldet sie zusätzlich den Kopf wie gefunden: `SourceVersion` (1.0, 1.1, 1.2),
+`SourcePhase` (DP, auch für Phasen ohne XML-Gegenstück) und `SourceCharset` (`Zeichensatz`);
+`Target` bleibt leer, es beschreibt nur GAEB DA XML.

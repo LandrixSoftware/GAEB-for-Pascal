@@ -425,6 +425,9 @@ LandrixGaebDetect: record tlandrixgaebdetection
 LandrixGaebDetect: tlandrixgaebdetection field accepted: boolean
 LandrixGaebDetect: tlandrixgaebdetection field format: tlandrixgaebformat
 LandrixGaebDetect: tlandrixgaebdetection field namespace: tlandrixxmlutf8
+LandrixGaebDetect: tlandrixgaebdetection field sourcecharset: tlandrixgaebcharset
+LandrixGaebDetect: tlandrixgaebdetection field sourcephase: string
+LandrixGaebDetect: tlandrixgaebdetection field sourceversion: string
 LandrixGaebDetect: tlandrixgaebdetection field target: tlandrixgaebtarget
 LandrixGaebDiagnostics: class tlandrixgaebdiagnostic(tobject)
 LandrixGaebDiagnostics: class tlandrixgaebdiagnostics(tobjectlist)
@@ -496,6 +499,11 @@ LandrixGaebTypes: class elandrixgaeberror(exception)
 LandrixGaebTypes: const landrixgaebdecimalmaxcoefficient (integer)
 LandrixGaebTypes: const landrixgaebdecimalmaxscale (integer)
 LandrixGaebTypes: const landrixgaeblibraryversion (string)
+LandrixGaebTypes: enum tlandrixgaebcharset
+LandrixGaebTypes: enum tlandrixgaebcharset value gcsansi
+LandrixGaebTypes: enum tlandrixgaebcharset value gcsoem
+LandrixGaebTypes: enum tlandrixgaebcharset value gcsunicode
+LandrixGaebTypes: enum tlandrixgaebcharset value gcsunknown
 LandrixGaebTypes: enum tlandrixgaebedition
 LandrixGaebTypes: enum tlandrixgaebedition value ge2004_07
 LandrixGaebTypes: enum tlandrixgaebedition value ge2007_11

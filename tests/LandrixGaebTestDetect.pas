@@ -385,6 +385,351 @@ begin
   end;
 end;
 
+{ ---- GAEB DA 2000 header ---- }
+
+{ A minimal GAEB DA 2000 file; Info is the content of GAEBInfo, Main the
+  main object with its content. }
+function DA2000(const Info, Main, MainContent: AnsiString): AnsiString;
+begin
+  Result := '#begin[GAEB]' + CRLF + '  #begin[GAEBInfo]' + CRLF + Info +
+    '  #end[GAEBInfo]' + CRLF + '  #begin[PrjInfo]' + CRLF +
+    '    [Name]P[end]' + CRLF + '  #end[PrjInfo]' + CRLF +
+    '  #begin[' + Main + ']' + CRLF + MainContent + '  #end[' + Main + ']' + CRLF +
+    '#end[GAEB]' + CRLF;
+end;
+
+function Info2000(const Version, Charset: AnsiString): AnsiString;
+begin
+  Result := '    [Version]' + Version + '[end]' + CRLF +
+    '    [ProgSystem]Test[end]' + CRLF;
+  if Charset <> '' then
+    Result := Result + '    [Zeichensatz]' + Charset + '[end]' + CRLF;
+end;
+
+procedure TestDA2000Header;
+var
+  Diags: TLandrixGaebDiagnostics;
+  R: TLandrixGaebDetection;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    R := Detect(DA2000(Info2000('1.2', 'ANSI'), 'Vergabe',
+      '    [DP]83[end]' + CRLF + '    #begin[LV]' + CRLF + '    #end[LV]' + CRLF), Diags);
+    Check(R.Accepted and (R.Format = gfDA2000), 'accepted');
+    CheckEqualsStr('1.2', R.SourceVersion, 'version');
+    CheckEqualsStr('83', R.SourcePhase, 'phase');
+    Check(R.SourceCharset = gcsAnsi, 'charset');
+    Check(R.Target.Version = gvUnknown, 'Target stays XML only');
+    CheckEquals(0, Integer(Diags.Count), 'no diagnostics: ' + Diags.ToText);
+
+    { keywords are case-insensitive; LVKatalog carries DP as well }
+    Diags.Clear;
+    R := Detect(DA2000('    [VERSION] 1.0 [END]' + CRLF + '    [zeichensatz]oem[end]' + CRLF,
+      'LVKatalog', '    [dp]80[end]' + CRLF), Diags);
+    CheckEqualsStr('1.0', R.SourceVersion, 'version trimmed, any case');
+    CheckEqualsStr('80', R.SourcePhase, 'phase in LVKatalog');
+    Check(R.SourceCharset = gcsOem, 'charset in any case');
+    CheckEquals(0, Integer(Diags.Count), 'no diagnostics in any case: ' + Diags.ToText);
+
+    { phases without an XML counterpart are detected, not rejected }
+    Diags.Clear;
+    R := Detect(DA2000(Info2000('1.1', 'ANSI'), 'KostErm', '    [DP]50[end]' + CRLF), Diags);
+    Check(R.Accepted, 'phase 50 accepted by the detection');
+    CheckEqualsStr('50', R.SourcePhase, 'phase 50');
+    CheckEquals(0, Integer(Diags.Count), 'phase 50 is a GAEB DA 2000 phase');
+  finally
+    Diags.Free;
+  end;
+end;
+
+{ Severity of the first entry with this rule; gsInformation if none, so
+  callers check the count as well. }
+function SeverityOf(Diags: TLandrixGaebDiagnostics; const RuleId: string): TLandrixGaebSeverity;
+var
+  I: Integer;
+begin
+  Result := gsInformation;
+  for I := 0 to Integer(Diags.Count) - 1 do
+    if Diags[I].RuleId = RuleId then
+    begin
+      Result := Diags[I].Severity;
+      Exit;
+    end;
+end;
+
+function Repeated(C: AnsiChar; N: Integer): AnsiString;
+begin
+  Result := '';
+  while Length(Result) < N do
+    Result := Result + C;
+end;
+
+{ S with every CR LF replaced by ALineEnd. }
+function WithLineEnd(const S, ALineEnd: AnsiString): AnsiString;
+var
+  I: Integer;
+begin
+  Result := '';
+  I := 1;
+  while I <= Length(S) do
+    if (S[I] = #13) and (I < Length(S)) and (S[I + 1] = #10) then
+    begin
+      Result := Result + ALineEnd;
+      Inc(I, 2);
+    end
+    else
+    begin
+      Result := Result + S[I];
+      Inc(I);
+    end;
+end;
+
+procedure TestDA2000LineEnds;
+var
+  Diags: TLandrixGaebDiagnostics;
+  R: TLandrixGaebDetection;
+  S: AnsiString;
+  I: Integer;
+const
+  Ends: array[0..2] of AnsiString = (#10, #13, #13#13#10);
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    S := DA2000(Info2000('1.1', 'OEM'), 'Vergabe', '    [DP]86[end]' + CRLF);
+    for I := 0 to 2 do
+    begin
+      Diags.Clear;
+      R := Detect(WithLineEnd(S, Ends[I]), Diags);
+      Check((R.SourceVersion = '1.1') and (R.SourcePhase = '86') and (R.SourceCharset = gcsOem),
+        'line end variant ' + IntToStr(I));
+      CheckEquals(0, Integer(Diags.Count), 'line end variant ' + IntToStr(I) + ': ' + Diags.ToText);
+    end;
+  finally
+    Diags.Free;
+  end;
+end;
+
+procedure TestDA2000HeaderRobust;
+var
+  Diags: TLandrixGaebDiagnostics;
+  R: TLandrixGaebDetection;
+  S: AnsiString;
+  I: Integer;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    { messages name the element, never its value }
+    R := Detect(DA2000(Info2000('AcmeGmbH', 'Xyzzy'), 'Vergabe', '    [DP]Q4711[end]' + CRLF), Diags);
+    CheckEquals(3, Integer(Diags.Count), 'three findings: ' + Diags.ToText);
+    Check((Pos('AcmeGmbH', Diags.ToText) = 0) and (Pos('XYZZY', UpperCase(Diags.ToText)) = 0) and
+      (Pos('Q4711', Diags.ToText) = 0), 'no value in the messages');
+
+    { a prefix that never closed GAEBInfo does not report "missing" }
+    Diags.Clear;
+    S := '#begin[GAEB]' + CRLF + '  #begin[PrjInfo]' + CRLF;
+    R := LandrixGaebDetectBuffer(Pointer(S), Length(S), True, Diags);
+    CheckEquals(0, Diags.CountOf('GAEB-DET-014'), 'GAEBInfo not closed: not missing');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-015'), 'GAEBInfo not closed: not found');
+
+    { an empty first occurrence wins and counts as missing }
+    Diags.Clear;
+    R := Detect(DA2000('    [Version]1.2[end]' + CRLF + '    [Zeichensatz][end]' + CRLF +
+      '    [Zeichensatz]ANSI[end]' + CRLF, 'Vergabe', '    [DP][end]' + CRLF +
+      '    [DP]83[end]' + CRLF), Diags);
+    Check(R.SourceCharset = gcsUnknown, 'empty Zeichensatz wins');
+    CheckEqualsStr('', R.SourcePhase, 'empty DP wins');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-014'), 'empty Zeichensatz reported');
+    Check(SeverityOf(Diags, 'GAEB-DET-014') = gsInformation, 'empty Zeichensatz is information');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-013'), 'empty DP reported');
+
+    { a closing #end without its object is ignored }
+    Diags.Clear;
+    R := Detect(DA2000(Info2000('1.2', 'ANSI'), 'Vergabe', '    #end[Unopened]' + CRLF +
+      '    [DP]83[end]' + CRLF), Diags);
+    CheckEqualsStr('83', R.SourcePhase, 'DP after an unmatched #end');
+    CheckEquals(0, Integer(Diags.Count), 'unmatched #end: ' + Diags.ToText);
+
+    { a vendor object is no main object: its DP does not count, its end
+      does not stop the search }
+    Diags.Clear;
+    S := '#begin[GAEB]' + CRLF + '  #begin[GAEBInfo]' + CRLF + Info2000('1.2', 'ANSI') +
+      '  #end[GAEBInfo]' + CRLF + '  #begin[_Vendor]' + CRLF + '    [DP]84[end]' + CRLF +
+      '  #end[_Vendor]' + CRLF + '  #begin[Vergabe]' + CRLF + '    [DP]83[end]' + CRLF +
+      '  #end[Vergabe]' + CRLF + '#end[GAEB]' + CRLF;
+    R := Detect(S, Diags);
+    CheckEqualsStr('83', R.SourcePhase, 'DP of Vergabe, not of the vendor object');
+    CheckEquals(0, Integer(Diags.Count), 'vendor object: ' + Diags.ToText);
+
+    { long object names are compared in full }
+    Diags.Clear;
+    R := Detect(DA2000(Info2000('1.2', 'ANSI'), 'Vergabe',
+      '    #begin[' + Repeated('A', 70) + ']' + CRLF +
+      '    #end[' + Repeated('B', 70) + ']' + CRLF +
+      '    [DP]84[end]' + CRLF +
+      '    #end[' + Repeated('A', 70) + ']' + CRLF +
+      '    [DP]83[end]' + CRLF), Diags);
+    CheckEqualsStr('83', R.SourcePhase, 'a different long name does not close the object');
+
+    { nesting deeper than the scan follows ends it as incomplete }
+    Diags.Clear;
+    S := '';
+    for I := 1 to 70 do
+      S := S + '#begin[A]' + CRLF;
+    S := S + '#end[Unopened]' + CRLF;
+    for I := 1 to 69 do
+      S := S + '#end[A]' + CRLF;
+    R := Detect(DA2000(Info2000('1.2', 'ANSI'), 'Vergabe', S + '    [DP]84[end]' + CRLF), Diags);
+    CheckEqualsStr('', R.SourcePhase, 'no DP taken behind a too deep nesting');
+    Check((Diags.CountOf('GAEB-DET-013') = 1) and (Pos('not found at the beginning', Diags.ToText) > 0),
+      'too deep: not found, not missing');
+    CheckEqualsStr('1.2', R.SourceVersion, 'header before the nesting kept');
+
+    { severities }
+    Diags.Clear;
+    R := Detect(DA2000(Info2000('1.2', ''), 'Vergabe', '    [DP]83[end]' + CRLF), Diags);
+    Check((Diags.CountOf('GAEB-DET-014') = 1) and (SeverityOf(Diags, 'GAEB-DET-014') = gsInformation),
+      'missing Zeichensatz is information');
+    Diags.Clear;
+    R := Detect(DA2000(Info2000('1.2', 'UNICODE'), 'Vergabe', '    [DP]83[end]' + CRLF), Diags);
+    Check((Diags.CountOf('GAEB-DET-015') = 1) and (SeverityOf(Diags, 'GAEB-DET-015') = gsWarning),
+      'UNICODE is a warning');
+    Diags.Clear;
+    R := Detect(DA2000(Info2000('2.0', 'ANSI'), 'Vergabe', '    [DP]87[end]' + CRLF), Diags);
+    Check((SeverityOf(Diags, 'GAEB-DET-012') = gsWarning) and
+      (SeverityOf(Diags, 'GAEB-DET-013') = gsWarning), 'unknown version and phase are warnings');
+    Check(R.Accepted, 'accepted with findings');
+  finally
+    Diags.Free;
+  end;
+end;
+
+procedure TestDA2000HeaderFindings;
+var
+  Diags: TLandrixGaebDiagnostics;
+  R: TLandrixGaebDetection;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    { missing Zeichensatz: information only }
+    R := Detect(DA2000(Info2000('1.2', ''), 'Vergabe', '    [DP]84[end]' + CRLF), Diags);
+    Check(R.SourceCharset = gcsUnknown, 'charset unknown when missing');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-014'), 'missing charset reported');
+    Check(not Diags.HasErrors, 'missing charset is no error');
+
+    Diags.Clear;
+    R := Detect(DA2000(Info2000('1.2', 'UNICODE'), 'Vergabe', '    [DP]84[end]' + CRLF), Diags);
+    Check(R.Accepted and (R.SourceCharset = gcsUnicode), 'UNICODE detected');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-015'), 'UNICODE reported');
+
+    Diags.Clear;
+    R := Detect(DA2000(Info2000('1.2', 'EBCDIC'), 'Vergabe', '    [DP]84[end]' + CRLF), Diags);
+    Check(R.SourceCharset = gcsUnknown, 'unknown charset');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-015'), 'unknown charset reported');
+
+    { unknown version and phase: value kept, warning }
+    Diags.Clear;
+    R := Detect(DA2000(Info2000('2.0', 'ANSI'), 'Vergabe', '    [DP]87[end]' + CRLF), Diags);
+    CheckEqualsStr('2.0', R.SourceVersion, 'unknown version kept');
+    CheckEqualsStr('87', R.SourcePhase, 'unknown phase kept');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-012'), 'unknown version reported');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-013'), 'unknown phase reported');
+
+    { unusable values never reach the result }
+    Diags.Clear;
+    R := Detect(DA2000(Info2000('1.2 Beta/x', 'ANSI'), 'Vergabe',
+      '    [DP]12345678901234567[end]' + CRLF), Diags);
+    CheckEqualsStr('', R.SourceVersion, 'version with foreign characters dropped');
+    CheckEqualsStr('', R.SourcePhase, 'overlong phase dropped');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-012'), 'unusable version reported');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-013'), 'unusable phase reported');
+
+    { a value spanning lines is unusable, and its lines are no structure }
+    Diags.Clear;
+    R := Detect(DA2000('    [Version]1.2' + CRLF + '#end[GAEBInfo]' + CRLF + '[end]' + CRLF +
+      '    [Zeichensatz]ANSI[end]' + CRLF, 'Vergabe', '    [DP]83[end]' + CRLF), Diags);
+    CheckEqualsStr('', R.SourceVersion, 'multi-line version dropped');
+    Check(R.SourceCharset = gcsAnsi, 'charset after a multi-line value');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-012'), 'multi-line version reported');
+
+    { missing values; empty elements count as missing; first occurrence wins }
+    Diags.Clear;
+    R := Detect(DA2000('    [Version][end]' + CRLF + '    [Zeichensatz]ANSI[end]' + CRLF +
+      '    [Zeichensatz]OEM[end]' + CRLF, 'Vergabe', '    #begin[LV]' + CRLF +
+      '      [DP]83[end]' + CRLF + '    #end[LV]' + CRLF), Diags);
+    CheckEqualsStr('', R.SourceVersion, 'empty version');
+    CheckEqualsStr('', R.SourcePhase, 'DP below the main object is not the phase');
+    Check(R.SourceCharset = gcsAnsi, 'first Zeichensatz counts');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-012'), 'missing version reported');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-013'), 'missing phase reported');
+
+    { comments and a UTF-8 byte order mark }
+    Diags.Clear;
+    R := Detect(#$EF#$BB#$BF + DA2000('## [Version]9.9[end]' + CRLF + Info2000('1.1', 'ANSI'),
+      'Vergabe', '    [DP]81[end]' + CRLF), Diags);
+    CheckEqualsStr('1.1', R.SourceVersion, 'comment line ignored');
+    CheckEquals(0, Integer(Diags.Count), 'no diagnostics with BOM and comment: ' + Diags.ToText);
+  finally
+    Diags.Free;
+  end;
+end;
+
+procedure TestDA2000HeaderPrefix;
+var
+  Diags: TLandrixGaebDiagnostics;
+  R: TLandrixGaebDetection;
+  S: AnsiString;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    { a prefix that ends inside GAEBInfo: "not found at the beginning",
+      never "missing" }
+    S := '#begin[GAEB]' + CRLF + '  #begin[GAEBInfo]' + CRLF + '    [ProgSystem]Test[end]' + CRLF +
+      '    [Version]1.';
+    R := LandrixGaebDetectBuffer(Pointer(S), Length(S), True, Diags);
+    Check(R.Accepted, 'prefix accepted');
+    CheckEqualsStr('', R.SourceVersion, 'cut version not taken');
+    CheckEquals(0, Diags.CountOf('GAEB-DET-014'), 'charset not reported as missing');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-015'), 'charset not found at the beginning');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-012'), 'version not found at the beginning');
+    CheckEquals(1, Diags.CountOf('GAEB-DET-013'), 'phase not found at the beginning');
+    Check(not Diags.HasErrors, 'prefix findings are no errors');
+
+    { the same text as a whole input: missing }
+    Diags.Clear;
+    R := LandrixGaebDetectBuffer(Pointer(S), Length(S), False, Diags);
+    CheckEquals(1, Diags.CountOf('GAEB-DET-014'), 'charset missing in a whole input');
+
+    { diagnostics may be nil }
+    S := DA2000(Info2000('1.2', 'ANSI'), 'Vergabe', '    [DP]83[end]' + CRLF);
+    R := LandrixGaebDetectBuffer(Pointer(S), Length(S), False, nil);
+    CheckEqualsStr('83', R.SourcePhase, 'nil diagnostics allowed');
+  finally
+    Diags.Free;
+  end;
+end;
+
+procedure TestDA2000SizeLimitFields;
+var
+  R: TLandrixGaebDetection;
+  Stream: TMemoryStream;
+  S: AnsiString;
+begin
+  Stream := TMemoryStream.Create;
+  try
+    S := DA2000(Info2000('1.2', 'ANSI'), 'Vergabe', '    [DP]83[end]' + CRLF);
+    Stream.WriteBuffer(S[1], Length(S));
+    Stream.Position := 0;
+    R := LandrixGaebDetectStream(Stream, nil, Int64(Length(S)) - 1);
+    Check(not R.Accepted and (R.Format = gfUnknown), 'larger than the limit');
+    Check((R.SourceVersion = '') and (R.SourcePhase = '') and (R.SourceCharset = gcsUnknown),
+      'source fields cleared');
+    R := LandrixGaebDetectStream(Stream, nil, 0);
+    Check(R.Accepted and (R.SourceCharset = gcsAnsi) and (R.SourcePhase = '83'), 'stream');
+  finally
+    Stream.Free;
+  end;
+end;
+
 { ---- local corpus ---- }
 
 type
@@ -394,6 +739,7 @@ var
   ExpectedFormat: TLandrixGaebFormat;
   Failures: TStringList;
   FaultyRejected: Integer;
+  Header2000, Header2000Complete: Integer;
 
 function LocalDir: string;
 begin
@@ -453,7 +799,15 @@ begin
     R := LandrixGaebDetectFile(FileName, nil, 0);
     if R.Format <> Expected then
       Failures.Add(RelName + ': detected ' + LandrixGaebFormatToStr(R.Format) +
-        ', expected ' + LandrixGaebFormatToStr(Expected));
+        ', expected ' + LandrixGaebFormatToStr(Expected))
+    else if R.Format = gfDA2000 then
+    begin
+      { header values are not printed: the files may hold customer data }
+      Inc(Header2000);
+      if ((R.SourceVersion = '1.0') or (R.SourceVersion = '1.1') or (R.SourceVersion = '1.2')) and
+        (R.SourcePhase <> '') and (R.SourceCharset in [gcsAnsi, gcsOem]) then
+        Inc(Header2000Complete);
+    end;
   except
     on E: Exception do
       Failures.Add(RelName + ': ' + E.ClassName);
@@ -485,12 +839,15 @@ begin
   Failures := TStringList.Create;
   try
     Total := 0;
+    Header2000 := 0;
+    Header2000Complete := 0;
     RunDetectFolder('xml', gfXml, Total);
     RunDetectFolder('official', gfXml, Total);
     RunDetectFolder('gaeb90', gfDA90, Total);
     RunDetectFolder('gaeb2000', gfDA2000, Total);
     RunDetectFolder('gaeb-multiformat', gfUnknown, Total);
-    WriteLn('  Local.Detect: ', Total, ' file(s), ', Failures.Count, ' mismatch(es)');
+    WriteLn('  Local.Detect: ', Total, ' file(s), ', Failures.Count, ' mismatch(es); GAEB DA 2000 ',
+      Header2000, ' file(s), ', Header2000Complete, ' with version, phase and ANSI/OEM');
     if Failures.Count > 0 then
       Fail(IntToStr(Failures.Count) + ' file(s) detected wrongly:' + sLineBreak + Failures.Text);
     Check(Total > 0, 'local files found');
@@ -628,6 +985,12 @@ begin
   RegisterTest('Detect.XmlTruncatedPrefix', TestXmlTruncatedPrefix);
   RegisterTest('Detect.XmlRejected', TestXmlRejected);
   RegisterTest('Detect.SizeLimit', TestSizeLimit);
+  RegisterTest('Detect.DA2000Header', TestDA2000Header);
+  RegisterTest('Detect.DA2000HeaderFindings', TestDA2000HeaderFindings);
+  RegisterTest('Detect.DA2000HeaderPrefix', TestDA2000HeaderPrefix);
+  RegisterTest('Detect.DA2000HeaderRobust', TestDA2000HeaderRobust);
+  RegisterTest('Detect.DA2000LineEnds', TestDA2000LineEnds);
+  RegisterTest('Detect.DA2000SizeLimitFields', TestDA2000SizeLimitFields);
   RegisterTest('Local.Detect', TestLocalDetect);
   RegisterTest('Local.Sweep', TestLocalSweep);
   RegisterTest('Local.Faulty', TestLocalFaulty);

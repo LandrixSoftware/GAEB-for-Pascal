@@ -37,6 +37,23 @@
     GAEB-DET-010 information  schema edition not recognised from VersDate
     GAEB-DET-011 warning  DP, Version or VersDate holds child elements instead
                           of a value (not used for the detection)
+    GAEB-DET-012 warning  GAEB DA 2000: GAEBInfo/Version missing, not found at
+                          the beginning, unusable or not 1.0/1.1/1.2
+    GAEB-DET-013 warning  GAEB DA 2000: DP missing, not found at the
+                          beginning, unusable or no GAEB DA 2000 phase
+    GAEB-DET-014 information  GAEB DA 2000: GAEBInfo/Zeichensatz missing
+                          (ANSI is assumed in practice; the reader decides)
+    GAEB-DET-015 warning  GAEB DA 2000: Zeichensatz UNICODE (encoding not
+                          defined), unknown, unusable or not found at the
+                          beginning
+
+  A value of the GAEB DA 2000 header is taken only when it is 1 to 16
+  letters, digits or dots on one line; anything else is reported as
+  unusable and left empty, so no file content reaches the result.
+  DE: Ein Wert aus dem Kopf von GAEB DA 2000 wird nur uebernommen, wenn er
+  aus 1 bis 16 Buchstaben, Ziffern oder Punkten auf einer Zeile besteht;
+  alles andere wird als unbrauchbar gemeldet und bleibt leer, damit kein
+  Dateiinhalt ins Ergebnis gelangt.
 
   DE: Die Meldungen oben haben dieselben Regelkennungen; die Texte sind
   englisch und enthalten keinen Dateiinhalt. }
@@ -88,6 +105,24 @@ type
       XML-Wurzelelements. }
     Namespace: TLandrixXmlUtf8;
     Accepted: Boolean;
+    { GAEB DA 2000 only: GAEBInfo/Version as found ('1.0', '1.1', '1.2'),
+      '' when missing or unusable. Since 1.3.0.
+      DE: Nur GAEB DA 2000: GAEBInfo/Version wie gefunden, '' wenn sie
+      fehlt oder unbrauchbar ist. Seit 1.3.0. }
+    SourceVersion: string;
+    { GAEB DA 2000 only: DP of the main object as found ('83', '88'),
+      also for phases this library does not read; '' when missing or
+      unusable. Since 1.3.0.
+      DE: Nur GAEB DA 2000: DP des Hauptobjekts wie gefunden, auch fuer
+      Phasen, die die Bibliothek nicht liest; '' wenn er fehlt oder
+      unbrauchbar ist. Seit 1.3.0. }
+    SourcePhase: string;
+    { GAEB DA 2000 only: declared character set; gcsUnknown when missing,
+      unknown or not found at the beginning. Since 1.3.0.
+      DE: Nur GAEB DA 2000: angegebener Zeichensatz; gcsUnknown, wenn er
+      fehlt, unbekannt ist oder am Anfang nicht gefunden wurde. Seit
+      1.3.0. }
+    SourceCharset: TLandrixGaebCharset;
   end;
 
 { Format family from the first bytes only (BOM and leading white space are
@@ -540,13 +575,338 @@ begin
       'schema edition not recognised from VersDate');
 end;
 
+{ Every field of R, on every return path. }
+procedure InitDetection(out R: TLandrixGaebDetection; AFormat: TLandrixGaebFormat);
+begin
+  R.Format := AFormat;
+  R.Target := LandrixGaebTarget(gvUnknown, geUnknown, gpUnknown);
+  R.Namespace := '';
+  R.Accepted := AFormat <> gfUnknown;
+  R.SourceVersion := '';
+  R.SourcePhase := '';
+  R.SourceCharset := gcsUnknown;
+end;
+
+{ True if P[0..Len-1] equals S ignoring ASCII case; S is lower case. }
+function SameTextAt(P: PAnsiChar; Len: Integer; const S: string): Boolean;
+var
+  I: Integer;
+begin
+  Result := Len = Length(S);
+  if not Result then
+    Exit;
+  for I := 1 to Len do
+    if LowerAscii(P[I - 1]) <> Ord(S[I]) then
+    begin
+      Result := False;
+      Exit;
+    end;
+end;
+
+{ Index of the first '[end]' (any case) in P[0..Len-1], -1 if none. }
+function FindEndMark(P: PAnsiChar; Len: Integer): Integer;
+var
+  I: Integer;
+begin
+  Result := -1;
+  for I := 0 to Len - 5 do
+    if (P[I] = '[') and SameTextAt(P + I + 1, 4, 'end]') then
+    begin
+      Result := I;
+      Exit;
+    end;
+end;
+
+const
+  { Longest header value taken into the detection result. }
+  MaxSourceValue = 16;
+
+  ValueEmpty = 0;
+  ValueUsable = 1;
+  ValueUnusable = 2;
+
+{ Value P[0..Len-1] trimmed: ValueEmpty, ValueUsable (AValue set: 1 to
+  MaxSourceValue letters, digits or dots) or ValueUnusable. }
+function HeaderValue(P: PAnsiChar; Len: Integer; out AValue: string): Integer;
+var
+  I: Integer;
+begin
+  AValue := '';
+  while (Len > 0) and (P^ in [' ', #9]) do
+  begin
+    Inc(P);
+    Dec(Len);
+  end;
+  while (Len > 0) and (P[Len - 1] in [' ', #9]) do
+    Dec(Len);
+  if Len = 0 then
+  begin
+    Result := ValueEmpty;
+    Exit;
+  end;
+  Result := ValueUnusable;
+  if Len > MaxSourceValue then
+    Exit;
+  for I := 0 to Len - 1 do
+    if not (P[I] in ['0'..'9', 'A'..'Z', 'a'..'z', '.']) then
+      Exit;
+  for I := 0 to Len - 1 do
+    AValue := AValue + Char(P[I]);
+  Result := ValueUsable;
+end;
+
+{ True if S is a phase of GAEB DA 2000, read or not. }
+function IsDA2000Phase(const S: string): Boolean;
+begin
+  Result := (S = '40') or (S = '50') or (S = '51') or (S = '61') or (S = '71') or
+    (S = '80') or (S = '81') or (S = '82') or (S = '83') or (S = '84') or
+    (S = '85') or (S = '86') or (S = '88') or (S = '89') or (S = '93') or
+    (S = '94') or (S = '96') or (S = '97');
+end;
+
+{ Reads the header of a GAEB DA 2000 file: GAEBInfo/Version,
+  GAEBInfo/Zeichensatz and DP of the main object (Vergabe, LVKatalog, ...).
+  A line-based scan of the structure only; values spanning lines are
+  skipped, a closing #end that does not match the open object is ignored.
+  The first occurrence counts, an empty one as missing. Messages name the
+  element, never its value. }
+procedure DetectDA2000(Buffer: Pointer; Size: Integer; AIsPrefix: Boolean;
+  ADiagnostics: TLandrixGaebDiagnostics; var R: TLandrixGaebDetection);
+const
+  KindOther = 0;
+  KindInfo = 1;
+  KindMain = 2;
+  { nesting depth followed; deeper input ends the scan as incomplete }
+  MaxNames = 64;
+var
+  P, Stop, LineStart, LineEnd, Q, KeyStart: PAnsiChar;
+  Depth, LineNo, Len, Close, Mark, Kind, State: Integer;
+  InValue, InfoClosed, InfoPassed, MainDone, Incomplete: Boolean;
+  VersionSeen, PhaseSeen, CharsetSeen: Boolean;
+  Value, Name: string;
+  Names: array[1..MaxNames] of string;
+
+  procedure Report(const ARuleId: string; ASeverity: TLandrixGaebSeverity;
+    const AMessage: string);
+  begin
+    AddDiag(ADiagnostics, ARuleId, ASeverity, LineNo, Integer(Q - LineStart) + 1,
+      Q - PAnsiChar(Buffer), AMessage);
+  end;
+
+  function KeyIs(const S: string): Boolean;
+  begin
+    Result := SameTextAt(KeyStart, Close - 1, S);
+  end;
+
+  { Lower-case name of #begin[...] / #end[...] from index AStart of the
+    line; '' if it has no closing bracket. An empty name never matches. }
+  function BlockName(AStart: Integer): string;
+  var
+    I, Stop2: Integer;
+  begin
+    Result := '';
+    Stop2 := AStart;
+    while (Stop2 < Len) and (Q[Stop2] <> ']') do
+      Inc(Stop2);
+    if Stop2 >= Len then
+      Exit;
+    SetLength(Result, Stop2 - AStart);
+    for I := AStart to Stop2 - 1 do
+      Result[I - AStart + 1] := Char(LowerAscii(Q[I]));
+  end;
+
+  { True for the objects that carry DP as their first element. }
+  function IsMainObject(const AName: string): Boolean;
+  begin
+    Result := (AName = 'vergabe') or (AName = 'lvkatalog') or (AName = 'katalog') or
+      (AName = 'kosterm') or (AName = 'raumbuch') or (AName = 'ablaufplanung') or
+      (AName = 'rechnung') or (AName = 'bestellung');
+  end;
+
+begin
+  P := PAnsiChar(Buffer);
+  Stop := P + Size;
+  if (Size >= 3) and (P[0] = #$EF) and (P[1] = #$BB) and (P[2] = #$BF) then
+    Inc(P, 3);
+  Depth := 0;
+  LineNo := 0;
+  Kind := KindOther;
+  InValue := False;
+  InfoClosed := False;
+  InfoPassed := False;
+  MainDone := False;
+  Incomplete := AIsPrefix;
+  VersionSeen := False;
+  PhaseSeen := False;
+  CharsetSeen := False;
+  while P < Stop do
+  begin
+    LineStart := P;
+    while (P < Stop) and not (P^ in [#10, #13]) do
+      Inc(P);
+    LineEnd := P;
+    if (P < Stop) and (P^ = #13) then
+      Inc(P);
+    if (P < Stop) and (P^ = #10) then
+      Inc(P);
+    Inc(LineNo);
+    { the last line of a prefix may be cut off }
+    if AIsPrefix and (LineEnd = Stop) then
+      Break;
+    Q := LineStart;
+    while (Q < LineEnd) and (Q^ in [' ', #9]) do
+      Inc(Q);
+    Len := Integer(LineEnd - Q);
+    if InValue then
+    begin
+      InValue := FindEndMark(Q, Len) < 0;
+      Continue;
+    end;
+    if (Len = 0) or ((Len >= 2) and (Q[0] = '#') and (Q[1] = '#')) then
+      Continue;
+    if (Len >= 7) and SameTextAt(Q, 7, '#begin[') then
+    begin
+      Name := BlockName(7);
+      if Depth >= MaxNames then
+      begin
+        Incomplete := True;
+        Break;
+      end;
+      Inc(Depth);
+      Names[Depth] := Name;
+      if Depth = 2 then
+        if Name = 'gaebinfo' then
+          Kind := KindInfo
+        else
+        begin
+          { GAEBInfo comes first: behind it, it is not searched for }
+          InfoPassed := True;
+          if IsMainObject(Name) then
+            Kind := KindMain
+          else
+            Kind := KindOther;
+        end;
+      Continue;
+    end;
+    if (Len >= 5) and SameTextAt(Q, 5, '#end[') then
+    begin
+      Name := BlockName(5);
+      if (Depth > 0) and (Name <> '') and (Names[Depth] = Name) then
+      begin
+        if Depth = 2 then
+        begin
+          if Kind = KindInfo then
+            InfoClosed := True
+          else if Kind = KindMain then
+            MainDone := True;
+          Kind := KindOther;
+        end;
+        Dec(Depth);
+      end;
+      if (InfoClosed or InfoPassed) and (PhaseSeen or MainDone) then
+        Break;
+      Continue;
+    end;
+    if Q[0] <> '[' then
+      Continue;
+    Close := 1;
+    while (Close < Len) and (Q[Close] <> ']') do
+      Inc(Close);
+    if Close >= Len then
+      Continue;
+    KeyStart := Q + 1;
+    Mark := FindEndMark(Q + Close + 1, Len - Close - 1);
+    if Mark < 0 then
+    begin
+      InValue := True;
+      State := ValueUnusable;
+      Value := '';
+    end
+    else
+      State := HeaderValue(Q + Close + 1, Mark, Value);
+    if Depth <> 2 then
+      Continue;
+    if (Kind = KindInfo) and (not VersionSeen) and KeyIs('version') then
+    begin
+      VersionSeen := True;
+      if State = ValueEmpty then
+        Report('GAEB-DET-012', gsWarning, 'GAEBInfo/Version is empty')
+      else if State = ValueUnusable then
+        Report('GAEB-DET-012', gsWarning, 'GAEBInfo/Version is not a usable value')
+      else
+      begin
+        R.SourceVersion := Value;
+        if (Value <> '1.0') and (Value <> '1.1') and (Value <> '1.2') then
+          Report('GAEB-DET-012', gsWarning,
+            'GAEBInfo/Version is not a GAEB DA 2000 version (1.0, 1.1, 1.2)');
+      end;
+    end
+    else if (Kind = KindInfo) and (not CharsetSeen) and KeyIs('zeichensatz') then
+    begin
+      CharsetSeen := True;
+      Value := UpperCase(Value);
+      if State = ValueEmpty then
+        Report('GAEB-DET-014', gsInformation,
+          'GAEBInfo/Zeichensatz is empty; ANSI is assumed in practice')
+      else if State = ValueUnusable then
+        Report('GAEB-DET-015', gsWarning, 'GAEBInfo/Zeichensatz is not a usable value')
+      else if Value = 'ANSI' then
+        R.SourceCharset := gcsAnsi
+      else if Value = 'OEM' then
+        R.SourceCharset := gcsOem
+      else if Value = 'UNICODE' then
+      begin
+        R.SourceCharset := gcsUnicode;
+        Report('GAEB-DET-015', gsWarning,
+          'Zeichensatz UNICODE does not define an encoding; the reader decides');
+      end
+      else
+        Report('GAEB-DET-015', gsWarning, 'Zeichensatz is not known (ANSI, OEM, UNICODE)');
+    end
+    else if (Kind = KindMain) and (not PhaseSeen) and KeyIs('dp') then
+    begin
+      PhaseSeen := True;
+      if State = ValueEmpty then
+        Report('GAEB-DET-013', gsWarning, 'DP is empty')
+      else if State = ValueUnusable then
+        Report('GAEB-DET-013', gsWarning, 'DP is not a usable value')
+      else
+      begin
+        R.SourcePhase := Value;
+        if not IsDA2000Phase(Value) then
+          Report('GAEB-DET-013', gsWarning, 'DP is not a GAEB DA 2000 phase');
+      end;
+    end;
+    if (InfoClosed or InfoPassed) and PhaseSeen then
+      Break;
+  end;
+
+  { "missing" only where the scan saw the whole block or the whole input }
+  if not VersionSeen then
+    if InfoClosed or not Incomplete then
+      AddDiag(ADiagnostics, 'GAEB-DET-012', gsWarning, 0, 0, -1, 'GAEBInfo/Version missing')
+    else
+      AddDiag(ADiagnostics, 'GAEB-DET-012', gsWarning, 0, 0, -1,
+        'GAEBInfo/Version not found at the beginning of the document');
+  if not CharsetSeen then
+    if InfoClosed or not Incomplete then
+      AddDiag(ADiagnostics, 'GAEB-DET-014', gsInformation, 0, 0, -1,
+        'GAEBInfo/Zeichensatz missing; ANSI is assumed in practice')
+    else
+      AddDiag(ADiagnostics, 'GAEB-DET-015', gsWarning, 0, 0, -1,
+        'GAEBInfo/Zeichensatz not found at the beginning of the document');
+  if not PhaseSeen then
+    if MainDone or not Incomplete then
+      AddDiag(ADiagnostics, 'GAEB-DET-013', gsWarning, 0, 0, -1, 'DP missing')
+    else
+      AddDiag(ADiagnostics, 'GAEB-DET-013', gsWarning, 0, 0, -1,
+        'DP not found at the beginning of the document');
+end;
+
 function LandrixGaebDetectBuffer(Buffer: Pointer; Size: Integer; AIsPrefix: Boolean;
   ADiagnostics: TLandrixGaebDiagnostics): TLandrixGaebDetection;
 begin
-  Result.Format := LandrixGaebDetectFormat(Buffer, Size);
-  Result.Target := LandrixGaebTarget(gvUnknown, geUnknown, gpUnknown);
-  Result.Namespace := '';
-  Result.Accepted := Result.Format <> gfUnknown;
+  InitDetection(Result, LandrixGaebDetectFormat(Buffer, Size));
   case Result.Format of
     gfUnknown:
       if Size <= 0 then
@@ -556,6 +916,8 @@ begin
           'format not recognised (neither GAEB DA XML, GAEB DA 2000 nor GAEB 90)');
     gfXml:
       DetectXml(Buffer, Size, AIsPrefix, ADiagnostics, Result);
+    gfDA2000:
+      DetectDA2000(Buffer, Size, AIsPrefix, ADiagnostics, Result);
   else
     ;
   end;
@@ -574,10 +936,7 @@ begin
   Remaining := AStream.Size - Start;
   if Remaining > AMaxSize then
   begin
-    Result.Format := gfUnknown;
-    Result.Target := LandrixGaebTarget(gvUnknown, geUnknown, gpUnknown);
-    Result.Namespace := '';
-    Result.Accepted := False;
+    InitDetection(Result, gfUnknown);
     AddDiag(ADiagnostics, 'GAEB-DET-001', gsFatal, 0, 0, -1,
       'input of ' + IntToStr(Remaining) + ' bytes exceeds the size limit of ' +
       IntToStr(AMaxSize) + ' bytes');

@@ -101,3 +101,6 @@ tail; a bidder fills them with `SetBodyText` or `SetBodyNumber`.
 Without the facade, `LandrixGaebXmlReadFile` (unit `LandrixGaebXmlReader`) reads into a
 `TLandrixGaebXmlGAEB` and returns the detection (format, target). `LandrixGaebDetectFile`
 (unit `LandrixGaebDetect`) only detects format and target, also for GAEB DA 2000 and GAEB 90.
+For GAEB DA 2000 it also reports the header as found: `SourceVersion` (1.0, 1.1, 1.2),
+`SourcePhase` (DP, also for phases without an XML counterpart) and `SourceCharset`
+(`Zeichensatz`); `Target` stays empty, it describes GAEB DA XML only.
