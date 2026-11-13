@@ -50,6 +50,8 @@ uses
   LandrixGaebXmlReader,
   LandrixGaebXmlWriter,
   LandrixGaebXmlCheck,
+  LandrixGaebBoQ,
+  LandrixGaebXmlXsd,
   LandrixGaebTestNoValues,
   LandrixGaebTestFramework;
 
@@ -59,6 +61,8 @@ const
 
 var
   Schemas: array[0..TargetCount - 1] of TLandrixXmlXsdSchemaSet;
+  { the same schemas through LandrixGaebXmlXsd }
+  ApiSchemas: TLandrixGaebXmlXsdSchemas;
   { export (-export=): folder with trailing delimiter, '' when off; number
     of the last document written; documents from the local corpus }
   ExportFolder: string;
@@ -134,6 +138,40 @@ begin
     Schemas[AIndex] := LandrixXmlXsdLoadSchema(SchemaDir +
       StringReplace(SchemaPath(AIndex), '/', PathDelim, [rfReplaceAll]));
   Result := Schemas[AIndex];
+end;
+
+function ApiSchemasOf: TLandrixGaebXmlXsdSchemas;
+begin
+  if ApiSchemas = nil then
+    ApiSchemas := TLandrixGaebXmlXsdSchemas.Create(SchemaDir);
+  Result := ApiSchemas;
+end;
+
+{ Validates through LandrixGaebXmlXsd and checks that it agrees with
+  AValid (the verdict of the validator used directly), that every error
+  is GAEB-XSD-001 with a validator code and that no message quotes a value
+  of the document. }
+procedure CheckApi(const ASource: TLandrixXmlUtf8; AIndex: Integer; AValid: Boolean; const AContext: string);
+var
+  Diags: TLandrixGaebDiagnostics;
+  I: TLandrixGaebListIndex;
+  Ok: Boolean;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    Ok := LandrixGaebXmlXsdValidateTarget(ApiSchemasOf, Pointer(ASource), Integer(Length(ASource)),
+      TargetOf(AIndex), Diags);
+    Check(Ok = AValid, AContext + ': LandrixGaebXmlXsd agrees with the validator');
+    Check(Ok = (Diags.CountOf('GAEB-XSD-001') = 0), AContext + ': GAEB-XSD-001 exactly when invalid');
+    for I := 0 to Diags.Count - 1 do
+      if Diags[I].RuleId = 'GAEB-XSD-001' then
+        Check((Diags[I].XsdCode <> '') and (Pos('(' + Diags[I].XsdCode + ')', Diags[I].Message) > 0),
+          AContext + ': the code is in XsdCode and in the message');
+    CheckEquals(0, Diags.CountOf('GAEB-XSD-003'), AContext + ': the official schemas match');
+    CheckNoFileValues(ASource, Diags, AContext);
+  finally
+    Diags.Free;
+  end;
 end;
 
 { The export folder of -export=, '' when the parameter is missing. }
@@ -335,6 +373,7 @@ begin
       Check(Valid = Expected, ASub + '/' + Name + ': XSD ' + XsdError);
       Check(CheckValid(Source, CheckError) = Valid, ASub + '/' + Name + ': the check agrees with the XSD (' +
         CheckError + ', ' + XsdError + ')');
+      CheckApi(Source, T, Valid, ASub + '/' + Name);
     end;
     Check(Files.Count > 0, ASub + ': documents found');
   finally
@@ -520,6 +559,7 @@ begin
             Options, nil), '<VersDate>2021-05</VersDate>', '<VersDate>2019-11</VersDate>');
         XsdOk := XsdValid(Base, I, XsdError);
         Check(XsdOk, Names[N] + ' for ' + TargetName(I) + ' is XSD-valid: ' + XsdError);
+        CheckApi(Base, I, XsdOk, Names[N] + ' for ' + TargetName(I));
         Check(CheckValid(Base, CheckError) = XsdOk, Names[N] + ' for ' + TargetName(I) + ': the check agrees (' +
           CheckError + ')');
         for M := 0 to MutationCount - 1 do
@@ -532,6 +572,7 @@ begin
           XsdOk := XsdValid(Mutant, I, XsdError);
           CheckOk := CheckValid(Mutant, CheckError);
           Check(not XsdOk, TargetName(I) + ' mutation ' + IntToStr(M) + ' breaks the schema');
+          CheckApi(Mutant, I, XsdOk, TargetName(I) + ' mutation ' + IntToStr(M));
           Check(CheckOk = XsdOk, TargetName(I) + ' mutation ' + IntToStr(M) + ': the check agrees with the XSD (' +
             CheckError + ', ' + XsdError + ')');
           Inc(Compared);
@@ -659,6 +700,228 @@ begin
   CheckEquals(Converted, ConvertedValid, 'every valid 3.2 file is valid after the conversion to 3.3');
 end;
 
+{ ---- LandrixGaebXmlXsd: files, models, bills ---- }
+
+function RaisesGaebError(ASchemas: TLandrixGaebXmlXsdSchemas; const ATarget: TLandrixGaebTarget;
+  const ASource: TLandrixXmlUtf8): Boolean;
+begin
+  Result := False;
+  try
+    LandrixGaebXmlXsdValidateTarget(ASchemas, Pointer(ASource), Integer(Length(ASource)), ATarget, nil);
+  except
+    on ELandrixGaebError do
+      Result := True;
+  end;
+end;
+
+procedure TestApiModel;
+var
+  Source: TLandrixXmlUtf8;
+  G: TLandrixGaebXmlGAEB;
+  Det: TLandrixGaebDetection;
+  Diags: TLandrixGaebDiagnostics;
+  Bill: TLandrixGaebBillOfQuantities;
+  Raised: Boolean;
+begin
+  if not HaveSchemas then
+    Exit;
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    Check(LandrixGaebXmlXsdValidateFile(ApiSchemasOf, DataDir('process') + 'request.x83', Diags, 0, Det),
+      'request.x83 is valid: ' + Diags.ToText);
+    Check(Det.Target.Phase = gp83, 'request.x83 detected as X83');
+    Source := ReadFileBytes(DataDir('process') + 'request.x83');
+    G := LandrixGaebXmlReadBuffer(Pointer(Source), Integer(Length(Source)), nil, Det);
+    try
+      Diags.Clear;
+      Check(LandrixGaebXmlXsdValidateModel(ApiSchemasOf, G, Det.Target, Diags),
+        'the model of request.x83 written again is valid: ' + Diags.ToText);
+    finally
+      G.Free;
+    end;
+    Bill := TLandrixGaebBillOfQuantities.LoadFromFile(DataDir('process') + 'bid.x84', nil, 0);
+    try
+      Diags.Clear;
+      Check(LandrixGaebXmlXsdValidateBill(ApiSchemasOf, Bill, Diags), 'bid.x84 as the bill would save it: ' +
+        Diags.ToText);
+    finally
+      Bill.Free;
+    end;
+    Check(RaisesGaebError(ApiSchemasOf, LandrixGaebTarget(gv31, ge2009_12, gp83), ''),
+      'a target without XSD validation raises');
+    Raised := False;
+    try
+      Source := '<a/>';
+      LandrixGaebXmlXsdValidateBuffer(ApiSchemasOf, Pointer(Source), Integer(Length(Source)), nil, Det);
+    except
+      on ELandrixGaebError do
+        Raised := True;
+    end;
+    Check(Raised, 'input that is not GAEB raises');
+  finally
+    Diags.Free;
+  end;
+end;
+
+{ ---- LandrixGaebXmlXsd: the schema folder ---- }
+
+procedure WriteBytes(const AFileName: string; const AData: TLandrixXmlUtf8);
+var
+  F: TFileStream;
+begin
+  ForceDirectories(ExtractFilePath(AFileName));
+  F := TFileStream.Create(AFileName, fmCreate);
+  try
+    if Length(AData) > 0 then
+      F.WriteBuffer(Pointer(AData)^, Length(AData));
+  finally
+    F.Free;
+  end;
+end;
+
+procedure DeleteTree(const ADir: string);
+var
+  SR: TSearchRec;
+begin
+  if not DirectoryExists(ADir) then
+    Exit;
+  if FindFirst(ADir + '*', faAnyFile, SR) = 0 then
+  try
+    repeat
+      if (SR.Name = '.') or (SR.Name = '..') then
+        Continue;
+      if (SR.Attr and faDirectory) <> 0 then
+        DeleteTree(ADir + SR.Name + PathDelim)
+      else
+        DeleteFile(ADir + SR.Name);
+    until FindNext(SR) <> 0;
+  finally
+    FindClose(SR);
+  end;
+  RemoveDir(ADir);
+end;
+
+procedure TestApiFolder;
+const
+  MainName = 'GAEB_DA_XML_83_3.3_2021-05.xsd';
+  LibName = 'GAEB_DA_XML_Lib_3.3_2021-05.xsd';
+  Namespace = 'http://www.gaeb.de/GAEB_DA_XML/DA83/3.3';
+var
+  Dir, Src: string;
+  T: TLandrixGaebTarget;
+  Doc, MainXsd, LibXsd: TLandrixXmlUtf8;
+  S: TLandrixGaebXmlXsdSchemas;
+  Diags: TLandrixGaebDiagnostics;
+begin
+  if not HaveSchemas then
+    Exit;
+  Dir := RepositoryRoot + 'build' + PathDelim + 'xsdtest' + PathDelim;
+  Src := SchemaDir + 'XML-3.3' + PathDelim + 'Schema' + PathDelim;
+  T := LandrixGaebTarget(gv33, ge2021_05, gp83);
+  Doc := ReadFileBytes(DataDir('coverage') + '3.3-2021-05-83-minimal.x83');
+  MainXsd := ReadFileBytes(Src + MainName);
+  LibXsd := ReadFileBytes(Src + LibName);
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    { an empty folder }
+    DeleteTree(Dir);
+    ForceDirectories(Dir);
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Check(not S.HasTarget(T), 'empty folder: no target');
+      Check(not S.Verify(Diags), 'empty folder: Verify fails');
+      CheckEquals(1, Diags.CountOf('GAEB-XSD-004'), 'empty folder: GAEB-XSD-004');
+      Check(RaisesGaebError(S, T, Doc), 'empty folder: validation raises');
+    finally
+      S.Free;
+    end;
+    { one target, unpacked one level deeper }
+    WriteBytes(Dir + 'pkg' + PathDelim + MainName, MainXsd);
+    WriteBytes(Dir + 'pkg' + PathDelim + LibName, LibXsd);
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Check(S.HasTarget(T), 'one target: found');
+      Check(not S.HasTarget(LandrixGaebTarget(gv33, ge2021_05, gp84)), 'one target: X84 not there');
+      Diags.Clear;
+      Check(S.Verify(Diags), 'one target: Verify passes: ' + Diags.ToText);
+      CheckEquals(0, Integer(Diags.Count), 'one target: no diagnostic');
+      Check(LandrixGaebXmlXsdValidateTarget(S, Pointer(Doc), Integer(Length(Doc)), T, Diags),
+        'one target: the document is valid');
+      CheckEquals(0, Integer(Diags.Count), 'one target: no diagnostic after validation');
+    finally
+      S.Free;
+    end;
+    { a changed Lib file: a warning on every validation, Verify fails }
+    WriteBytes(Dir + 'pkg' + PathDelim + LibName, LibXsd + '<!-- changed -->'#10);
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Diags.Clear;
+      Check(LandrixGaebXmlXsdValidateTarget(S, Pointer(Doc), Integer(Length(Doc)), T, Diags),
+        'changed Lib: still validated');
+      Check(LandrixGaebXmlXsdValidateTarget(S, Pointer(Doc), Integer(Length(Doc)), T, Diags),
+        'changed Lib: validated again');
+      CheckEquals(2, Diags.CountOf('GAEB-XSD-003'), 'changed Lib: GAEB-XSD-003 on both validations');
+      Diags.Clear;
+      Check(not S.Verify(Diags), 'changed Lib: Verify fails');
+      CheckEquals(1, Diags.CountOf('GAEB-XSD-003'), 'changed Lib: Verify reports it once');
+    finally
+      S.Free;
+    end;
+    WriteBytes(Dir + 'pkg' + PathDelim + LibName, LibXsd);
+    { the main schema twice; Verify reads the folder again }
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Check(S.HasTarget(T), 'before the copy: found once');
+      WriteBytes(Dir + 'other' + PathDelim + MainName, MainXsd);
+      WriteBytes(Dir + 'other' + PathDelim + LibName, LibXsd);
+      Diags.Clear;
+      Check(not S.Verify(Diags), 'copy added later: Verify fails');
+      CheckEquals(1, Diags.CountOf('GAEB-XSD-004'), 'copy added later: GAEB-XSD-004');
+    finally
+      S.Free;
+    end;
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Check(not S.HasTarget(T), 'twice: not a usable target');
+      Check(RaisesGaebError(S, T, Doc), 'twice: validation raises');
+      Diags.Clear;
+      Check(not S.Verify(Diags), 'twice: Verify fails');
+      CheckEquals(1, Diags.CountOf('GAEB-XSD-004'), 'twice: GAEB-XSD-004');
+    finally
+      S.Free;
+    end;
+    DeleteTree(Dir + 'other' + PathDelim);
+    { the Lib file missing }
+    DeleteFile(Dir + 'pkg' + PathDelim + LibName);
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir);
+    try
+      Check(S.HasTarget(T), 'no Lib: the main schema is found');
+      Check(RaisesGaebError(S, T, Doc), 'no Lib: validation raises');
+      Diags.Clear;
+      Check(not S.Verify(Diags), 'no Lib: Verify fails');
+      CheckEquals(1, Diags.CountOf('GAEB-XSD-004'), 'no Lib: GAEB-XSD-004');
+    finally
+      S.Free;
+    end;
+    { a schema document outside the folder is not read }
+    DeleteTree(Dir);
+    WriteBytes(Dir + 'outside.xsd', '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="' +
+      Namespace + '"><xs:element name="GAEB"/></xs:schema>');
+    WriteBytes(Dir + 'inner' + PathDelim + MainName, '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" ' +
+      'targetNamespace="' + Namespace + '"><xs:include schemaLocation="../outside.xsd"/></xs:schema>');
+    S := TLandrixGaebXmlXsdSchemas.Create(Dir + 'inner');
+    try
+      Check(S.HasTarget(T), 'outside: the main schema is found');
+      Check(RaisesGaebError(S, T, Doc), 'outside: the include outside the folder is not read');
+    finally
+      S.Free;
+    end;
+  finally
+    Diags.Free;
+    DeleteTree(Dir);
+  end;
+end;
+
 procedure Register;
 begin
   RegisterTest('Xsd.RuleCases', TestRuleCases);
@@ -667,6 +930,8 @@ begin
   RegisterTest('Xsd.CoverageCases', TestCoverageCases);
   RegisterTest('Xsd.WriterTargets', TestWriterTargets);
   RegisterTest('Xsd.Agreement', TestAgreement);
+  RegisterTest('Xsd.Api.Model', TestApiModel);
+  RegisterTest('Xsd.Api.Folder', TestApiFolder);
   RegisterTest('Local.Xsd', TestLocal);
 end;
 
@@ -685,4 +950,5 @@ initialization
 
 finalization
   FreeSchemas;
+  ApiSchemas.Free;
 end.

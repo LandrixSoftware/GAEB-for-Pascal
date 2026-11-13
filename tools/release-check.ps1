@@ -9,8 +9,8 @@
        submodule checked out at the recorded commit, on a tag and on a
        remote branch; Specification/ and tests/data/local-full/ present.
     2. Static checks: tools/check-forbidden.py, tools/check-api.py and every
-       generator with --check (schema extraction, merge, model, coverage,
-       legacy and rule cases).
+       generator with --check (schema extraction, merge, model, schema
+       checksums, coverage, legacy and rule cases).
     3. Schemas: SHA-256 of every schema file listed in
        tools/schema/manifest.json, compared with the manifest.
     4. Full matrix: tools/build.ps1 all -Full (every toolchain, the complete
@@ -173,6 +173,7 @@ try {
     @{ Name = 'extract-gaeb-xsd';    Args = @('tools/schema/extract-gaeb-xsd.py', '--check') },
     @{ Name = 'merge-gaeb';          Args = @('tools/schema/merge-gaeb.py', '--check') },
     @{ Name = 'gen-gaeb-model';      Args = @('tools/schema/gen-gaeb-model.py', '--check') },
+    @{ Name = 'gen-xsd-sums';        Args = @('tools/schema/gen-xsd-sums.py', '--check') },
     @{ Name = 'make-coverage-cases'; Args = @('tools/coverage/make-coverage-cases.py', '--check') },
     @{ Name = 'make-legacy-cases';   Args = @('tools/legacy/make-legacy-cases.py', '--check') },
     @{ Name = 'make-rule-cases';     Args = @('tools/rules/make-rule-cases.py', '--check') }

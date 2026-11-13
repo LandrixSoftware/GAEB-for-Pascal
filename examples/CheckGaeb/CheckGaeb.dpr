@@ -17,10 +17,13 @@
      declares (LandrixGaebXmlCheck),
   2. the business rules of its phase (LandrixGaebRules),
   3. with a second file, the pair rules between both (for example request
-     X83 and bid X84).
+     X83 and bid X84),
+  4. with -xsd=<folder>, the validation against the original GAEB schemas
+     in that folder (LandrixGaebXmlXsd; tools/fetch-gaeb-xsd.ps1 downloads
+     them).
   Exit code 0 if no stage found an error, 1 otherwise.
 
-  Usage: CheckGaeb <file> [<second file>] }
+  Usage: CheckGaeb [-xsd=<folder>] <file> [<second file>] }
 
 program CheckGaeb;
 
@@ -45,7 +48,13 @@ uses
   LandrixGaebXmlModel,
   LandrixGaebXmlReader,
   LandrixGaebXmlCheck,
+  LandrixGaebXmlXsd,
   LandrixGaebRules;
+
+var
+  { the arguments without -xsd=; the schema folder, '' without }
+  Files: array of string;
+  XsdFolder: string;
 
 function Passed(AOk: Boolean): string;
 begin
@@ -61,9 +70,10 @@ begin
     LandrixXmlUtf8ToString(LandrixGaebPhaseToDP(ATarget.Phase));
 end;
 
-{ Stages 1 and 2 for one file; the document read for stage 3 is returned. }
+{ Stages 1, 2 and 4 for one file; the document read for stage 3 is
+  returned. }
 function CheckFile(const AFileName: string; ADiagnostics: TLandrixGaebDiagnostics;
-  out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+  ASchemas: TLandrixGaebXmlXsdSchemas; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
 var
   Det: TLandrixGaebDetection;
   Ok: Boolean;
@@ -71,6 +81,9 @@ begin
   Ok := LandrixGaebXmlCheckFile(AFileName, ADiagnostics, 0, Det);
   WriteLn(AFileName, ': GAEB DA XML ', TargetText(Det.Target));
   WriteLn('  content model check: ', Passed(Ok));
+  if ASchemas <> nil then
+    WriteLn('  XSD validation: ', Passed(LandrixGaebXmlXsdValidateFile(ASchemas, AFileName, ADiagnostics, 0,
+      Det)));
   Result := LandrixGaebXmlReadFile(AFileName, ADiagnostics, 0, Det);
   try
     ATarget := Det.Target;
@@ -87,20 +100,25 @@ var
   Diags: TLandrixGaebDiagnostics;
   First, Second: TLandrixGaebXmlGAEB;
   FirstTarget, SecondTarget: TLandrixGaebTarget;
+  Schemas: TLandrixGaebXmlXsdSchemas;
 begin
   Diags := TLandrixGaebDiagnostics.Create;
   First := nil;
   Second := nil;
+  Schemas := nil;
   try
     try
-      First := CheckFile(ParamStr(1), Diags, FirstTarget);
-      if ParamCount = 2 then
+      if XsdFolder <> '' then
+        Schemas := TLandrixGaebXmlXsdSchemas.Create(XsdFolder);
+      First := CheckFile(Files[0], Diags, Schemas, FirstTarget);
+      if Length(Files) = 2 then
       begin
-        Second := CheckFile(ParamStr(2), Diags, SecondTarget);
+        Second := CheckFile(Files[1], Diags, Schemas, SecondTarget);
         WriteLn('pair rules: ', Passed(LandrixGaebCheckPair(First, FirstTarget, Second, SecondTarget,
           Diags)));
       end;
     finally
+      Schemas.Free;
       Second.Free;
       First.Free;
       { the findings of all stages, also when one of them failed; each names
@@ -116,10 +134,27 @@ begin
   end;
 end;
 
+procedure ReadArguments;
+var
+  I: Integer;
 begin
-  if (ParamCount < 1) or (ParamCount > 2) then
+  XsdFolder := '';
+  SetLength(Files, 0);
+  for I := 1 to ParamCount do
+    if Copy(ParamStr(I), 1, 5) = '-xsd=' then
+      XsdFolder := Copy(ParamStr(I), 6, MaxInt)
+    else
+    begin
+      SetLength(Files, Length(Files) + 1);
+      Files[High(Files)] := ParamStr(I);
+    end;
+end;
+
+begin
+  ReadArguments;
+  if (Length(Files) < 1) or (Length(Files) > 2) then
   begin
-    WriteLn('Usage: CheckGaeb <file> [<second file>]');
+    WriteLn('Usage: CheckGaeb [-xsd=<folder>] <file> [<second file>]');
     ExitCode := 2;
     Exit;
   end;

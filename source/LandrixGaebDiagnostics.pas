@@ -76,6 +76,13 @@ type
     { English message without file content. DE: Englischer Text ohne
       Dateiinhalt. }
     Message: string;
+    { For XSD validation (LandrixGaebXmlXsd): the code of the XML Schema
+      validator, as Xerces reports it (e.g. cvc-complex-type.2.4.a); ''
+      otherwise.
+      DE: Bei der XSD-Pruefung (LandrixGaebXmlXsd): der Code des
+      XML-Schema-Validators, wie Xerces ihn meldet (z. B.
+      cvc-complex-type.2.4.a); sonst ''. }
+    XsdCode: string;
   end;
 
   { List of diagnostics (owns its entries).

@@ -42,6 +42,10 @@ Hersteller der einbindenden Anwendung sollten insbesondere Ressourcenlimits und 
 Parserkonfiguration (z. B. externe Entitäten, DTDs) prüfen. Validierung ersetzt diese Prüfungen
 nicht.
 
+Der Schemaordner der XSD-Prüfung (`LandrixGaebXmlXsd`) ist dagegen vertrauenswürdige Eingabe der
+Anwendung: Er sollte nur die offiziellen GAEB-Schemas enthalten und nicht von Dritten
+beschreibbar sein. Schemadokumente werden nur aus diesem Ordner gelesen, nie aus dem Netz.
+
 ## English
 
 As of 21 October 2026
@@ -80,3 +84,7 @@ change licence terms.
 Treat GAEB files as untrusted input. Manufacturers integrating the
 library should review resource limits and parser configuration (e.g. external entities, DTDs).
 Validation does not replace these checks.
+
+The schema folder of the XSD validation (`LandrixGaebXmlXsd`), in contrast, is trusted input of
+the application: it should hold only the official GAEB schemas and not be writable by third
+parties. Schema documents are read only from that folder, never from the network.

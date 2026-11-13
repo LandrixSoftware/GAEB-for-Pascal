@@ -58,10 +58,11 @@ are covered by semantic versioning from release 1.0 on.
 - **Stabil / stable:** `LandrixGaebBoQ` (fachliche Fassade / business facade),
   `LandrixGaebProcess`, `LandrixGaebTypes`, `LandrixGaebDiagnostics`, `LandrixGaebXmlBase`,
   `LandrixGaebXmlModel` (Syntaxmodell / syntax model), `LandrixGaebXmlReader`,
-  `LandrixGaebXmlWriter`, `LandrixGaebXmlCheck`, `LandrixGaebRules`, `LandrixGaebDetect`.
+  `LandrixGaebXmlWriter`, `LandrixGaebXmlCheck`, `LandrixGaebXmlXsd` (XSD-Prüfung / XSD
+  validation, ab / from 1.1), `LandrixGaebRules`, `LandrixGaebDetect`.
 - **Intern / internal** (kann sich in jeder Version ändern / may change in any release):
   `LandrixGaebBoQTree`, `LandrixGaebXmlReadBase`, `LandrixGaebXmlWriteBase`,
-  `LandrixGaebXmlProfiles`, `LandrixGaebXmlGrammar`, `LandrixGaebXmlCodes`.
+  `LandrixGaebXmlProfiles`, `LandrixGaebXmlGrammar`, `LandrixGaebXmlCodes`, `LandrixGaebXmlXsdSums`.
 
 Innerhalb von 1.x bleibt der Quelltext kompatibel, nicht das Binärformat: Aufzählungen können
 Werte erhalten (unbekannte Werte in einem `else`-Zweig behandeln, keine Ordinalwerte speichern),
