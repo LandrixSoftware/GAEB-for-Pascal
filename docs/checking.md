@@ -73,6 +73,43 @@ end;
 The XSD validation complements stage 2, it does not replace it: stage 2 is faster and part of
 every write.
 
+## Checking a conversion
+
+`LandrixGaebCheckConversion` (unit `LandrixGaebConversion`) checks what a bill becomes when it
+is saved for another target, for example a file of GAEB DA XML 3.0 or 3.1, which is read only,
+saved as 3.3. The bill is not changed and nothing is repaired.
+
+```pascal
+ReadDiags := TLandrixGaebDiagnostics.Create;
+Diags := TLandrixGaebDiagnostics.Create;
+Bill := TLandrixGaebBillOfQuantities.LoadFromFile('old.x83', ReadDiags, 0);
+try
+  R := LandrixGaebCheckConversion(Bill, Bill.OutputTarget, Diags, nil);
+  if (R.Writing = gcrPassed) and (R.Structure = gcrPassed) and (R.Rules <> gcrFailed) then
+    Bill.SaveToFile('new.x83', nil);
+finally
+  Bill.Free;
+end;
+```
+
+- `Writing`: passed if nothing is lost when writing (`GAEB-WRT-001`, `-002`, `-004`); the
+  output is written with `gwmBestEffort`, so it exists even with losses.
+- `Structure`: stage 2 on exactly that output.
+- `Rules`: the business rules of the output phase on the output as this library reads it back;
+  they also run when an earlier check failed.
+- Each state is `gcrPassed`, `gcrFailed` or `gcrNotRun`; a check that did not run is reported
+  with `GAEB-CNV-002` and the reason. `GAEB-CNV-001`: a value holds characters XML cannot carry,
+  nothing was written. `GAEB-CNV-003`: the output exceeds a limit of the XML reader (for
+  example the nesting depth), `Structure` fails.
+- The findings of reading the file stay in the list given to `LoadFromFile` (paths of the file);
+  those of the conversion carry paths of the output. Findings of the writer have no line; those
+  of the later checks have lines of the output.
+- With a stream as last parameter the output is handed out, for example to save it or to
+  validate exactly these bytes against the original schemas with
+  `LandrixGaebXmlXsdValidateTarget`.
+
+`CheckGaeb -convert=3.3 old.x83` prints the three states and both groups of findings.
+
 ## Diagnostics
 
 Every finding has a stable rule identifier (`RuleId`), a severity (`gsInformation`,

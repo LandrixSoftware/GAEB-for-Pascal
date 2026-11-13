@@ -111,6 +111,7 @@ $Examples = @(
   @{ Name = 'WriteBoQ';    Args = @('.') },
   @{ Name = 'ReadBoQ';     Args = @('request.x83') },
   @{ Name = 'CheckGaeb';   Args = @('request.x83') },
+  @{ Name = 'CheckGaeb';   Args = @('-convert=3.3', '../../../tests/data/version3x/v31-2009-12.x83') },
   @{ Name = 'ConvertGaeb'; Args = @('request.x83', 'request-3.2.x83', '3.2') },
   @{ Name = 'BidToAward';  Args = @("$ProcessData/request.x83", "$ProcessData/bid.x84", 'award.x86') }
 )

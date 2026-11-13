@@ -59,7 +59,8 @@ are covered by semantic versioning from release 1.0 on.
   `LandrixGaebProcess`, `LandrixGaebTypes`, `LandrixGaebDiagnostics`, `LandrixGaebXmlBase`,
   `LandrixGaebXmlModel` (Syntaxmodell / syntax model), `LandrixGaebXmlReader`,
   `LandrixGaebXmlWriter`, `LandrixGaebXmlCheck`, `LandrixGaebXmlXsd` (XSD-Prüfung / XSD
-  validation, ab / from 1.1), `LandrixGaebRules`, `LandrixGaebDetect`.
+  validation, ab / from 1.1), `LandrixGaebConversion` (Konvertierung prüfen / checking a
+  conversion, ab / from 1.2), `LandrixGaebRules`, `LandrixGaebDetect`.
 - **Intern / internal** (kann sich in jeder Version ändern / may change in any release):
   `LandrixGaebBoQTree`, `LandrixGaebXmlReadBase`, `LandrixGaebXmlWriteBase`,
   `LandrixGaebXmlProfiles`, `LandrixGaebXmlGrammar`, `LandrixGaebXmlCodes`, `LandrixGaebXmlXsdSums`.

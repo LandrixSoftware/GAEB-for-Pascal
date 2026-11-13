@@ -72,7 +72,8 @@ Dateien in GAEB DA XML 3.0 und 3.1 werden als 3.3/2021-05 gespeichert. Ihre Date
 ganz zu 3.3: Elemente, die die Phase in 3.3 nicht mehr kennt, IDs, die in 3.3 ungültig sind, Texte
 über der zulässigen Länge, fehlende Pflichtangaben. Die Bibliothek repariert nichts davon
 selbsttätig und kürzt nie; sie meldet jeden Fall. Mit `gwmBestEffort` entsteht eine 3.3-Datei mit
-den gemeldeten Verlusten, die man vor der Weitergabe prüft.
+den gemeldeten Verlusten, die man vor der Weitergabe prüft, etwa mit `LandrixGaebCheckConversion`
+(siehe [Prüfen](checking.md#konvertierung-prüfen)).
 
 ## Schreiboptionen
 

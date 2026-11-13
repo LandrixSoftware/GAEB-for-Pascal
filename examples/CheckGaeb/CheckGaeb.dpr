@@ -23,7 +23,15 @@
      them).
   Exit code 0 if no stage found an error, 1 otherwise.
 
-  Usage: CheckGaeb [-xsd=<folder>] <file> [<second file>] }
+  With -convert=3.2|3.3 the file is not checked as it is but as it would
+  be saved in that version (same phase), for example a file of GAEB DA XML
+  3.0 or 3.1, which is read only (LandrixGaebConversion): writing (losses),
+  content model check and business rules of the output, with -xsd=<folder>
+  also the XSD validation of the output. Exit code 0 if every check that
+  ran passed, 1 otherwise.
+
+  Usage: CheckGaeb [-xsd=<folder>] <file> [<second file>]
+         CheckGaeb [-xsd=<folder>] -convert=3.2|3.3 <file> }
 
 program CheckGaeb;
 
@@ -41,6 +49,7 @@ uses
   {$ENDIF}
 {$ENDIF}
   SysUtils,
+  Classes,
   LandrixXmlBase,
   LandrixGaebTypes,
   LandrixGaebDiagnostics,
@@ -49,12 +58,17 @@ uses
   LandrixGaebXmlReader,
   LandrixGaebXmlCheck,
   LandrixGaebXmlXsd,
-  LandrixGaebRules;
+  LandrixGaebRules,
+  LandrixGaebBoQ,
+  LandrixGaebConversion;
 
 var
   { the arguments without -xsd=; the schema folder, '' without }
   Files: array of string;
   XsdFolder: string;
+  { the version of -convert=; ConvertGiven tells whether the option was given }
+  ConvertTo: string;
+  ConvertGiven: Boolean;
 
 function Passed(AOk: Boolean): string;
 begin
@@ -92,6 +106,85 @@ begin
   except
     Result.Free;
     raise;
+  end;
+end;
+
+function StateText(AState: TLandrixGaebConversionState): string;
+begin
+  case AState of
+    gcrPassed:
+      Result := 'passed';
+    gcrFailed:
+      Result := 'errors found';
+  else
+    Result := 'not run';
+  end;
+end;
+
+{ -convert=: the checks of the file as it would be saved in ConvertTo. }
+procedure RunConversion;
+var
+  ReadDiags, Diags: TLandrixGaebDiagnostics;
+  Bill: TLandrixGaebBillOfQuantities;
+  Target: TLandrixGaebTarget;
+  R: TLandrixGaebConversionResult;
+  Output: TMemoryStream;
+  Schemas: TLandrixGaebXmlXsdSchemas;
+  XsdOk: Boolean;
+begin
+  ReadDiags := TLandrixGaebDiagnostics.Create;
+  Diags := TLandrixGaebDiagnostics.Create;
+  Output := TMemoryStream.Create;
+  Bill := nil;
+  Schemas := nil;
+  XsdOk := True;
+  R.Writing := gcrNotRun;
+  R.Structure := gcrNotRun;
+  R.Rules := gcrNotRun;
+  try
+    try
+      Bill := TLandrixGaebBillOfQuantities.LoadFromFile(Files[0], ReadDiags, 0);
+      Target := Bill.Target;
+      if ConvertTo = '3.2' then
+      begin
+        Target.Version := gv32;
+        Target.Edition := ge2013_10;
+      end
+      else
+      begin
+        Target.Version := gv33;
+        Target.Edition := ge2021_05;
+      end;
+      WriteLn(Files[0], ': GAEB DA XML ', TargetText(Bill.Target), ' as ', TargetText(Target));
+      R := LandrixGaebCheckConversion(Bill, Target, Diags, Output);
+      WriteLn('  writing (losses): ', StateText(R.Writing));
+      WriteLn('  content model check: ', StateText(R.Structure));
+      WriteLn('  business rules (rule set ', LandrixGaebRuleSetVersion, '): ', StateText(R.Rules));
+      if (XsdFolder <> '') and (Output.Size > 0) then
+      begin
+        Schemas := TLandrixGaebXmlXsdSchemas.Create(XsdFolder);
+        XsdOk := LandrixGaebXmlXsdValidateTarget(Schemas, Output.Memory, Integer(Output.Size), Target,
+          Diags);
+        WriteLn('  XSD validation: ', Passed(XsdOk));
+      end;
+    finally
+      Schemas.Free;
+      Bill.Free;
+      { findings of reading the file (paths of the file) apart from those of
+        the conversion (paths of the output) }
+      WriteLn('reading:');
+      Write(ReadDiags.ToText);
+      WriteLn('conversion:');
+      Write(Diags.ToText);
+      WriteLn(ReadDiags.Count + Diags.Count, ' finding(s)');
+    end;
+    if ReadDiags.HasErrors or Diags.HasErrors or (R.Writing = gcrFailed) or
+      (R.Structure = gcrFailed) or (R.Rules = gcrFailed) or not XsdOk then
+      ExitCode := 1;
+  finally
+    Output.Free;
+    Diags.Free;
+    ReadDiags.Free;
   end;
 end;
 
@@ -139,10 +232,17 @@ var
   I: Integer;
 begin
   XsdFolder := '';
+  ConvertTo := '';
+  ConvertGiven := False;
   SetLength(Files, 0);
   for I := 1 to ParamCount do
     if Copy(ParamStr(I), 1, 5) = '-xsd=' then
       XsdFolder := Copy(ParamStr(I), 6, MaxInt)
+    else if Copy(ParamStr(I), 1, 9) = '-convert=' then
+    begin
+      ConvertTo := Copy(ParamStr(I), 10, MaxInt);
+      ConvertGiven := True;
+    end
     else
     begin
       SetLength(Files, Length(Files) + 1);
@@ -152,14 +252,19 @@ end;
 
 begin
   ReadArguments;
-  if (Length(Files) < 1) or (Length(Files) > 2) then
+  if (Length(Files) < 1) or (Length(Files) > 2) or
+    (ConvertGiven and ((Length(Files) <> 1) or ((ConvertTo <> '3.2') and (ConvertTo <> '3.3')))) then
   begin
     WriteLn('Usage: CheckGaeb [-xsd=<folder>] <file> [<second file>]');
+    WriteLn('       CheckGaeb [-xsd=<folder>] -convert=3.2|3.3 <file>');
     ExitCode := 2;
     Exit;
   end;
   try
-    Run;
+    if ConvertGiven then
+      RunConversion
+    else
+      Run;
   except
     on E: Exception do
     begin

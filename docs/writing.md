@@ -72,7 +72,8 @@ Files in GAEB DA XML 3.0 and 3.1 are saved as 3.3/2021-05. Their data often does
 3.3: elements the phase no longer has in 3.3, IDs that are invalid in 3.3, texts longer than
 allowed, missing mandatory data. The library repairs none of this by itself and never shortens;
 it reports every case. With `gwmBestEffort` it writes a 3.3 file with the reported losses; check
-it before passing it on.
+it before passing it on, for example with `LandrixGaebCheckConversion` (see
+[Checking](checking.md#checking-a-conversion)).
 
 ## Write options
 

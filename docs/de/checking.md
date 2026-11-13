@@ -74,6 +74,42 @@ end;
 Die XSD-Prüfung ergänzt Stufe 2, sie ersetzt sie nicht: Stufe 2 ist schneller und Teil jedes
 Schreibens.
 
+## Konvertierung prüfen
+
+`LandrixGaebCheckConversion` (Unit `LandrixGaebConversion`) prüft, was aus einem LV wird, wenn
+es für ein anderes Ziel gespeichert wird, etwa eine Datei in GAEB DA XML 3.0 oder 3.1, die nur
+gelesen wird, gespeichert als 3.3. Das LV wird nicht geändert und nichts repariert.
+
+```pascal
+ReadDiags := TLandrixGaebDiagnostics.Create;
+Diags := TLandrixGaebDiagnostics.Create;
+Bill := TLandrixGaebBillOfQuantities.LoadFromFile('alt.x83', ReadDiags, 0);
+try
+  R := LandrixGaebCheckConversion(Bill, Bill.OutputTarget, Diags, nil);
+  if (R.Writing = gcrPassed) and (R.Structure = gcrPassed) and (R.Rules <> gcrFailed) then
+    Bill.SaveToFile('neu.x83', nil);
+finally
+  Bill.Free;
+end;
+```
+
+- `Writing`: bestanden, wenn beim Schreiben nichts verloren geht (`GAEB-WRT-001`, `-002`,
+  `-004`); geschrieben wird mit `gwmBestEffort`, die Ausgabe entsteht also auch mit Verlusten.
+- `Structure`: Stufe 2 an genau dieser Ausgabe.
+- `Rules`: die Geschäftsregeln der Ausgabephase an der Ausgabe, wie diese Bibliothek sie
+  zurückliest; sie laufen auch, wenn eine frühere Prüfung gescheitert ist.
+- Jeder Zustand ist `gcrPassed`, `gcrFailed` oder `gcrNotRun`; eine Prüfung, die nicht lief,
+  wird mit `GAEB-CNV-002` und dem Grund gemeldet. `GAEB-CNV-001`: ein Wert enthält Zeichen, die
+  XML nicht tragen kann, es wurde nichts geschrieben. `GAEB-CNV-003`: die Ausgabe überschreitet
+  eine Grenze des XML-Lesers (etwa die Schachtelungstiefe), `Structure` scheitert.
+- Die Meldungen des Lesens der Datei bleiben in der Liste, die `LoadFromFile` bekam (Pfade der
+  Datei); die der Konvertierung tragen Pfade der Ausgabe. Meldungen des Schreibers haben keine
+  Zeile, die der späteren Prüfungen Zeilen der Ausgabe.
+- Mit einem Stream als letztem Parameter wird die Ausgabe herausgegeben, etwa zum Speichern oder
+  um genau diese Bytes mit `LandrixGaebXmlXsdValidateTarget` gegen die Originalschemas zu prüfen.
+
+`CheckGaeb -convert=3.3 alt.x83` gibt die drei Zustände und beide Gruppen von Meldungen aus.
+
 ## Meldungen
 
 Jeder Befund hat eine stabile Regelkennung (`RuleId`), eine Schwere (`gsInformation`, `gsWarning`,
