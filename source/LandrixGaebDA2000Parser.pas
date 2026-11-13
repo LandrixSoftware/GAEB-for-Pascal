@@ -153,6 +153,10 @@ function LandrixGaebDA2000ParseStream(AStream: TStream;
   ein | innerhalb einer Komponente. }
 function LandrixGaebDA2000SplitStructure(const AValue: TLandrixGaebString): TLandrixGaebStringArray;
 
+{ Code point of byte AByte in Windows-1252 (AOem False) or code page 850
+  (AOem True). DE: Codepunkt des Bytes AByte in Windows-1252 bzw. CP850. }
+function LandrixGaebDA2000CharOfByte(AByte: Byte; AOem: Boolean): Cardinal;
+
 implementation
 
 uses
@@ -195,6 +199,18 @@ const
     $00DE, $00DA, $00DB, $00D9, $00FD, $00DD, $00AF, $00B4,
     $00AD, $00B1, $2017, $00BE, $00B6, $00A7, $00F7, $00B8,
     $00B0, $00A8, $00B7, $00B9, $00B3, $00B2, $25A0, $00A0);
+
+function LandrixGaebDA2000CharOfByte(AByte: Byte; AOem: Boolean): Cardinal;
+begin
+  if AByte < $80 then
+    Result := AByte
+  else if AOem then
+    Result := Cp850High[AByte]
+  else if AByte <= $9F then
+    Result := Cp1252High[AByte]
+  else
+    Result := AByte;
+end;
 
 { ---- node ---- }
 
@@ -687,14 +703,7 @@ var
 
   function SingleByte(AByte: Cardinal): Cardinal;
   begin
-    if AByte < $80 then
-      Result := AByte
-    else if FCharset = gcsOem then
-      Result := Cp850High[AByte]
-    else if AByte <= $9F then
-      Result := Cp1252High[AByte]
-    else
-      Result := AByte;
+    Result := LandrixGaebDA2000CharOfByte(Byte(AByte), FCharset = gcsOem);
   end;
 
 begin
