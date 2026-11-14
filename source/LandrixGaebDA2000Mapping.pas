@@ -22,7 +22,8 @@
     VersMon and VersJahr name the edition of GAEB DA 2000 and have no
     counterpart), PrjInfo (name, label, description, currency);
   - VergabeInfo -> AwardInfo (currency, dates, contract, warranty, Art ->
-    Cat);
+    Cat, SonderArt -> SpecialType); InstHaltInfo -> MaintInfo and
+    RahmVertrInfo -> MastAgrInfo (maintenance extension 1);
   - AG -> OWN, AN -> CTR, each with Adresse -> Address; Bedarfstraeger ->
     Requester, AusfOrt -> CnstSite and BenachOrt -> NotifSite (one
     CnstSiteGroup per pair);
@@ -288,6 +289,7 @@ type
     procedure MapAddress(ANode: TLandrixGaebDA2000Node; AAddress: TLandrixGaebXmlAddress);
     procedure MapAddTexts(ANode: TLandrixGaebDA2000Node; AList: TLandrixGaebXmlAddTextList);
     procedure MapSites(AAward: TLandrixGaebDA2000Node; G: TLandrixGaebXmlGAEB);
+    procedure MapMaintenance(AInfo: TLandrixGaebDA2000Node; AAward: TLandrixGaebXmlAwardInfo);
     procedure MapMLText(const AValue: TLandrixGaebString; AText: TLandrixGaebXmlMLText);
     procedure MapPlain(const AValue: TLandrixGaebString; AText: TLandrixGaebXmlFText);
     procedure MapComplement(APart: TLandrixGaebDA2000TextPart; AComplement: TLandrixGaebXmlTextComplement);
@@ -2307,6 +2309,100 @@ begin
   until False;
 end;
 
+{ Maintenance and master agreements (extension 1 of GAEB DA 2000) of
+  VergabeInfo: SonderArt IH/RV/RI -> SpecialType; InstHaltInfo ->
+  MaintInfo (InstHaltArt -> MaintType, BehandlArt -> ProcessType,
+  AuftrUebDat/AuftrUebUhr -> ContrTransDate/ContrTransTime, AuftrRecht ->
+  ContrLaw, Terminierung -> Deadline); RahmVertrInfo -> MastAgrInfo
+  (AufAbGebot -> BidUpDown, RahmVertrBez -> MastAgrLbl, RahmVertrBeg,
+  RahmVertrEnd, RahmVertrDat -> MastAgrBeg, MastAgrEnd, MastAgrDate,
+  RahmVertrDau (months, 1 to 99) -> MastAgrDur only without an end (GAEB DA
+  XML has one of them), RahmVertrVers ->
+  MastAgrVers, AuftrGesWert, AuftrMinWert, AuftrMaxWert -> TotContrVal,
+  MinContrVal, MaxContrVal, AuftrMinZuschl -> MinContrAwd, AuftrWertSchl
+  Anteil|Anzahl -> ContrValCode Percent and Number, both or none).
+  AuftrUebUhr is taken only with AuftrUebDat. What is not taken stays
+  unmapped and is reported.
+  DE: Instandhaltung und Rahmenvertraege (Erweiterung 1) der
+  VergabeInfo: SonderArt -> SpecialType; InstHaltInfo -> MaintInfo;
+  RahmVertrInfo -> MastAgrInfo (Schluessel wie oben); RahmVertrDau nur
+  ohne Ende, AuftrWertSchl nur vollstaendig, AuftrUebUhr nur mit Datum.
+  Was nicht uebernommen wird, bleibt unabgebildet und wird gemeldet. }
+procedure TMapper.MapMaintenance(AInfo: TLandrixGaebDA2000Node; AAward: TLandrixGaebXmlAwardInfo);
+var
+  N, K: TLandrixGaebDA2000Node;
+  M: TLandrixGaebXmlMastAgrInfo;
+  No, Count: TLandrixGaebDecimal;
+  Parts: TLandrixGaebStringArray;
+  S: TLandrixGaebString;
+begin
+  Parts := nil;
+  AAward.SpecialType := Enum(AInfo, 'SonderArt', 'IH|RV|RI', 'Maint|MastAgree|MastMaintAgree');
+  N := NextObject(AInfo, 'InstHaltInfo');
+  if N <> nil then
+  begin
+    AAward.MaintInfo.Present := True;
+    AAward.MaintInfo.MaintType := Enum(N, 'InstHaltArt', 'IH|IS|MO|GW|ST',
+      'Maint|Repair|Modern|Warr|Cancelorder');
+    AAward.MaintInfo.ProcessType := Enum(N, 'BehandlArt', 'NA|VS|AM|WA|FR',
+      'StandCon|InsurClaim|InvoicToTen|FinApartInsp|ThirdPartyBill');
+    AAward.MaintInfo.ContrTransDate := DateOf(N, 'AuftrUebDat');
+    { a time needs its date in GAEB DA XML: without one AuftrUebUhr stays
+      unmapped and is reported }
+    if AAward.MaintInfo.ContrTransDate <> '' then
+      AAward.MaintInfo.ContrTransTime := TimeOf(N, 'AuftrUebUhr');
+    AAward.MaintInfo.ContrLaw := Enum(N, 'AuftrRecht', '1|2|3', 'OwnForOwn|OwnForThi|ThiForThi');
+    AAward.MaintInfo.Deadline := Enum(N, 'Terminierung', 'S|E|V', 'Imm|Rush|AsArr');
+  end;
+  N := NextObject(AInfo, 'RahmVertrInfo');
+  if N = nil then
+    Exit;
+  M := AAward.MastAgrInfo;
+  M.Present := True;
+  M.BidUpDown := Yes(N, 'AufAbGebot');
+  S := Text(N, 'RahmVertrBez');
+  if TrimW(S) <> '' then
+    MapMLText(S, M.MastAgrLbl);
+  M.MastAgrBeg := DateOf(N, 'RahmVertrBeg');
+  M.MastAgrEnd := DateOf(N, 'RahmVertrEnd');
+  M.MastAgrDate := DateOf(N, 'RahmVertrDat');
+  { GAEB DA XML has the duration or the end: next to an end RahmVertrDau
+    stays unmapped and is reported }
+  if M.MastAgrEnd = '' then
+  begin
+    No.Clear;
+    K := N.Find('RahmVertrDau');
+    Num(N, 'RahmVertrDau', No);
+    if No.HasValue and (No.Scale = 0) and (No.Coefficient >= 1) and (No.Coefficient <= 99) then
+      M.MastAgrDur := W(IntToStr(Integer(No.Coefficient)))
+    else if No.HasValue then
+      Report(K, RuleValue, gsWarning, 'RahmVertrDau: no whole number from 1 to 99, not mapped');
+  end;
+  M.MastAgrVers := Str(N, 'RahmVertrVers');
+  Num(N, 'AuftrGesWert', M.TotContrVal);
+  Num(N, 'AuftrMinWert', M.MinContrVal);
+  Num(N, 'AuftrMaxWert', M.MaxContrVal);
+  Num(N, 'AuftrMinZuschl', M.MinContrAwd);
+  K := Child(N, 'AuftrWertSchl');
+  if (K <> nil) and not K.IsObject then
+  begin
+    { ContrValCode needs both: Anteil a number, Anzahl a whole number
+      from 1 to 99999; otherwise the key is reported and left out }
+    Parts := LandrixGaebDA2000SplitStructure(XmlSafe(K.Value, FControlChars));
+    No.Clear;
+    Count.Clear;
+    if ParseNum(Component(Parts, 0), No) and ParseNum(Component(Parts, 1), Count) and
+      (Count.Scale = 0) and (Count.Coefficient >= 1) and (Count.Coefficient <= 99999) then
+    begin
+      M.ContrValCode.Percent := No;
+      M.ContrValCode.Number := W(IntToStr(Integer(Count.Coefficient)));
+    end
+    else if AnyComponent(Parts) then
+      Report(K, RuleValue, gsWarning,
+        'AuftrWertSchl: Anteil (number) and Anzahl (1 to 99999) both required, not mapped');
+  end;
+end;
+
 { ---- what was not mapped ---- }
 
 procedure TMapper.ReportUnused(ARoot: TLandrixGaebDA2000Node);
@@ -2446,6 +2542,7 @@ begin
       Num(VI, 'GwlProz', G.Award.AwardInfo.WarrantPcnt);
       G.Award.AwardInfo.Cat := Enum(VI, 'Art', '1|2|3|4|5|6|7',
         'OpenProc|ClosedProc|NegProc|OpenCall|SelectCall|NegCont|IntNATO');
+      MapMaintenance(VI, G.Award.AwardInfo);
     end;
 
     AG := Child(V, 'AG');

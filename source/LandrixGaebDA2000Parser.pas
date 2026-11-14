@@ -47,6 +47,11 @@
                                    text
     GAEB-BR-D2000-006 information/warning/error  character set missing,
                                    unknown, UNICODE without byte order mark
+    GAEB-BR-D2000-007 warning      the counters m|n after #end[GAEB] (objects
+                                   including GAEB, elements including empty
+                                   ones) differ from the file, or are not
+                                   of that form (missing counters are not
+                                   reported)
     GAEB-BR-D2000-014 information  empty elements
     GAEB-BR-D2000-029 information  continuation lines indented to the
                                    column of the key's bracket
@@ -174,6 +179,7 @@ const
   RuleBalance = 'GAEB-BR-D2000-002';
   RuleEscape = 'GAEB-BR-D2000-004';
   RuleCharset = 'GAEB-BR-D2000-006';
+  RuleCounters = 'GAEB-BR-D2000-007';
   RuleEmpty = 'GAEB-BR-D2000-014';
   RuleIndent = 'GAEB-BR-D2000-029';
 
@@ -332,6 +338,20 @@ begin
   Result := True;
 end;
 
+{ True if S is a non-empty run of the digits 0 to 9. }
+function AllDigits(const S: string): Boolean;
+var
+  I: Integer;
+begin
+  Result := S <> '';
+  for I := 1 to Length(S) do
+    if (S[I] < '0') or (S[I] > '9') then
+    begin
+      Result := False;
+      Exit;
+    end;
+end;
+
 { ---- parser ---- }
 
 type
@@ -354,6 +374,9 @@ type
     FEmpty, FStray, FStrayLine, FIndentAtKey, FIndentLine: Integer;
     FTrailReported: Boolean;
     FBadEscapes: Integer;
+    { objects (including GAEB) and elements (including empty ones) for the
+      counters after #end[GAEB] }
+    FObjects, FElements: Integer;
     FUtf8: Boolean;
     FCharset: TLandrixGaebCharset;
     procedure Report(const ARuleId: string; ASeverity: TLandrixGaebSeverity;
@@ -370,6 +393,7 @@ type
       AHasBom: Boolean);
     function Decode(const ARaw: AnsiString): TLandrixGaebString;
     procedure DecodeTree(ANode: TLandrixGaebDA2000Node);
+    procedure CheckCounters;
   public
     function Parse(Buffer: Pointer; Size: Integer; ACharset: TLandrixGaebCharset;
       ADiagnostics: TLandrixGaebDiagnostics): TLandrixGaebDA2000Document;
@@ -380,6 +404,39 @@ procedure TParser.Report(const ARuleId: string; ASeverity: TLandrixGaebSeverity;
 begin
   if FDiags <> nil then
     FDiags.AddAt(ARuleId, ASeverity, '', ALine, 0, -1, AMessage);
+end;
+
+{ The counters m|n after #end[GAEB] (DA2000: m objects including GAEB, n
+  elements; "should be checked when reading") against the file. Missing
+  counters are common and not reported; another form or other numbers
+  are a warning that names what was counted, not the counters.
+  DE: Die Zaehler m|n hinter #end[GAEB] (m Objekte einschliesslich GAEB,
+  n Elemente) gegen die Datei. Fehlende Zaehler sind haeufig und werden
+  nicht gemeldet; eine andere Form oder andere Zahlen sind eine Warnung,
+  die das Gezaehlte nennt, nicht die Zaehler. }
+procedure TParser.CheckCounters;
+var
+  S: string;
+  Bar, M, N: Integer;
+begin
+  S := FDoc.EndCounters;
+  if S = '' then
+    Exit;
+  Bar := Pos('|', S);
+  M := -1;
+  N := -1;
+  if (Bar > 1) and (Bar < Length(S)) and AllDigits(Copy(S, 1, Bar - 1)) and
+    AllDigits(Copy(S, Bar + 1, MaxInt)) and (Bar <= 10) and (Length(S) - Bar <= 9) then
+  begin
+    M := StrToInt(Copy(S, 1, Bar - 1));
+    N := StrToInt(Copy(S, Bar + 1, MaxInt));
+  end;
+  if M < 0 then
+    Report(RuleCounters, gsWarning, 0, 'counters after #end[GAEB] are not of the form m|n')
+  else if (M <> FObjects) or (N <> FElements) then
+    Report(RuleCounters, gsWarning, 0, 'counters after #end[GAEB] differ from the file (' +
+      IntToStr(FObjects) + ' object(s) including GAEB and ' + IntToStr(FElements) +
+      ' element(s) counted)');
 end;
 
 procedure TParser.Fail(ALine: Integer; const AMessage: string);
@@ -408,6 +465,7 @@ procedure TParser.FinishElement(const AKey: string; ALine: Integer; const ARaw: 
 var
   Node: TLandrixGaebDA2000Node;
 begin
+  Inc(FElements);
   { an empty element counts as missing }
   if IsBlank(ARaw) then
   begin
@@ -497,6 +555,7 @@ begin
     if FLineNo <> 1 then
       Report(RuleFirstLine, gsError, FLineNo, '#begin[GAEB] is not in line 1');
     FDoc.FRoot := TLandrixGaebDA2000Node.Create(nil, Name, True, FLineNo);
+    Inc(FObjects);
     FCurrent := FDoc.FRoot;
     FDepth := 1;
     Exit;
@@ -506,6 +565,7 @@ begin
   Node := TLandrixGaebDA2000Node.Create(FCurrent, Name, True, FLineNo);
   Node.Suffix := Trim(BytesToStr(FQ + Close + 1, Len - Close - 1));
   FCurrent.Add(Node);
+  Inc(FObjects);
   FCurrent := Node;
   Inc(FDepth);
 end;
@@ -830,6 +890,7 @@ begin
       Report(RuleBalance, gsError, FStrayLine, IntToStr(FStray) + ' line(s) outside any element ignored');
     if FEmpty > 0 then
       Report(RuleEmpty, gsInformation, 0, IntToStr(FEmpty) + ' empty element(s) treated as missing');
+    CheckCounters;
     if FIndentAtKey > 0 then
       Report(RuleIndent, gsInformation, FIndentLine, IntToStr(FIndentAtKey) +
         ' continuation line(s) indented to the column of the key''s bracket');

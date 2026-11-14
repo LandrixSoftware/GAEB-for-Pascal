@@ -995,6 +995,87 @@ begin
   end;
 end;
 
+{ SonderArt, InstHaltInfo and RahmVertrInfo (extension 1). }
+procedure TestMaintenance;
+var
+  Diags: TLandrixGaebDiagnostics;
+  G: TLandrixGaebXmlGAEB;
+  T: TLandrixGaebTarget;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  G := MapText(Lines(['#begin[GAEB]', '#begin[GAEBInfo]', '[Version]1.1[end]', '[Datum]13.11.2026[end]',
+    '#end[GAEBInfo]', '#begin[PrjInfo]', '[Name]P1[end]', '[Wae]EUR[end]', '#end[PrjInfo]',
+    '#begin[Vergabe]', '[DP]83[end]', '#begin[VergabeInfo]', '[Wae]EUR[end]', '[SonderArt]RI[end]',
+    '#begin[InstHaltInfo]', '[InstHaltArt]IS[end]', '[BehandlArt]VS[end]', '[AuftrUebDat]02.03.2026[end]',
+    '[AuftrUebUhr]08:15[end]', '[AuftrRecht]2[end]', '[Terminierung]E[end]', '#end[InstHaltInfo]',
+    '#begin[RahmVertrInfo]', '[AufAbGebot]J[end]', '[RahmVertrBez]Wartung[end]',
+    '[RahmVertrBeg]01.01.2026[end]', '[RahmVertrEnd]31.12.2027[end]', '[RahmVertrDat]15.12.2025[end]',
+    '[RahmVertrVers]V2[end]', '[AuftrGesWert]100000,00[end]',
+    '[AuftrMinWert]500[end]', '[AuftrMaxWert]20000[end]', '[AuftrMinZuschl]2,5[end]',
+    '[AuftrWertSchl]12,5|3[end]', '#end[RahmVertrInfo]', '#end[VergabeInfo]', '#end[Vergabe]',
+    '#end[GAEB]']), Diags, T);
+  try
+    with G.Award.AwardInfo do
+    begin
+      CheckEqualsGaebStr('MastMaintAgree', SpecialType, 'SonderArt RI');
+      CheckEqualsGaebStr('Repair', MaintInfo.MaintType, 'InstHaltArt');
+      CheckEqualsGaebStr('InsurClaim', MaintInfo.ProcessType, 'BehandlArt');
+      CheckEqualsGaebStr('2026-03-02', MaintInfo.ContrTransDate, 'AuftrUebDat');
+      CheckEqualsGaebStr('08:15:00', MaintInfo.ContrTransTime, 'AuftrUebUhr');
+      CheckEqualsGaebStr('OwnForThi', MaintInfo.ContrLaw, 'AuftrRecht');
+      CheckEqualsGaebStr('Rush', MaintInfo.Deadline, 'Terminierung');
+      CheckEqualsGaebStr('Yes', MastAgrInfo.BidUpDown, 'AufAbGebot');
+      Check(MastAgrInfo.HasMastAgrLbl, 'RahmVertrBez');
+      CheckEqualsGaebStr('2026-01-01', MastAgrInfo.MastAgrBeg, 'RahmVertrBeg');
+      CheckEqualsGaebStr('2027-12-31', MastAgrInfo.MastAgrEnd, 'RahmVertrEnd');
+      CheckEqualsGaebStr('2025-12-15', MastAgrInfo.MastAgrDate, 'RahmVertrDat');
+      CheckEqualsGaebStr('V2', MastAgrInfo.MastAgrVers, 'RahmVertrVers');
+      CheckEqualsUtf8('100000.00', MastAgrInfo.TotContrVal.Text, 'AuftrGesWert');
+      CheckEqualsUtf8('500', MastAgrInfo.MinContrVal.Text, 'AuftrMinWert');
+      CheckEqualsUtf8('20000', MastAgrInfo.MaxContrVal.Text, 'AuftrMaxWert');
+      CheckEqualsUtf8('2.5', MastAgrInfo.MinContrAwd.Text, 'AuftrMinZuschl');
+      CheckEqualsUtf8('12.5', MastAgrInfo.ContrValCode.Percent.Text, 'Anteil');
+      CheckEqualsGaebStr('3', MastAgrInfo.ContrValCode.Number, 'Anzahl');
+    end;
+    CheckEquals(0, Diags.CountOf('GAEB-D2000-MAP-001'), 'everything taken: ' + Diags.ToText);
+    CheckEquals(0, Diags.CountOf('GAEB-D2000-MAP-004'), 'no value outside: ' + Diags.ToText);
+  finally
+    G.Free;
+  end;
+  { values outside }
+  Diags.Clear;
+  G := MapText(Lines(['#begin[GAEB]', '#begin[GAEBInfo]', '[Version]1.1[end]', '[Datum]13.11.2026[end]',
+    '#end[GAEBInfo]', '#begin[Vergabe]', '[DP]83[end]', '#begin[VergabeInfo]', '[SonderArt]XX[end]',
+    '#begin[InstHaltInfo]', '[AuftrUebUhr]08:15[end]', '#end[InstHaltInfo]',
+    '#begin[RahmVertrInfo]', '[RahmVertrDau]100[end]', '[AuftrWertSchl]12,5|[end]', '#end[RahmVertrInfo]',
+    '#end[VergabeInfo]', '#end[Vergabe]', '#end[GAEB]']), Diags, T);
+  try
+    CheckEqualsGaebStr('', G.Award.AwardInfo.SpecialType, 'unknown SonderArt');
+    CheckEqualsGaebStr('', G.Award.AwardInfo.MastAgrInfo.MastAgrDur, 'RahmVertrDau 100');
+    Check(not G.Award.AwardInfo.MastAgrInfo.HasContrValCode, 'AuftrWertSchl without Anzahl left out');
+    CheckEqualsGaebStr('', G.Award.AwardInfo.MaintInfo.ContrTransTime, 'time without date left out');
+    CheckEquals(3, Diags.CountOf('GAEB-D2000-MAP-004'), 'SonderArt, RahmVertrDau, AuftrWertSchl: ' +
+      Diags.ToText);
+    Check(Pos('InstHaltInfo/AuftrUebUhr not mapped', Diags.ToText) > 0, 'time without date reported');
+  finally
+    G.Free;
+  end;
+  { the end and the duration: the end is taken, the duration reported }
+  Diags.Clear;
+  G := MapText(Lines(['#begin[GAEB]', '#begin[GAEBInfo]', '[Version]1.1[end]', '[Datum]13.11.2026[end]',
+    '#end[GAEBInfo]', '#begin[Vergabe]', '[DP]83[end]', '#begin[VergabeInfo]', '[SonderArt]RV[end]',
+    '#begin[RahmVertrInfo]', '[RahmVertrEnd]31.12.2027[end]', '[RahmVertrDau]24[end]',
+    '#end[RahmVertrInfo]', '#end[VergabeInfo]', '#end[Vergabe]', '#end[GAEB]']), Diags, T);
+  try
+    CheckEqualsGaebStr('2027-12-31', G.Award.AwardInfo.MastAgrInfo.MastAgrEnd, 'end');
+    CheckEqualsGaebStr('', G.Award.AwardInfo.MastAgrInfo.MastAgrDur, 'no duration next to the end');
+    Check(Pos('RahmVertrInfo/RahmVertrDau not mapped', Diags.ToText) > 0, 'duration reported');
+  finally
+    G.Free;
+    Diags.Free;
+  end;
+end;
+
 procedure ExpectRejected(const S: AnsiString; const AMsg: string);
 var
   G: TLandrixGaebXmlGAEB;
@@ -1248,6 +1329,7 @@ begin
   RegisterTest('DA2000Mapping.Markup', TestMarkup);
   RegisterTest('DA2000Mapping.Header', TestHeader);
   RegisterTest('DA2000Mapping.Lots', TestLots);
+  RegisterTest('DA2000Mapping.Maintenance', TestMaintenance);
   RegisterTest('Local.DA2000Map', TestLocalMap);
 end;
 

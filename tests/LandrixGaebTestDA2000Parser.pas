@@ -322,9 +322,28 @@ begin
       CheckEquals(3, Diags.CountOf('GAEB-BR-D2000-002'),
         'unclosed LV, foreign #end, stray line: ' + Diags.ToText);
       CheckEquals(1, Diags.CountOf('GAEB-BR-D2000-001'), 'text after the end reported once');
+      CheckEquals(1, Diags.CountOf('GAEB-BR-D2000-007'), 'counters differ');
+      Check(Pos('3 object(s) including GAEB and 1 element(s)', Diags.ToText) > 0, 'counted named');
+      Check(Pos('12|34', Diags.ToText) = 0, 'the counters are not named');
     finally
       D.Free;
     end;
+    { counters: matching (an empty element counts), missing, other form }
+    Diags.Clear;
+    D := Parse('#begin[GAEB]' + CRLF + '#begin[Vergabe]' + CRLF + '[Bez]x[end]' + CRLF + '[Leer][end]' + CRLF +
+      '#end[Vergabe]' + CRLF + '#end[GAEB]2|2' + CRLF, Diags);
+    D.Free;
+    CheckEquals(0, Diags.CountOf('GAEB-BR-D2000-007'), 'matching counters: ' + Diags.ToText);
+    Diags.Clear;
+    D := Parse('#begin[GAEB]' + CRLF + '#begin[Vergabe]' + CRLF + '[Bez]x[end]' + CRLF +
+      '#end[Vergabe]' + CRLF + '#end[GAEB]' + CRLF, Diags);
+    D.Free;
+    CheckEquals(0, Diags.CountOf('GAEB-BR-D2000-007'), 'no counters');
+    Diags.Clear;
+    D := Parse('#begin[GAEB]' + CRLF + '#begin[Vergabe]' + CRLF + '[Bez]x[end]' + CRLF +
+      '#end[Vergabe]' + CRLF + '#end[GAEB]2;1' + CRLF, Diags);
+    D.Free;
+    CheckEquals(1, Diags.CountOf('GAEB-BR-D2000-007'), 'counters of another form');
     { #begin[GAEB] not in line 1 }
     Diags.Clear;
     D := Parse(CRLF + Doc('ANSI', ''), Diags);
