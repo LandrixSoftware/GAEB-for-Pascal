@@ -908,6 +908,93 @@ begin
   end;
 end;
 
+{ LosGr and Produkt. }
+procedure TestLots;
+var
+  Diags, CheckDiags: TLandrixGaebDiagnostics;
+  G: TLandrixGaebXmlGAEB;
+  T: TLandrixGaebTarget;
+  C1, C2: TLandrixGaebXmlBoQCtgy;
+  I1, I2: TLandrixGaebXmlItem;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  CheckDiags := TLandrixGaebDiagnostics.Create;
+  G := MapText(Head('83') + Lines(['#begin[LV]', '#begin[LVInfo]', '[Name]LV1[end]', '[Bez]Rohbau[end]',
+    '#begin[LVGlied]', '[Typ]Los[end]', '[Laenge]2[end]', '#end[LVGlied]',
+    '#begin[LVGlied]', '[Typ]Position[end]', '[Laenge]4[end]', '#end[LVGlied]', '#end[LVInfo]',
+    '#begin[LVBereich]', '[OZ]01[end]', '[Bez]Los eins[end]',
+    '#begin[Position]', '[OZ]010010[end]', '[Menge]1[end]', '[ME]m[end]',
+    '#begin[Beschreibung]', '[Kurztext]Eins[end]', '#end[Beschreibung]',
+    '#begin[Produkt]', '#begin[Artikel]', '[Marke]Marke A[end]', '[ArtNr]A-1[end]',
+    '[ArtKurztext]Artikel eins[end]', '#begin[ZusText]', '[Text]Zum Artikel[end]', '#end[ZusText]',
+    '#end[Artikel]', '#begin[ZusText]', '[Text]Zum Produkt[end]', '#end[ZusText]', '#end[Produkt]',
+    '#end[Position]', '#end[LVBereich]',
+    '#begin[LVBereich]', '[OZ]02[end]', '[Bez]Los zwei[end]',
+    '#begin[Position]', '[OZ]020010[end]', '[Menge]1[end]', '[ME]m[end]',
+    '#begin[Beschreibung]', '[Kurztext]Zwei[end]', '#end[Beschreibung]',
+    '#begin[Produkt]', '#begin[ZusText]', '[Text]Ohne Artikel[end]', '#end[ZusText]', '#end[Produkt]',
+    '#end[Position]', '#end[LVBereich]',
+    '#begin[LosGr]', '[LosGrNr]1[end]', '[LosNr]01[end]', '[LosNr] 2 [end]', '[LosNr]09[end]',
+    '[Summe]10[end]', '#end[LosGr]', '#begin[LosGr]', '[LosNr]01[end]', '#end[LosGr]',
+    '#begin[LosGr]', '[LosGrNr]3[end]', '[LosNr]08[end]', '#end[LosGr]',
+    '#end[LV]']) + Tail, Diags, T);
+  try
+    C1 := TLandrixGaebXmlBoQCtgy(G.Award.BoQ.BoQBody.Children[0]);
+    C2 := TLandrixGaebXmlBoQCtgy(G.Award.BoQ.BoQBody.Children[1]);
+    I1 := TLandrixGaebXmlItem(C1.BoQBody.Itemlist.Children[0]);
+    I2 := TLandrixGaebXmlItem(C2.BoQBody.Itemlist.Children[0]);
+    CheckEquals(3, Integer(G.Award.BoQ.LotGrp.Count), 'three lot groups, also the one of no lot');
+    CheckEquals(0, Integer(G.Award.BoQ.LotGrp[2].RefLotNo.Count), 'its unknown lot left out');
+    with G.Award.BoQ.LotGrp[0] do
+    begin
+      CheckEqualsGaebStr('1', LotGrNo, 'LosGrNr');
+      CheckEquals(2, Integer(RefLotNo.Count), 'unknown lot left out');
+      CheckEqualsGaebStr(C1.ID, RefLotNo[0].IDRef, 'first lot');
+      CheckEqualsGaebStr(C2.ID, RefLotNo[1].IDRef, 'second lot, spaces and leading zeros ignored');
+      CheckEqualsUtf8('10', Totals.Total.Text, 'Summe');
+    end;
+    CheckEqualsGaebStr('', G.Award.BoQ.LotGrp[1].LotGrNo, 'without LosGrNr kept');
+    Check(I1.HasProduct, 'Produkt');
+    CheckEquals(1, Integer(I1.Product.Article.Count), 'one Artikel');
+    CheckEqualsGaebStr('Marke A', I1.Product.Article[0].Brand, 'Marke');
+    CheckEqualsGaebStr('A-1', I1.Product.Article[0].ArtNo, 'ArtNr');
+    Check(I1.Product.Article[0].HasArtOutline, 'ArtKurztext');
+    CheckEquals(1, Integer(I1.Product.Article[0].AddText.Count), 'ZusText of the Artikel');
+    CheckEquals(1, Integer(I1.Product.AddText.Count), 'ZusText of the Produkt');
+    Check(not I2.HasProduct, 'Produkt without Artikel left out');
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-010'), 'unknown lots: ' + Diags.ToText);
+    Check(Pos('2 reference(s)', Diags.ToText) > 0, 'both unknown lots counted');
+    Check(Pos('1 product(s)', Diags.ToText) > 0, 'Produkt without Artikel counted');
+    Check(Pos('1 lot group(s)', Diags.ToText) > 0, 'LosGr without LosGrNr counted once');
+    CheckEquals(0, Diags.CountOf('GAEB-D2000-MAP-001'), 'everything taken: ' + Diags.ToText);
+  finally
+    G.Free;
+  end;
+  { X84 excludes RefLotNo: a lot group without LosNr keeps its total and
+    fits the content model (the rest of this short bill does not) }
+  Diags.Clear;
+  G := MapText(Head('84') + Lines(['#begin[LV]', '#begin[LVInfo]', '[Name]LV1[end]', '[Bez]Rohbau[end]',
+    '#begin[LVGlied]', '[Typ]Los[end]', '[Laenge]2[end]', '#end[LVGlied]',
+    '#begin[LVGlied]', '[Typ]Position[end]', '[Laenge]4[end]', '#end[LVGlied]', '[Summe]10[end]',
+    '#end[LVInfo]', '#begin[LVBereich]', '[OZ]01[end]', '[Bez]Los eins[end]',
+    '#begin[Position]', '[OZ]010010[end]', '[Menge]1[end]', '[ME]m[end]', '[EP]10[end]', '[GB]10[end]',
+    '#begin[Beschreibung]', '[Kurztext]Eins[end]', '#end[Beschreibung]', '#end[Position]',
+    '[Summe]10[end]', '#end[LVBereich]',
+    '#begin[LosGr]', '[LosGrNr]3[end]', '[Summe]10[end]', '#end[LosGr]', '#end[LV]']) + Tail, Diags, T);
+  try
+    CheckEquals(1, Integer(G.Award.BoQ.LotGrp.Count), 'kept without LosNr');
+    CheckEqualsUtf8('10', G.Award.BoQ.LotGrp[0].Totals.Total.Text, 'its total');
+    CheckEquals(0, Diags.CountOf('GAEB-D2000-MAP-009') + Diags.CountOf('GAEB-D2000-MAP-010'),
+      'nothing incomplete: ' + Diags.ToText);
+    LandrixGaebXmlCheckModel(G, T, CheckDiags);
+    Check(Pos('LotGrp', CheckDiags.ToText) = 0, 'the lot group fits X84: ' + CheckDiags.ToText);
+  finally
+    G.Free;
+    CheckDiags.Free;
+    Diags.Free;
+  end;
+end;
+
 procedure ExpectRejected(const S: AnsiString; const AMsg: string);
 var
   G: TLandrixGaebXmlGAEB;
@@ -1160,6 +1247,7 @@ begin
   RegisterTest('DA2000Mapping.Standard', TestStandard);
   RegisterTest('DA2000Mapping.Markup', TestMarkup);
   RegisterTest('DA2000Mapping.Header', TestHeader);
+  RegisterTest('DA2000Mapping.Lots', TestLots);
   RegisterTest('Local.DA2000Map', TestLocalMap);
 end;
 

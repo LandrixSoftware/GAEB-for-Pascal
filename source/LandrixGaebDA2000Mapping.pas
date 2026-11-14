@@ -55,6 +55,10 @@
     ITMarkup, Zuschlag -> Markup); Mengensplit -> QtySplit (Menge -> Qty
     or, without it, MengeProz -> QtyPcnt; KatZuord); BedarfAuftr ->
     ProvisAccpt;
+  - Produkt -> Product (Adresse, ZusText, each Artikel -> Article with
+    Marke -> Brand, ArtNr -> ArtNo, ArtKurztext -> ArtOutline, ZusText);
+  - LosGr -> BoQ/LotGrp (LosGrNr -> LotGrNo, each LosNr -> RefLotNo to the
+    category of the top level with that number, totals);
   - LeitBeschr -> SumDescr, each UnterBeschr -> SubDescr (UbNr -> SubDNo,
     Beschreibung, MeAng -> QtySpec, FrMenge -> QtyTBD, Menge, ME, and the
     unit price keys EPAng, EPAufgl, EP, EPAnteil1 to 6 that GAEB DA 2000
@@ -102,12 +106,15 @@
                                    catalogues of a file without LV, STLBBau
                                    without catalogue name or group and
                                    Mengensplit without Menge or MengeProz
-                                   (left out) and UnterBeschr without UbNr
+                                   and Produkt without Artikel (left out),
+                                   UnterBeschr without UbNr and LosGr
+                                   without LosGrNr
                                    (left missing; once per file and kind
                                    with a count)
-    GAEB-D2000-MAP-010 warning      BezugOZ, BezugAusfNr or the OZ of
-                                   ZuschlTMenge naming no item or
-                                   execution description of the file
+    GAEB-D2000-MAP-010 warning      BezugOZ, BezugAusfNr, the OZ of
+                                   ZuschlTMenge or a LosNr naming no item,
+                                   execution description or lot of the
+                                   file
                                    (left out; once per file with a
                                    count)
   Messages name keys, never values.
@@ -235,8 +242,13 @@ type
       STLBBau without catalogue name or group and UnterBeschr without UbNr
       (RuleIncomplete) }
     FStandardValues, FIncompleteStlb, FIncompleteSub: Integer;
-    { Mengensplit without quantity (RuleIncomplete) }
-    FIncompleteSplit: Integer;
+    { Mengensplit without quantity, Produkt without Artikel, LosGr without
+      LosGrNr (RuleIncomplete) }
+    FIncompleteSplit, FIncompleteProduct, FIncompleteLot: Integer;
+    { categories of the top level (lots for LosGr/LosNr): number as
+      written and ID }
+    FLotNos, FLotIds: array of TLandrixGaebString;
+    FLotCount: Integer;
     { markup items whose MarkupSubQty without a resolved RefItem are
       removed after ResolveRefs }
     FMarkups: array of TLandrixGaebXmlMarkupItem;
@@ -298,7 +310,9 @@ type
     procedure RegisterItem(const AOZ, AId: TLandrixGaebString);
     procedure MapRefs(ANode: TLandrixGaebDA2000Node; ARNo, APerfNo: TLandrixGaebXmlRefItem);
     procedure MapQtySplits(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
+    procedure MapProduct(ANode: TLandrixGaebDA2000Node; AProduct: TLandrixGaebXmlProduct);
     procedure MapItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
+    procedure MapLotGroups(ALV: TLandrixGaebDA2000Node; ABoQ: TLandrixGaebXmlBoQ);
     procedure MapMarkupItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlMarkupItem);
     procedure DropUnresolvedSubQty;
     procedure MapRemark(ANode: TLandrixGaebDA2000Node; ARemark: TLandrixGaebXmlRemark);
@@ -1776,6 +1790,46 @@ begin
     end;
 end;
 
+{ Product (Produkt) of an item: Adresse -> Address, ZusText -> AddText,
+  each Artikel -> Article (Marke -> Brand, ArtNr -> ArtNo, ArtKurztext ->
+  ArtOutline, ZusText -> AddText). GAEB DA XML requires an Article: a
+  Produkt without Artikel is counted (GAEB-D2000-MAP-009) and left out.
+  DE: Produkt einer Position: Adresse -> Address, ZusText -> AddText, je
+  Artikel ein Article (Marke -> Brand, ArtNr -> ArtNo, ArtKurztext ->
+  ArtOutline, ZusText -> AddText). GAEB DA XML verlangt einen Article:
+  ein Produkt ohne Artikel wird gezaehlt und weggelassen. }
+procedure TMapper.MapProduct(ANode: TLandrixGaebDA2000Node; AProduct: TLandrixGaebXmlProduct);
+var
+  N: TLandrixGaebDA2000Node;
+  A: TLandrixGaebXmlArticle;
+  T: TLandrixGaebString;
+begin
+  N := NextObject(ANode, 'Adresse');
+  if N <> nil then
+    MapAddress(N, AProduct.Address);
+  MapAddTexts(ANode, AProduct.AddText);
+  repeat
+    N := NextObject(ANode, 'Artikel');
+    if N = nil then
+      Break;
+    A := AProduct.Article.Add;
+    A.Present := True;
+    A.Brand := Str(N, 'Marke');
+    A.ArtNo := Str(N, 'ArtNr');
+    T := Text(N, 'ArtKurztext');
+    if TrimW(T) <> '' then
+      MapMLText(T, A.ArtOutline);
+    MapAddTexts(N, A.AddText);
+  until False;
+  if AProduct.HasArticle then
+    AProduct.Present := True
+  else
+  begin
+    Inc(FIncompleteProduct);
+    AProduct.Clear;
+  end;
+end;
+
 procedure TMapper.MapItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
 var
   OZ, Index, QU: TLandrixGaebString;
@@ -1833,6 +1887,9 @@ begin
   { lead description and its sub descriptions (UnterBeschr only with
     LeitBeschr J: not checked, both kept as the file has them) }
   AItem.SumDescr := Yes(ANode, 'LeitBeschr');
+  N := NextObject(ANode, 'Produkt');
+  if N <> nil then
+    MapProduct(N, AItem.Product);
   repeat
     N := NextObject(ANode, 'UnterBeschr');
     if N = nil then
@@ -2076,7 +2133,7 @@ var
   N: TLandrixGaebDA2000Node;
   Ctgy: TLandrixGaebXmlBoQCtgy;
   HasCtgy, HasItem: Boolean;
-  Index, Lbl: TLandrixGaebString;
+  Index, Lbl, OZ: TLandrixGaebString;
 begin
   ABody.Present := True;
   HasCtgy := False;
@@ -2102,7 +2159,20 @@ begin
       Ctgy := ABody.AddBoQCtgy;
       Ctgy.Present := True;
       Ctgy.ID := NewId('LGC');
-      Ctgy.RNoPart := Part(Text(N, 'OZ'), ADepth, Index);
+      OZ := Text(N, 'OZ');
+      Ctgy.RNoPart := Part(OZ, ADepth, Index);
+      if ADepth = 0 then
+      begin
+        { a lot for LosGr/LosNr }
+        if FLotCount >= Length(FLotNos) then
+        begin
+          SetLength(FLotNos, 2 * FLotCount + 16);
+          SetLength(FLotIds, 2 * FLotCount + 16);
+        end;
+        FLotNos[FLotCount] := TrimW(OZ);
+        FLotIds[FLotCount] := Ctgy.ID;
+        Inc(FLotCount);
+      end;
       { Bez (V1.0/V1.1) or BezTx (V1.2); BezText is not defined but occurs }
       Lbl := Text(N, 'Bez');
       if TrimW(Lbl) = '' then
@@ -2152,6 +2222,89 @@ begin
   end;
   if ABody.HasItemlist then
     ABody.Itemlist.Present := True;
+end;
+
+{ Lot groups (LosGr) of the LV: each one LotGrp with LosGrNr -> LotGrNo,
+  each LosNr (number of the top level, without surrounding spaces; of
+  digits only, leading zeros do not count) -> RefLotNo to the category
+  with that number, and the totals. A LosNr naming no category is counted
+  with the other references (GAEB-D2000-MAP-010) and left out; a LosGr
+  without LosGrNr, which GAEB DA XML requires, is counted
+  (GAEB-D2000-MAP-009) and kept.
+  DE: Losgruppen (LosGr) des LV: je eine LotGrp mit LosGrNr -> LotGrNo,
+  jede LosNr (Nummer der obersten Stufe wie geschrieben) -> RefLotNo auf
+  den Bereich mit dieser Nummer (bei reinen Ziffern zaehlen fuehrende
+  Nullen nicht), und die Summen. Eine LosNr ohne Bereich wird mit den
+  anderen Bezuegen gezaehlt und weggelassen; eine LosGr ohne LosGrNr, die
+  GAEB DA XML verlangt, wird gezaehlt und behalten. }
+{ True if the lot numbers A and B are equal as written or, both of digits
+  only, as numbers (leading zeros do not count). }
+function SameLot(const A, B: TLandrixGaebString): Boolean;
+
+  function Digits(const S: TLandrixGaebString): Boolean;
+  begin
+    Result := IsWhole(S) and (S[1] <> '-');
+  end;
+
+  function Stripped(const S: TLandrixGaebString): TLandrixGaebString;
+  var
+    I: Integer;
+  begin
+    I := 1;
+    while (I < Length(S)) and (S[I] = '0') do
+      Inc(I);
+    Result := Copy(S, I, MaxInt);
+  end;
+
+begin
+  Result := (A = B) or (Digits(A) and Digits(B) and (Stripped(A) = Stripped(B)));
+end;
+
+procedure TMapper.MapLotGroups(ALV: TLandrixGaebDA2000Node; ABoQ: TLandrixGaebXmlBoQ);
+var
+  N, K: TLandrixGaebDA2000Node;
+  L: TLandrixGaebXmlLotGrp;
+  R: TLandrixGaebXmlRefBoQCtgy;
+  Ref, Id: TLandrixGaebString;
+  I: Integer;
+begin
+  repeat
+    N := NextObject(ALV, 'LosGr');
+    if N = nil then
+      Break;
+    L := ABoQ.LotGrp.Add;
+    L.Present := True;
+    L.ID := NewId('LGL');
+    L.LotGrNo := Str(N, 'LosGrNr');
+    if L.LotGrNo = '' then
+      Inc(FIncompleteLot);
+    repeat
+      K := Child(N, 'LosNr');
+      if K = nil then
+        Break;
+      Ref := TrimW(XmlSafe(K.Value, FControlChars));
+      if K.IsObject or (Ref = '') then
+        Continue;
+      Id := '';
+      for I := 0 to FLotCount - 1 do
+        if SameLot(FLotNos[I], Ref) then
+        begin
+          Id := FLotIds[I];
+          Break;
+        end;
+      if Id = '' then
+        Inc(FUnresolved)
+      else
+      begin
+        R := L.RefLotNo.Add;
+        R.Present := True;
+        R.IDRef := Id;
+      end;
+    until False;
+    { whether RefLotNo is required, allowed or excluded depends on the
+      phase: the writer and the check decide, as for other members }
+    MapTotals(N, L.Totals);
+  until False;
 end;
 
 { ---- what was not mapped ---- }
@@ -2390,6 +2543,7 @@ begin
       if LI <> nil then
         MapTotals(LI, BoQ.BoQInfo.Totals);
       MapBody(LV, 0, BoQ.BoQBody);
+      MapLotGroups(LV, BoQ);
       AddCatalogs(BoQ.BoQInfo);
     end
     else
@@ -2451,12 +2605,18 @@ begin
     if FIncompleteSplit > 0 then
       Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompleteSplit) +
         ' quantity split(s) (Mengensplit) without Menge or MengeProz; left out');
+    if FIncompleteProduct > 0 then
+      Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompleteProduct) +
+        ' product(s) (Produkt) without Artikel; left out');
+    if FIncompleteLot > 0 then
+      Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompleteLot) +
+        ' lot group(s) (LosGr) without LosGrNr; left missing');
     if FIncompleteSub > 0 then
       Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompleteSub) +
         ' sub description(s) (UnterBeschr) without UbNr; left missing');
     if FUnresolved > 0 then
       Report(nil, RuleReference, gsWarning, IntToStr(FUnresolved) +
-        ' reference(s) (BezugOZ, BezugAusfNr, ZuschlTMenge) to a number not in the file; left out');
+        ' reference(s) (BezugOZ, BezugAusfNr, ZuschlTMenge, LosNr) to a number not in the file; left out');
     if FPlainMarks > 0 then
       Report(nil, RuleOther, gsInformation, IntToStr(FPlainMarks) +
         ' text complement(s) marked in plain text (not defined in GAEB DA 2000) read');
