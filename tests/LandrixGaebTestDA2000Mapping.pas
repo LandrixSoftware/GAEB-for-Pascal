@@ -837,6 +837,77 @@ begin
   end;
 end;
 
+{ GAEBInfo, VergabeInfo/Art, Bedarfstraeger, AusfOrt, BenachOrt and
+  ZusText. }
+procedure TestHeader;
+var
+  Diags, CheckDiags: TLandrixGaebDiagnostics;
+  G: TLandrixGaebXmlGAEB;
+  T: TLandrixGaebTarget;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  CheckDiags := TLandrixGaebDiagnostics.Create;
+  G := MapText(Lines(['#begin[GAEB]', '#begin[GAEBInfo]', '[Version]1.2[end]', '[VersMon]04[end]',
+    '[VersJahr]2002[end]', '[Datum]13.11.2026[end]', '[ProgSystem]Test[end]', '[Zertifikat]J[end]',
+    '[Zeichensatz]ANSI[end]', '#end[GAEBInfo]',
+    '#begin[PrjInfo]', '[Name]P1[end]', '[Wae]EUR[end]', '[Kommunikation]Frage|Antwort[end]',
+    '[ZusText]Als Element[end]',
+    '#begin[ZusText]', '[Text]Projekttext[end]', '#end[ZusText]', '#end[PrjInfo]',
+    '#begin[Vergabe]', '[DP]83[end]', '#begin[VergabeInfo]', '[Wae]EUR[end]',
+    '[ErDatum]01.12.2026[end]', '[Art]4[end]', '#end[VergabeInfo]',
+    '#begin[AG]', '#begin[Adresse]', '[Name1]Bauherr[end]', '[Strasse]Weg 1[end]',
+    '[PLZ]12345[end]', '[Ort]Stadt[end]', '#end[Adresse]', '#begin[ZusText]', '[Text]AG-Text[end]', '#end[ZusText]', '#end[AG]',
+    '#begin[Bedarfstraeger]', '[BedarfTrName]Amt[end]', '#end[Bedarfstraeger]',
+    '#begin[AusfOrt]', '[AusfOrtName]Baustelle[end]', '#begin[Adresse]', '[Name1]Bau[end]',
+    '[Strasse]Weg 2[end]', '[PLZ]12345[end]', '[Ort]Stadt[end]',
+    '#end[Adresse]', '#end[AusfOrt]',
+    '#begin[BenachOrt]', '[BenachOrtNam]Nachbar eins[end]', '#end[BenachOrt]',
+    '#begin[BenachOrt]', '[BenachOrtNam]Nachbar zwei[end]', '#end[BenachOrt]',
+    '#begin[ZusText]', '[Text]Vertragstext[end]', BS('[TextRTF]{`rtf1 Vertragstext}[end]'),
+    '[ExtDat]PLAN.PDF|Plan[end]', '#end[ZusText]',
+    '#begin[ZusText]', BS('[TextRTF]{`rtf1 Nur RTF}[end]'), '#end[ZusText]',
+    '#begin[ZusText]', '[ExtDat]BILD.BMP|[end]', '#end[ZusText]',
+    '#end[Vergabe]', '#begin[ZusText]', '[Text]Schluss[end]', '#end[ZusText]', '#end[GAEB]']),
+    Diags, T);
+  try
+    CheckEqualsGaebStr('Available', G.GAEBInfo.Certific, 'Zertifikat');
+    CheckEqualsGaebStr('2021-05', G.GAEBInfo.VersDate, 'VersDate of GAEB DA XML');
+    CheckEqualsGaebStr('OpenCall', G.Award.AwardInfo.Cat, 'Art 4');
+    CheckEquals(1, Integer(G.PrjInfo.AddText.Count), 'ZusText of PrjInfo');
+    CheckEquals(1, Integer(G.Award.OWN.AddText.Count), 'ZusText of AG');
+    CheckEquals(1, Integer(G.Award.Requester.Count), 'Bedarfstraeger');
+    CheckEqualsGaebStr('Amt', G.Award.Requester[0].RequestName, 'its name');
+    CheckEquals(2, Integer(G.Award.CnstSiteGroup.Count), 'two pairs');
+    with G.Award.CnstSiteGroup[0] do
+    begin
+      CheckEqualsGaebStr('Baustelle', CnstSite.CnstSiteName, 'AusfOrtName');
+      CheckEqualsGaebStr('Stadt', CnstSite.Address.City, 'its address');
+      CheckEqualsGaebStr('Nachbar eins', NotifSite.NotifSiteName, 'BenachOrtNam');
+    end;
+    with G.Award.CnstSiteGroup[1] do
+    begin
+      Check(CnstSite.IsPresent, 'an empty CnstSite for the second BenachOrt');
+      CheckEqualsGaebStr('', CnstSite.CnstSiteName, 'empty');
+      CheckEqualsGaebStr('Nachbar zwei', NotifSite.NotifSiteName, 'second BenachOrt');
+    end;
+    CheckEquals(2, Integer(G.Award.AddText.Count), 'Text and TextRTF alone; ExtDat alone adds nothing');
+    Check(G.Award.AddText[1].DetailAddText.IsPresent, 'TextRTF read');
+    CheckEquals(1, Integer(G.AddText.Count), 'ZusText of GAEB');
+    CheckEquals(4, Diags.CountOf('GAEB-D2000-MAP-001'), 'Kommunikation, ZusText as an element, TextRTF next ' +
+      'to Text, ExtDat: ' + Diags.ToText);
+    Check(Pos('PrjInfo/ZusText not mapped', Diags.ToText) > 0, 'ZusText as an element reported');
+    Check(Pos('ZusText/TextRTF not mapped (1 time(s))', Diags.ToText) > 0, 'TextRTF next to Text');
+    Check(Pos('ZusText/ExtDat not mapped (2 time(s))', Diags.ToText) > 0, 'ExtDat');
+    Check(Pos('Kommunikation', Diags.ToText) > 0, 'Kommunikation has no counterpart');
+    Check(Pos('VersMon', Diags.ToText) = 0, 'VersMon taken');
+    Check(LandrixGaebXmlCheckModel(G, T, CheckDiags), 'content model: ' + CheckDiags.ToText);
+  finally
+    G.Free;
+    CheckDiags.Free;
+    Diags.Free;
+  end;
+end;
+
 procedure ExpectRejected(const S: AnsiString; const AMsg: string);
 var
   G: TLandrixGaebXmlGAEB;
@@ -1088,6 +1159,7 @@ begin
   RegisterTest('DA2000Mapping.References', TestReferences);
   RegisterTest('DA2000Mapping.Standard', TestStandard);
   RegisterTest('DA2000Mapping.Markup', TestMarkup);
+  RegisterTest('DA2000Mapping.Header', TestHeader);
   RegisterTest('Local.DA2000Map', TestLocalMap);
 end;
 

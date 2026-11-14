@@ -18,10 +18,18 @@
   as unused in the parser tree and is reported once per file and key.
 
   Mapped (exchange phases 81 to 86, object Vergabe):
-  - GAEBInfo (program, date, time), PrjInfo (name, label, description,
-    currency);
-  - VergabeInfo -> AwardInfo (currency, dates, contract, warranty);
-  - AG -> OWN, AN -> CTR, each with Adresse -> Address;
+  - GAEBInfo (program, date, time, Zertifikat -> Certific; Version,
+    VersMon and VersJahr name the edition of GAEB DA 2000 and have no
+    counterpart), PrjInfo (name, label, description, currency);
+  - VergabeInfo -> AwardInfo (currency, dates, contract, warranty, Art ->
+    Cat);
+  - AG -> OWN, AN -> CTR, each with Adresse -> Address; Bedarfstraeger ->
+    Requester, AusfOrt -> CnstSite and BenachOrt -> NotifSite (one
+    CnstSiteGroup per pair);
+  - ZusText (of GAEB, PrjInfo, Vergabe, AG, AN, Bedarfstraeger, AusfOrt,
+    BenachOrt) -> AddText with Text or, without it, TextRTF as
+    DetailAddText (a TextRTF next to Text and ExtDat stay unmapped and are
+    reported);
   - LV: LVInfo -> BoQInfo (name, label, date, text kind, unit price
     components, time label, totals), LVGlied -> BoQBkdn (derived from the
     ordinal numbers when LVGlied is missing), LVBereich -> BoQCtgy,
@@ -255,6 +263,7 @@ type
     function NewId(const APrefix: string): TLandrixGaebString;
     { access to the parser tree; every access marks what it took }
     function Child(ANode: TLandrixGaebDA2000Node; const AKey: string): TLandrixGaebDA2000Node;
+    function NextObject(ANode: TLandrixGaebDA2000Node; const AKey: string): TLandrixGaebDA2000Node;
     function Str(ANode: TLandrixGaebDA2000Node; const AKey: string): TLandrixGaebString;
     function Text(ANode: TLandrixGaebDA2000Node; const AKey: string): TLandrixGaebString;
     function Yes(ANode: TLandrixGaebDA2000Node; const AKey: string): TLandrixGaebString;
@@ -265,6 +274,8 @@ type
     function TimeOf(ANode: TLandrixGaebDA2000Node; const AKey: string): TLandrixGaebString;
     { parts }
     procedure MapAddress(ANode: TLandrixGaebDA2000Node; AAddress: TLandrixGaebXmlAddress);
+    procedure MapAddTexts(ANode: TLandrixGaebDA2000Node; AList: TLandrixGaebXmlAddTextList);
+    procedure MapSites(AAward: TLandrixGaebDA2000Node; G: TLandrixGaebXmlGAEB);
     procedure MapMLText(const AValue: TLandrixGaebString; AText: TLandrixGaebXmlMLText);
     procedure MapPlain(const AValue: TLandrixGaebString; AText: TLandrixGaebXmlFText);
     procedure MapComplement(APart: TLandrixGaebDA2000TextPart; AComplement: TLandrixGaebXmlTextComplement);
@@ -367,6 +378,25 @@ begin
     Exit;
   for I := 0 to ANode.Count - 1 do
     if (not ANode[I].Used) and (CompareText(ANode[I].Key, AKey) = 0) then
+    begin
+      Result := ANode[I];
+      Result.Used := True;
+      Exit;
+    end;
+end;
+
+{ The first unused object AKey of ANode, marked used; nil if there is
+  none. An element with that key (where GAEB DA 2000 defines an object)
+  stays unused and is reported. }
+function TMapper.NextObject(ANode: TLandrixGaebDA2000Node; const AKey: string): TLandrixGaebDA2000Node;
+var
+  I: Integer;
+begin
+  Result := nil;
+  if ANode = nil then
+    Exit;
+  for I := 0 to ANode.Count - 1 do
+    if (not ANode[I].Used) and ANode[I].IsObject and (CompareText(ANode[I].Key, AKey) = 0) then
     begin
       Result := ANode[I];
       Result.Used := True;
@@ -622,6 +652,98 @@ begin
   AAddress.Email := Str(ANode, 'Email');
   AAddress.VATID := Str(ANode, 'UStIdent');
   MapCatalogs(ANode, AAddress.CtlgAssign);
+end;
+
+{ Additional texts (ZusText) of ANode: each one AddText whose
+  DetailAddText is Text or, without it, TextRTF (V1.2), read as plain
+  paragraphs. A TextRTF next to Text stays unmapped and is reported (both
+  may differ), as does ExtDat (AddText has no external file); a ZusText
+  without text adds nothing.
+  DE: Zusatztexte (ZusText) von ANode: je ein AddText, dessen
+  DetailAddText Text oder, ohne ihn, TextRTF (V1.2) ist, als schlichte
+  Absaetze gelesen. Ein TextRTF neben Text bleibt unabgebildet und wird
+  gemeldet (beide koennen abweichen), ebenso ExtDat (AddText hat keine
+  externe Datei); ein ZusText ohne Text fuegt nichts hinzu. }
+procedure TMapper.MapAddTexts(ANode: TLandrixGaebDA2000Node; AList: TLandrixGaebXmlAddTextList);
+var
+  Z: TLandrixGaebDA2000Node;
+  T: TLandrixGaebString;
+  A: TLandrixGaebXmlAddText;
+begin
+  repeat
+    Z := NextObject(ANode, 'ZusText');
+    if Z = nil then
+      Break;
+    T := '';
+    if Z.Find('Text') <> nil then
+      T := Text(Z, 'Text')
+    else if Z.Find('TextRTF') <> nil then
+      T := Text(Z, 'TextRTF');
+    if HasText(T) then
+    begin
+      A := AList.Add;
+      A.Present := True;
+      MapPlain(T, A.DetailAddText);
+    end;
+  until False;
+end;
+
+{ Bedarfstraeger -> Requester (BedarfTrIdNr -> RequestIDNo, BedarfTrName
+  -> RequestName); AusfOrt -> CnstSite (AusfOrtIdNr, AusfOrtName) and
+  BenachOrt -> NotifSite (BenachOrtIdNr, BenachOrtNam), paired in one
+  CnstSiteGroup each (a BenachOrt without AusfOrt gets an empty CnstSite,
+  which GAEB DA XML requires in the group); each with Adresse and ZusText.
+  DE: Bedarfstraeger -> Requester; AusfOrt -> CnstSite und BenachOrt ->
+  NotifSite, paarweise in je einer CnstSiteGroup (ein BenachOrt ohne
+  AusfOrt erhaelt eine leere CnstSite, die GAEB DA XML in der Gruppe
+  verlangt); jeweils mit Adresse und ZusText. }
+procedure TMapper.MapSites(AAward: TLandrixGaebDA2000Node; G: TLandrixGaebXmlGAEB);
+var
+  N, A, B: TLandrixGaebDA2000Node;
+  R: TLandrixGaebXmlRequester;
+  Grp: TLandrixGaebXmlAwardCnstSiteGroup;
+begin
+  repeat
+    N := NextObject(AAward, 'Bedarfstraeger');
+    if N = nil then
+      Break;
+    R := G.Award.Requester.Add;
+    R.Present := True;
+    R.RequestIDNo := Str(N, 'BedarfTrIdNr');
+    R.RequestName := Str(N, 'BedarfTrName');
+    A := Child(N, 'Adresse');
+    if A <> nil then
+      MapAddress(A, R.Address);
+    MapAddTexts(N, R.AddText);
+  until False;
+  repeat
+    A := NextObject(AAward, 'AusfOrt');
+    B := NextObject(AAward, 'BenachOrt');
+    if (A = nil) and (B = nil) then
+      Break;
+    Grp := G.Award.CnstSiteGroup.Add;
+    Grp.Present := True;
+    Grp.CnstSite.Present := True;
+    if A <> nil then
+    begin
+      Grp.CnstSite.CnstSiteIDNo := Str(A, 'AusfOrtIdNr');
+      Grp.CnstSite.CnstSiteName := Str(A, 'AusfOrtName');
+      N := Child(A, 'Adresse');
+      if N <> nil then
+        MapAddress(N, Grp.CnstSite.Address);
+      MapAddTexts(A, Grp.CnstSite.AddText);
+    end;
+    if B <> nil then
+    begin
+      Grp.NotifSite.Present := True;
+      Grp.NotifSite.NotifSiteIDNo := Str(B, 'BenachOrtIdNr');
+      Grp.NotifSite.NotifSiteName := Str(B, 'BenachOrtNam');
+      N := Child(B, 'Adresse');
+      if N <> nil then
+        MapAddress(N, Grp.NotifSite.Address);
+      MapAddTexts(B, Grp.NotifSite.AddText);
+    end;
+  until False;
 end;
 
 { A value read as text (LandrixGaebDA2000Text), its losses counted and
@@ -1531,7 +1653,7 @@ var
   S: TLandrixGaebXmlQtySplit;
 begin
   repeat
-    N := Child(ANode, 'Mengensplit');
+    N := NextObject(ANode, 'Mengensplit');
     if N = nil then
       Break;
     Q.Clear;
@@ -1712,7 +1834,7 @@ begin
     LeitBeschr J: not checked, both kept as the file has them) }
   AItem.SumDescr := Yes(ANode, 'LeitBeschr');
   repeat
-    N := Child(ANode, 'UnterBeschr');
+    N := NextObject(ANode, 'UnterBeschr');
     if N = nil then
       Break;
     MapSubDescr(N, AItem.SubDescr.Add);
@@ -2124,8 +2246,14 @@ begin
     G.GAEBInfo.Time := TimeOf(Info, 'Uhrzeit');
     G.GAEBInfo.ProgSystem := Str(Info, 'ProgSystem');
     G.GAEBInfo.ProgName := Str(Info, 'ProgName');
-    { read by the parser and the detection }
+    { only J is defined; N, written for no certificate, means none }
+    G.GAEBInfo.Certific := Enum(Info, 'Zertifikat', 'J|N', 'Available|');
+    { read by the parser and the detection; the edition of GAEB DA 2000
+      (Version, VersMon, VersJahr) has no counterpart: VersDate is that of
+      GAEB DA XML }
     Child(Info, 'Version');
+    Child(Info, 'VersMon');
+    Child(Info, 'VersJahr');
     Child(Info, 'Zeichensatz');
 
     Prj := Child(Root, 'PrjInfo');
@@ -2137,6 +2265,7 @@ begin
       MapPlain(Descr, G.PrjInfo.Descrip);
     G.PrjInfo.Cur := Str(Prj, 'Wae');
     G.PrjInfo.CurLbl := Str(Prj, 'WaeBez');
+    MapAddTexts(Prj, G.PrjInfo.AddText);
 
     G.Award.Present := True;
     G.Award.DP := W(DP);
@@ -2162,6 +2291,8 @@ begin
       G.Award.AwardInfo.WarrEnd := DateOf(VI, 'GwlEnde');
       Num(VI, 'AusfProz', G.Award.AwardInfo.PerformPcnt);
       Num(VI, 'GwlProz', G.Award.AwardInfo.WarrantPcnt);
+      G.Award.AwardInfo.Cat := Enum(VI, 'Art', '1|2|3|4|5|6|7',
+        'OpenProc|ClosedProc|NegProc|OpenCall|SelectCall|NegCont|IntNATO');
     end;
 
     AG := Child(V, 'AG');
@@ -2176,7 +2307,9 @@ begin
       Adr := Child(AG, 'Adresse');
       if Adr <> nil then
         MapAddress(Adr, G.Award.OWN.Address);
+      MapAddTexts(AG, G.Award.OWN.AddText);
     end;
+    MapSites(V, G);
     AN := Child(V, 'AN');
     if AN <> nil then
     begin
@@ -2195,7 +2328,10 @@ begin
       Adr := Child(AN, 'Adresse');
       if Adr <> nil then
         MapAddress(Adr, G.Award.CTR.Address);
+      MapAddTexts(AN, G.Award.CTR.AddText);
     end;
+    MapAddTexts(V, G.Award.AddText);
+    MapAddTexts(Root, G.AddText);
 
     LV := Child(V, 'LV');
     if LV <> nil then
