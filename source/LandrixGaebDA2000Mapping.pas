@@ -27,6 +27,15 @@
     ordinal numbers when LVGlied is missing), LVBereich -> BoQCtgy,
     Position -> Item, Hinweis -> Remark, AusfBeschr -> PerfDescr (AusfNr
     -> PerfNo, AusfBez -> PerfLbl, each Beschreibung -> Description);
+  - references of an item: BezugBeschr B/W -> RefDescr Ref/Rep, BezugOZ
+    -> RefRNo and BezugAusfNr -> RefPerfNo (IDRef of the item or
+    execution description with that number in the file);
+  - KatZuord (LVInfo, LVBereich, Position, Adresse) -> CtlgAssign
+    (CtlgCode = KatSchl) with one BoQInfo/Ctlg per catalogue: CtlgID and
+    CtlgType = the name of the catalogue file (ExtDat) or, in the form
+    with the keys KatNam and KatBez that GAEB DA 2000 does not define but
+    programs write (owner decision 14.11.2026), KatNam; CtlgName = its
+    description (ExtDatBeschr, KatBez) or the name;
   - Beschreibung -> Description: Kurztext -> OutlineText, Langtext ->
     DetailTxt, as plain paragraphs with text complements
     (LandrixGaebDA2000Text).
@@ -47,7 +56,9 @@
     GAEB-D2000-MAP-002 information formatting of texts dropped
     GAEB-D2000-MAP-003 warning      text complement marks that do not pair
     GAEB-D2000-MAP-004 warning      a value outside the values of GAEB DA
-                                   2000, not mapped
+                                   2000, not mapped; catalogues with a name
+                                   or description too long for GAEB DA
+                                   XML, kept
     GAEB-D2000-MAP-005 information  BoQBkdn derived from the ordinal
                                    numbers
     GAEB-D2000-MAP-006 warning      control characters removed from values
@@ -63,8 +74,15 @@
                                    in plain text (LandrixGaebDA2000Text)
     GAEB-D2000-MAP-009 warning      execution descriptions without
                                    AusfNr, AusfBez or Beschreibung, which
-                                   PerfDescr requires (left missing; once
-                                   per file with a count)
+                                   PerfDescr requires, catalogue
+                                   assignments without catalogue or key
+                                   and catalogues of a file without LV
+                                   (left missing; once per file and kind
+                                   with a count)
+    GAEB-D2000-MAP-010 warning      BezugOZ or BezugAusfNr naming no item
+                                   or execution description of the file
+                                   (left out; once per file with a
+                                   count)
   Messages name keys, never values.
 
   DE: Abbildung einer gelesenen GAEB-DA-2000-Datei in das Syntaxmodell
@@ -158,6 +176,7 @@ const
   RuleUnusedLevel = 'GAEB-D2000-MAP-007';
   RuleOther = 'GAEB-D2000-MAP-008';
   RuleIncomplete = 'GAEB-D2000-MAP-009';
+  RuleReference = 'GAEB-D2000-MAP-010';
 
 type
   { One level of the breakdown: its kind and length. }
@@ -177,6 +196,22 @@ type
     FPlainMarks, FFormatKeys, FAlignKeys: Integer;
     { execution descriptions without a required part (RuleIncomplete) }
     FIncompletePerf: Integer;
+    { catalogues of KatZuord: name, description; count of the form with
+      KatNam/KatBez and of assignments without catalogue or key }
+    FCtlgNames, FCtlgLabels: array of TLandrixGaebString;
+    FCtlgCount: Integer;
+    FKatNamForm, FIncompleteKat: Integer;
+    { catalogues with a name or description too long for GAEB DA XML, and
+      catalogues of a file without LV (no BoQInfo to define them) }
+    FLongCtlg, FCtlgWithoutLV: Integer;
+    { numbers of items and execution descriptions with their IDs, and the
+      references to resolve after the mapping }
+    FItemNos, FItemIds, FPerfNos, FPerfIds: array of TLandrixGaebString;
+    FItemCount, FPerfCount: Integer;
+    FRefs: array of TLandrixGaebXmlRefItem;
+    FRefKeys: array of TLandrixGaebString;
+    FRefIsPerf: array of Boolean;
+    FRefCount, FUnresolved: Integer;
     FLosses: TLandrixGaebDA2000Losses;
     FMarkProblems: Integer;
     FControlChars: Integer;
@@ -219,6 +254,11 @@ type
     procedure MapItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
     procedure MapRemark(ANode: TLandrixGaebDA2000Node; ARemark: TLandrixGaebXmlRemark);
     procedure MapPerfDescr(ANode: TLandrixGaebDA2000Node; APerf: TLandrixGaebXmlPerfDescr);
+    procedure MapCatalogs(ANode: TLandrixGaebDA2000Node; AAssign: TLandrixGaebXmlCtlgAssignList);
+    procedure MapCatalog(K: TLandrixGaebDA2000Node; AAssign: TLandrixGaebXmlCtlgAssignList);
+    procedure AddCatalogs(AInfo: TLandrixGaebXmlBoQInfo);
+    procedure AddRef(ARef: TLandrixGaebXmlRefItem; const AKey: TLandrixGaebString; AIsPerf: Boolean);
+    procedure ResolveRefs;
     procedure MapBody(ANode: TLandrixGaebDA2000Node; ADepth: Integer; ABody: TLandrixGaebXmlBoQBody);
     procedure ReportUnused(ARoot: TLandrixGaebDA2000Node);
   public
@@ -535,6 +575,7 @@ begin
   AAddress.Fax := Str(ANode, 'Fax');
   AAddress.Email := Str(ANode, 'Email');
   AAddress.VATID := Str(ANode, 'UStIdent');
+  MapCatalogs(ANode, AAddress.CtlgAssign);
 end;
 
 { A value read as text (LandrixGaebDA2000Text), its losses counted and
@@ -1146,11 +1187,22 @@ end;
 
 procedure TMapper.MapItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
 var
-  OZ, Index, QU: TLandrixGaebString;
+  OZ, Index, QU, Ref: TLandrixGaebString;
+  No: TLandrixGaebDecimal;
+  N: TLandrixGaebDA2000Node;
 begin
   AItem.Present := True;
   AItem.ID := NewId('LGI');
   OZ := Text(ANode, 'OZ');
+  { the number as written, for BezugOZ of other items }
+  if FItemCount >= Length(FItemNos) then
+  begin
+    SetLength(FItemNos, 2 * FItemCount + 16);
+    SetLength(FItemIds, 2 * FItemCount + 16);
+  end;
+  FItemNos[FItemCount] := TrimW(OZ);
+  FItemIds[FItemCount] := AItem.ID;
+  Inc(FItemCount);
   AItem.RNoPart := Part(OZ, -1, Index);
   AItem.RNoIndex := Index;
   AItem.ALNGroupNo := Str(ANode, 'ZZGruppeNr');
@@ -1190,7 +1242,21 @@ begin
   Num(ANode, 'GB', AItem.IT);
   AItem.PriceInfo := Enum(ANode, 'PreisInfo', '1|2|3|4', 'scope|to|approx|lump');
   Num(ANode, 'Zeit', AItem.TimeQu);
+  { references (BezugOZ only with W, it excludes BezugAusfNr: not checked,
+    both are kept as the file has them) }
+  AItem.RefDescr := Enum(ANode, 'BezugBeschr', 'B|W', 'Ref|Rep');
+  Ref := TrimW(Text(ANode, 'BezugOZ'));
+  if Ref <> '' then
+    AddRef(AItem.RefRNo, Ref, False);
+  No.Clear;
+  N := ANode.Find('BezugAusfNr');
+  Num(ANode, 'BezugAusfNr', No);
+  if No.HasValue and (No.Scale = 0) and (No.Coefficient >= 0) and (No.Coefficient <= 9999) then
+    AddRef(AItem.RefPerfNo, W(IntToStr(Integer(No.Coefficient))), True)
+  else if No.HasValue then
+    Report(N, RuleValue, gsWarning, 'BezugAusfNr: no whole number from 0 to 9999, not mapped');
   MapDescription(ANode, AItem.Description);
+  MapCatalogs(ANode, AItem.CtlgAssign);
 end;
 
 procedure TMapper.MapRemark(ANode: TLandrixGaebDA2000Node; ARemark: TLandrixGaebXmlRemark);
@@ -1221,7 +1287,17 @@ begin
   B := ANode.Find('AusfNr');
   Num(ANode, 'AusfNr', No);
   if No.HasValue and (No.Scale = 0) and (No.Coefficient >= 0) and (No.Coefficient <= 9999) then
-    APerf.PerfNo := W(IntToStr(Integer(No.Coefficient)))
+  begin
+    APerf.PerfNo := W(IntToStr(Integer(No.Coefficient)));
+    if FPerfCount >= Length(FPerfNos) then
+    begin
+      SetLength(FPerfNos, 2 * FPerfCount + 16);
+      SetLength(FPerfIds, 2 * FPerfCount + 16);
+    end;
+    FPerfNos[FPerfCount] := APerf.PerfNo;
+    FPerfIds[FPerfCount] := APerf.ID;
+    Inc(FPerfCount);
+  end
   else if No.HasValue then
     Report(B, RuleValue, gsWarning, 'AusfNr: no whole number from 0 to 9999, not mapped');
   APerf.PerfLbl := Str(ANode, 'AusfBez');
@@ -1237,6 +1313,179 @@ begin
     is missing stays missing }
   if (APerf.PerfNo = '') or (TrimW(APerf.PerfLbl) = '') or not APerf.HasDescription then
     Inc(FIncompletePerf);
+end;
+
+{ Catalogue assignments (KatZuord, an object since V1.1, a structure
+  ExtDatName|ExtDatBeschr|KatSchl in V1.0) of ANode: each one CtlgAssign
+  with CtlgID = the name of its catalogue and CtlgCode = KatSchl; the
+  catalogue is registered for BoQInfo/Ctlg (AddCatalogs). An assignment
+  without catalogue or key is counted (RuleIncomplete) and left out.
+  DE: Katalogzuordnungen (KatZuord) von ANode: je eine CtlgAssign mit
+  CtlgID = Name ihres Katalogs und CtlgCode = KatSchl; der Katalog wird
+  fuer BoQInfo/Ctlg vermerkt. Eine Zuordnung ohne Katalog oder Schluessel
+  wird gezaehlt und weggelassen. }
+procedure TMapper.MapCatalogs(ANode: TLandrixGaebDA2000Node; AAssign: TLandrixGaebXmlCtlgAssignList);
+var
+  K: TLandrixGaebDA2000Node;
+begin
+  if ANode = nil then
+    Exit;
+  repeat
+    K := Child(ANode, 'KatZuord');
+    if K = nil then
+      Break;
+    MapCatalog(K, AAssign);
+  until False;
+end;
+
+{ One KatZuord K (see MapCatalogs). }
+procedure TMapper.MapCatalog(K: TLandrixGaebDA2000Node; AAssign: TLandrixGaebXmlCtlgAssignList);
+var
+  Parts: TLandrixGaebStringArray;
+  Name, Lbl, Code, Ext: TLandrixGaebString;
+  I: Integer;
+  A: TLandrixGaebXmlCtlgAssign;
+begin
+  Parts := nil;
+  Name := '';
+  Lbl := '';
+  Code := '';
+  if not K.IsObject then
+  begin
+    Parts := LandrixGaebDA2000SplitStructure(XmlSafe(K.Value, FControlChars));
+    if Integer(Length(Parts)) > 0 then
+      Name := TrimW(Parts[0]);
+    if Integer(Length(Parts)) > 1 then
+      Lbl := TrimW(Parts[1]);
+    if Integer(Length(Parts)) > 2 then
+      Code := TrimW(Parts[2]);
+  end
+  else
+  begin
+    Ext := Str(K, 'ExtDat');
+    if Ext <> '' then
+    begin
+      Parts := LandrixGaebDA2000SplitStructure(Ext);
+      if Integer(Length(Parts)) > 0 then
+        Name := TrimW(Parts[0]);
+      if Integer(Length(Parts)) > 1 then
+        Lbl := TrimW(Parts[1]);
+    end;
+    if (K.Find('KatNam') <> nil) or (K.Find('KatBez') <> nil) then
+    begin
+      { not defined by GAEB DA 2000, written by programs }
+      Inc(FKatNamForm);
+      if Name = '' then
+      begin
+        Name := Str(K, 'KatNam');
+        Lbl := Str(K, 'KatBez');
+      end;
+    end;
+    Code := Str(K, 'KatSchl');
+  end;
+  if (Name = '') or (Code = '') then
+  begin
+    Inc(FIncompleteKat);
+    Exit;
+  end;
+  I := 0;
+  while (I < FCtlgCount) and (FCtlgNames[I] <> Name) do
+    Inc(I);
+  if I = FCtlgCount then
+  begin
+    SetLength(FCtlgNames, FCtlgCount + 1);
+    SetLength(FCtlgLabels, FCtlgCount + 1);
+    FCtlgNames[I] := Name;
+    FCtlgLabels[I] := Lbl;
+    Inc(FCtlgCount);
+  end
+  else if (FCtlgLabels[I] = '') and (Lbl <> '') then
+    FCtlgLabels[I] := Lbl;
+  A := AAssign.Add;
+  A.Present := True;
+  A.CtlgID := Name;
+  A.CtlgCode := Code;
+end;
+
+{ One BoQInfo/Ctlg per catalogue of the assignments: CtlgID and CtlgType
+  the name, CtlgName the description or the name.
+  DE: Je Katalog der Zuordnungen ein BoQInfo/Ctlg: CtlgID und CtlgType
+  der Name, CtlgName die Bezeichnung oder der Name. }
+procedure TMapper.AddCatalogs(AInfo: TLandrixGaebXmlBoQInfo);
+var
+  I: Integer;
+  C: TLandrixGaebXmlCtlg;
+begin
+  for I := 0 to FCtlgCount - 1 do
+  begin
+    C := AInfo.Ctlg.Add;
+    C.Present := True;
+    C.CtlgID := FCtlgNames[I];
+    C.CtlgType := FCtlgNames[I];
+    if FCtlgLabels[I] <> '' then
+      C.CtlgName := FCtlgLabels[I]
+    else
+      C.CtlgName := FCtlgNames[I];
+    { CtlgID holds 100, CtlgName 80 characters: kept, counted }
+    if (Length(C.CtlgID) > 100) or (Length(C.CtlgName) > 80) then
+      Inc(FLongCtlg);
+  end;
+end;
+
+procedure TMapper.AddRef(ARef: TLandrixGaebXmlRefItem; const AKey: TLandrixGaebString; AIsPerf: Boolean);
+begin
+  if FRefCount >= Length(FRefs) then
+  begin
+    SetLength(FRefs, 2 * FRefCount + 16);
+    SetLength(FRefKeys, 2 * FRefCount + 16);
+    SetLength(FRefIsPerf, 2 * FRefCount + 16);
+  end;
+  FRefs[FRefCount] := ARef;
+  FRefKeys[FRefCount] := AKey;
+  FRefIsPerf[FRefCount] := AIsPerf;
+  Inc(FRefCount);
+end;
+
+{ BezugOZ and BezugAusfNr become the IDRef of the first item with that
+  number (as written, without surrounding spaces) or of the execution
+  description with that AusfNr; a reference to no such number is counted
+  (RuleReference) and left out.
+  DE: BezugOZ und BezugAusfNr werden IDRef der ersten Position mit dieser
+  OZ (wie geschrieben, ohne umgebende Leerzeichen) bzw. der
+  Ausfuehrungsbeschreibung mit dieser AusfNr; ein Bezug auf eine nicht
+  vorhandene Nummer wird gezaehlt und weggelassen. }
+procedure TMapper.ResolveRefs;
+var
+  I, J: Integer;
+  Id: TLandrixGaebString;
+begin
+  for I := 0 to FRefCount - 1 do
+  begin
+    Id := '';
+    if FRefIsPerf[I] then
+    begin
+      for J := 0 to FPerfCount - 1 do
+        if FPerfNos[J] = FRefKeys[I] then
+        begin
+          Id := FPerfIds[J];
+          Break;
+        end;
+    end
+    else
+      for J := 0 to FItemCount - 1 do
+        if FItemNos[J] = FRefKeys[I] then
+        begin
+          Id := FItemIds[J];
+          Break;
+        end;
+    if Id <> '' then
+    begin
+      FRefs[I].IDRef := Id;
+      FRefs[I].Present := True;
+    end
+    else
+      Inc(FUnresolved);
+  end;
 end;
 
 procedure TMapper.MapBody(ANode: TLandrixGaebDA2000Node; ADepth: Integer; ABody: TLandrixGaebXmlBoQBody);
@@ -1288,6 +1537,7 @@ begin
       Ctgy.ALNBSerNo := Str(N, 'ZZVLfdNr');
       Ctgy.Accepted := Enum(N, 'Beauftragt', 'B|Z', 'AltAccept|BasReject');
       Ctgy.NotApplBoQ := Yes(N, 'Entf');
+      MapCatalogs(N, Ctgy.CtlgAssign);
       MapBody(N, ADepth + 1, Ctgy.BoQBody);
       MapTotals(N, Ctgy.Totals);
     end
@@ -1535,10 +1785,15 @@ begin
         BoQ.BoQInfo.LblUPComp6.TypeAttr := 'Unknown';
       end;
       BoQ.BoQInfo.LblTime := Str(LI, 'BezZeit');
+      MapCatalogs(LI, BoQ.BoQInfo.CtlgAssign);
       if LI <> nil then
         MapTotals(LI, BoQ.BoQInfo.Totals);
       MapBody(LV, 0, BoQ.BoQBody);
-    end;
+      AddCatalogs(BoQ.BoQInfo);
+    end
+    else
+      FCtlgWithoutLV := FCtlgCount;
+    ResolveRefs;
 
     if FFormatTexts > 0 then
     begin
@@ -1572,6 +1827,21 @@ begin
     if FIncompletePerf > 0 then
       Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompletePerf) +
         ' execution description(s) (AusfBeschr) without AusfNr, AusfBez or Beschreibung; left missing');
+    if FKatNamForm > 0 then
+      Report(nil, RuleOther, gsInformation, 'KatZuord with KatNam/KatBez (not defined in GAEB DA 2000) read as ' +
+        'catalogue (' + IntToStr(FKatNamForm) + ' time(s))');
+    if FIncompleteKat > 0 then
+      Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompleteKat) +
+        ' catalogue assignment(s) (KatZuord) without catalogue or KatSchl; left out');
+    if FLongCtlg > 0 then
+      Report(nil, RuleValue, gsWarning, IntToStr(FLongCtlg) +
+        ' catalogue(s) (KatZuord) with a name over 100 or a description over 80 characters; kept');
+    if FCtlgWithoutLV > 0 then
+      Report(nil, RuleIncomplete, gsWarning, IntToStr(FCtlgWithoutLV) +
+        ' catalogue(s) (KatZuord) in a file without LV: no BoQInfo/Ctlg defines them');
+    if FUnresolved > 0 then
+      Report(nil, RuleReference, gsWarning, IntToStr(FUnresolved) +
+        ' reference(s) (BezugOZ, BezugAusfNr) to a number not in the file; left out');
     if FPlainMarks > 0 then
       Report(nil, RuleOther, gsInformation, IntToStr(FPlainMarks) +
         ' text complement(s) marked in plain text (not defined in GAEB DA 2000) read');

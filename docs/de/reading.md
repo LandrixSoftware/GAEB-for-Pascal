@@ -73,7 +73,8 @@ Manche Programme schreiben Formen, die GAEB DA 2000 nicht festlegt. Der Leser ü
 GAEB-Toolbox und meldet jede Art einmal als Hinweis `GAEB-D2000-MAP-008`: Textergänzungen, die
 im Klartext markiert sind (`[TB01Beschriftung: [Feld] Rest]`, die Klammern als `&#91;` und
 `&#93;` geschrieben), `LVGlied/Format` (`A` und `N` ergeben `Num`) und
-`LVGlied/_GAEBXML_Alignment` (ergibt `Alignment`). Das Modell aus der `.P83` eines LV gleicht
+`LVGlied/_GAEBXML_Alignment` (ergibt `Alignment`) und Katalogzuordnungen mit `KatNam` und
+`KatBez` (je Katalog ein `BoQInfo/Ctlg`, wie bei der festgelegten Form mit `ExtDat`). Das Modell aus der `.P83` eines LV gleicht
 dem Modell aus seiner von der GAEB-Toolbox geschriebenen `.X83` bis auf IDs, Textformatierung
 und zwei Unterschiede: die Summe des LV, die X83 nicht trägt, und `LumpSumItem`, das der Leser
 für die Einheit `psch` setzt.

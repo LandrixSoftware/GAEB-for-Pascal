@@ -69,7 +69,8 @@ Some programs write forms GAEB DA 2000 does not define. The reader takes those o
 Toolbox and reports each kind once as information `GAEB-D2000-MAP-008`: text complements
 marked in plain text (`[TB01Caption: [field] tail]`, the brackets written as `&#91;` and
 `&#93;`), `LVGlied/Format` (`A` and `N` give `Num`) and `LVGlied/_GAEBXML_Alignment` (gives
-`Alignment`). The model read from the `.P83` of a bill equals the model read from its `.X83`
+`Alignment`) and catalogue assignments with `KatNam` and `KatBez` (one `BoQInfo/Ctlg` per
+catalogue, as for the defined form with `ExtDat`). The model read from the `.P83` of a bill equals the model read from its `.X83`
 written by the GAEB Toolbox, apart from IDs, text formatting and two differences: the total of
 the bill, which X83 does not carry, and `LumpSumItem`, which the reader sets for the unit `psch`.
 

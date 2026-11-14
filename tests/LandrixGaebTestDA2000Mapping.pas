@@ -184,8 +184,8 @@ begin
     Check(Contains(Xml, '<ComplCaption><p><span>Fabrikat: </span></p></ComplCaption>'), 'caption');
     Check(Contains(Xml, '<span>Boden ausheben</span>'), 'long text paragraph');
     Check(LandrixGaebXmlCheckModel(G, T, CheckDiags), 'content model: ' + CheckDiags.ToText);
-    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-001'), 'KatZuord not mapped: ' + Diags.ToText);
-    Check(Pos('Position/KatZuord', Diags.ToText) > 0, 'the key is named');
+    CheckEquals(0, Diags.CountOf('GAEB-D2000-MAP-001'), 'everything mapped: ' + Diags.ToText);
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-009'), 'KatZuord without catalogue: ' + Diags.ToText);
     Check(not Diags.HasErrors, 'no errors: ' + Diags.ToText);
   finally
     G.Free;
@@ -509,6 +509,127 @@ begin
   end;
 end;
 
+{ N times C. }
+function Repeated(C: AnsiChar; N: Integer): AnsiString;
+var
+  I: Integer;
+begin
+  Result := '';
+  SetLength(Result, N);
+  for I := 1 to N do
+    Result[I] := C;
+end;
+
+{ BezugBeschr, BezugOZ, BezugAusfNr and KatZuord. }
+procedure TestReferences;
+var
+  Diags, CheckDiags: TLandrixGaebDiagnostics;
+  G: TLandrixGaebXmlGAEB;
+  T: TLandrixGaebTarget;
+  Ctgy: TLandrixGaebXmlBoQCtgy;
+  Perf: TLandrixGaebXmlPerfDescr;
+  I1, I2, I3: TLandrixGaebXmlItem;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  CheckDiags := TLandrixGaebDiagnostics.Create;
+  G := MapText(Head('83') + Lines(['#begin[LV]', '#begin[LVInfo]', '[Name]LV1[end]', '[Bez]Rohbau[end]',
+    '[KurzLang]1[end]', '#begin[KatZuord]', '[KatNam]DIN276[end]', '[KatBez]Kostengruppen[end]',
+    '[KatSchl]300[end]', '#end[KatZuord]']) + Glied + Lines(['#end[LVInfo]',
+    '#begin[LVBereich]', '[OZ]01[end]', '[Bez]Bereich[end]',
+    '#begin[AusfBeschr]', '[AusfNr]5[end]', '[AusfBez]Beton[end]', '#begin[Beschreibung]',
+    '[Kurztext]Vorgabe[end]', '#end[Beschreibung]', '#end[AusfBeschr]',
+    '#begin[Position]', '[OZ]010010[end]', '[Menge]1[end]', '[ME]m[end]', '[BezugBeschr]B[end]',
+    '[BezugAusfNr]0005[end]', '#begin[Beschreibung]', '[Kurztext]Eins[end]', '#end[Beschreibung]',
+    '#begin[KatZuord]', '[KatNam]DIN276[end]', '[KatSchl]310[end]', '#end[KatZuord]',
+    '#begin[KatZuord]', '[ExtDat]STLB.KAT|Standardleistungsbuch[end]', '[KatSchl]A1[end]',
+    '#end[KatZuord]', '#begin[KatZuord]', '[KatSchl]ohne[end]', '#end[KatZuord]', '#end[Position]',
+    '#begin[Position]', '[OZ]010020[end]', '[Menge]2[end]', '[ME]m[end]', '[BezugBeschr]W[end]',
+    '[BezugOZ] 010010 [end]', '#begin[Beschreibung]', '[Kurztext]Zwei[end]', '#end[Beschreibung]',
+    '#end[Position]',
+    '#begin[Position]', '[OZ]010030[end]', '[Menge]3[end]', '[ME]m[end]', '[BezugOZ]019999[end]',
+    '[BezugAusfNr]77[end]', '#begin[Beschreibung]', '[Kurztext]Drei[end]', '#end[Beschreibung]',
+    '#end[Position]', '#end[LVBereich]', '#end[LV]']) + Tail, Diags, T);
+  try
+    with G.Award.BoQ.BoQInfo do
+    begin
+      CheckEquals(2, Integer(Ctlg.Count), 'two catalogues');
+      CheckEqualsGaebStr('DIN276', Ctlg[0].CtlgID, 'catalogue ID: KatNam');
+      CheckEqualsGaebStr('DIN276', Ctlg[0].CtlgType, 'catalogue type: KatNam');
+      CheckEqualsGaebStr('Kostengruppen', Ctlg[0].CtlgName, 'catalogue name: KatBez');
+      CheckEqualsGaebStr('STLB.KAT', Ctlg[1].CtlgID, 'catalogue of ExtDat');
+      CheckEqualsGaebStr('Standardleistungsbuch', Ctlg[1].CtlgName, 'ExtDatBeschr');
+      CheckEquals(1, Integer(CtlgAssign.Count), 'LVInfo assignment');
+      CheckEqualsGaebStr('300', CtlgAssign[0].CtlgCode, 'its key');
+    end;
+    Ctgy := TLandrixGaebXmlBoQCtgy(G.Award.BoQ.BoQBody.Children[0]);
+    Perf := TLandrixGaebXmlPerfDescr(Ctgy.BoQBody.Itemlist.Children[0]);
+    I1 := TLandrixGaebXmlItem(Ctgy.BoQBody.Itemlist.Children[1]);
+    I2 := TLandrixGaebXmlItem(Ctgy.BoQBody.Itemlist.Children[2]);
+    I3 := TLandrixGaebXmlItem(Ctgy.BoQBody.Itemlist.Children[3]);
+    CheckEqualsGaebStr('Ref', I1.RefDescr, 'BezugBeschr B');
+    Check(I1.HasRefPerfNo, 'BezugAusfNr mapped');
+    CheckEqualsGaebStr(Perf.ID, I1.RefPerfNo.IDRef, 'to the execution description');
+    CheckEquals(2, Integer(I1.CtlgAssign.Count), 'two assignments, the incomplete one left out');
+    CheckEqualsGaebStr('DIN276', I1.CtlgAssign[0].CtlgID, 'first catalogue');
+    CheckEqualsGaebStr('310', I1.CtlgAssign[0].CtlgCode, 'first key');
+    CheckEqualsGaebStr('STLB.KAT', I1.CtlgAssign[1].CtlgID, 'second catalogue');
+    CheckEqualsGaebStr('Rep', I2.RefDescr, 'BezugBeschr W');
+    Check(I2.HasRefRNo, 'BezugOZ mapped');
+    CheckEqualsGaebStr(I1.ID, I2.RefRNo.IDRef, 'to the item, spaces ignored');
+    Check(not I3.HasRefRNo and not I3.HasRefPerfNo, 'unknown numbers left out');
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-010'), 'reported once');
+    Check(Pos('2 reference(s)', Diags.ToText) > 0, 'with their count');
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-009'), 'assignment without catalogue');
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-008'), 'KatNam form reported');
+    Check(Pos('(2 time(s))', Diags.ToText) > 0, 'with its count');
+    CheckEquals(0, Diags.CountOf('GAEB-D2000-MAP-001'), 'everything mapped: ' + Diags.ToText);
+    Check((Pos('019999', Diags.ToText) = 0) and (Pos('DIN276', Diags.ToText) = 0), 'no values in messages');
+    Check(LandrixGaebXmlCheckModel(G, T, CheckDiags), 'content model: ' + CheckDiags.ToText);
+  finally
+    G.Free;
+  end;
+  { a description is no name; too long values; the V1.0 structure with a
+    control character }
+  Diags.Clear;
+  G := MapText(WithItem('83', '', '010010', Lines(['#begin[KatZuord]', '[KatBez]Nur Bezeichnung[end]',
+    '[KatSchl]1[end]', '#end[KatZuord]', '#begin[KatZuord]', '[ExtDat]K|' + Repeated('A', 81) + '[end]',
+    '[KatSchl]2[end]', '#end[KatZuord]', '[KatZuord]V10|Alt|A&#1;B[end]'])), Diags, T);
+  try
+    CheckEquals(2, Integer(FirstItem(G).CtlgAssign.Count), 'the one without name left out');
+    CheckEqualsGaebStr('V10', FirstItem(G).CtlgAssign[1].CtlgID, 'V1.0 structure: name');
+    CheckEqualsGaebStr('AB', FirstItem(G).CtlgAssign[1].CtlgCode, 'V1.0 structure: key');
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-009'), 'without name: ' + Diags.ToText);
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-004'), 'too long description');
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-006'), 'control character counted');
+  finally
+    G.Free;
+  end;
+  { too long: the name standing for the description, a description given
+    by a later assignment }
+  Diags.Clear;
+  G := MapText(WithItem('83', '', '010010', Lines(['[KatZuord]' + Repeated('B', 81) + '||1[end]',
+    '[KatZuord]K||1[end]', '[KatZuord]K|' + Repeated('A', 81) + '|2[end]'])), Diags, T);
+  try
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-004'), 'reported once: ' + Diags.ToText);
+    Check(Pos('2 catalogue(s)', Diags.ToText) > 0, 'both catalogues counted: ' + Diags.ToText);
+  finally
+    G.Free;
+  end;
+  { an address catalogue in a file without LV }
+  Diags.Clear;
+  G := MapText(Head('83') + Lines(['#begin[AN]', '#begin[Adresse]', '[Name1]Firma[end]',
+    '#begin[KatZuord]', '[ExtDat]CAT|Kat[end]', '[KatSchl]300[end]', '#end[KatZuord]',
+    '#end[Adresse]', '#end[AN]']) + Tail, Diags, T);
+  try
+    CheckEquals(1, Integer(G.Award.CTR.Address.CtlgAssign.Count), 'address assignment');
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-009'), 'catalogue without LV reported: ' + Diags.ToText);
+  finally
+    G.Free;
+    CheckDiags.Free;
+    Diags.Free;
+  end;
+end;
+
 procedure ExpectRejected(const S: AnsiString; const AMsg: string);
 var
   G: TLandrixGaebXmlGAEB;
@@ -757,6 +878,7 @@ begin
   RegisterTest('DA2000Mapping.Rejected', TestRejected);
   RegisterTest('DA2000Mapping.ReviewCases', TestReviewCases);
   RegisterTest('DA2000Mapping.ToolboxForms', TestToolboxForms);
+  RegisterTest('DA2000Mapping.References', TestReferences);
   RegisterTest('Local.DA2000Map', TestLocalMap);
 end;
 
