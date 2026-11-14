@@ -25,13 +25,14 @@
   - LV: LVInfo -> BoQInfo (name, label, date, text kind, unit price
     components, time label, totals), LVGlied -> BoQBkdn (derived from the
     ordinal numbers when LVGlied is missing), LVBereich -> BoQCtgy,
-    Position -> Item, Hinweis -> Remark;
+    Position -> Item, Hinweis -> Remark, AusfBeschr -> PerfDescr (AusfNr
+    -> PerfNo, AusfBez -> PerfLbl, each Beschreibung -> Description);
   - Beschreibung -> Description: Kurztext -> OutlineText, Langtext ->
     DetailTxt, as plain paragraphs with text complements
     (LandrixGaebDA2000Text).
   Numbers accept a comma or a point; dates TT.MM.JJJJ become YYYY-MM-DD,
-  times HH:MM become HH:MM:SS. IDs are generated (LGB, LGC, LGI, LGR plus
-  a number); they do not exist in GAEB DA 2000.
+  times HH:MM become HH:MM:SS. IDs are generated (LGB, LGC, LGI, LGR, LGP
+  plus a number); they do not exist in GAEB DA 2000.
 
   Diagnostics (rule identifiers):
     GAEB-BR-D2000-008 error        a number that is no decimal number
@@ -53,6 +54,17 @@
                                    (XML 1.0 cannot carry them)
     GAEB-D2000-MAP-007 information  Num of breakdown levels without any
                                    value set (No for an index, Yes else)
+    GAEB-D2000-MAP-008 information  keys and marks GAEB DA 2000 does not
+                                   define, read as other programs write
+                                   them (once per kind with a count):
+                                   LVGlied/Format (A -> Num No, N -> Num
+                                   Yes), LVGlied/_GAEBXML_Alignment (left,
+                                   right -> Alignment), complements marked
+                                   in plain text (LandrixGaebDA2000Text)
+    GAEB-D2000-MAP-009 warning      execution descriptions without
+                                   AusfNr, AusfBez or Beschreibung, which
+                                   PerfDescr requires (left missing; once
+                                   per file with a count)
   Messages name keys, never values.
 
   DE: Abbildung einer gelesenen GAEB-DA-2000-Datei in das Syntaxmodell
@@ -144,6 +156,8 @@ const
   RuleBkdn = 'GAEB-D2000-MAP-005';
   RuleControl = 'GAEB-D2000-MAP-006';
   RuleUnusedLevel = 'GAEB-D2000-MAP-007';
+  RuleOther = 'GAEB-D2000-MAP-008';
+  RuleIncomplete = 'GAEB-D2000-MAP-009';
 
 type
   { One level of the breakdown: its kind and length. }
@@ -159,6 +173,10 @@ type
     FLevels: array of TLevel;
     { texts }
     FFormatTexts: Integer;
+    { keys and marks GAEB DA 2000 does not define, read (RuleOther) }
+    FPlainMarks, FFormatKeys, FAlignKeys: Integer;
+    { execution descriptions without a required part (RuleIncomplete) }
+    FIncompletePerf: Integer;
     FLosses: TLandrixGaebDA2000Losses;
     FMarkProblems: Integer;
     FControlChars: Integer;
@@ -191,6 +209,8 @@ type
     function HasText(const AValue: TLandrixGaebString): Boolean;
     procedure MapLongText(const AValue: TLandrixGaebString; ADetail: TLandrixGaebXmlBoQText);
     procedure MapShortText(const AValue: TLandrixGaebString; AOutline: TLandrixGaebXmlOutlTxt);
+    procedure MapTexts(B: TLandrixGaebDA2000Node; ADescription: TLandrixGaebXmlDescription;
+      APerf: TLandrixGaebXmlPerfDescription);
     procedure MapDescription(ANode: TLandrixGaebDA2000Node; ADescription: TLandrixGaebXmlDescription);
     procedure MapTotals(ANode: TLandrixGaebDA2000Node; ATotals: TLandrixGaebXmlTotals);
     procedure MapBreakdown(ALV: TLandrixGaebDA2000Node; AInfo: TLandrixGaebXmlBoQInfo);
@@ -198,6 +218,7 @@ type
     function Part(const AOZ: TLandrixGaebString; ALevel: Integer; out AIndex: TLandrixGaebString): TLandrixGaebString;
     procedure MapItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
     procedure MapRemark(ANode: TLandrixGaebDA2000Node; ARemark: TLandrixGaebXmlRemark);
+    procedure MapPerfDescr(ANode: TLandrixGaebDA2000Node; APerf: TLandrixGaebXmlPerfDescr);
     procedure MapBody(ANode: TLandrixGaebDA2000Node; ADepth: Integer; ABody: TLandrixGaebXmlBoQBody);
     procedure ReportUnused(ARoot: TLandrixGaebDA2000Node);
   public
@@ -543,6 +564,7 @@ begin
     Inc(FFormatTexts);
   FLosses := FLosses + AText.Losses;
   Inc(FMarkProblems, AText.MarkProblems);
+  Inc(FPlainMarks, AText.PlainMarks);
 end;
 
 { Text of a paragraph as lines (a #10 inside is a line break). }
@@ -618,7 +640,11 @@ begin
     AComplement.Kind := 'Bidder'
   else
     AComplement.Kind := 'Owner';
-  AComplement.MarkLbl := W(IntToStr(APart.Number));
+  { the digits as written, as the GAEB Toolbox writes MarkLbl }
+  if APart.Mark <> '' then
+    AComplement.MarkLbl := APart.Mark
+  else
+    AComplement.MarkLbl := W(IntToStr(APart.Number));
   if APart.Empty then
     AComplement.Empty := 'Yes';
   if APart.Caption <> '' then
@@ -740,14 +766,30 @@ begin
   end;
 end;
 
-procedure TMapper.MapDescription(ANode: TLandrixGaebDA2000Node; ADescription: TLandrixGaebXmlDescription);
+{ Beschreibung B into ADescription or, if that is nil, into APerf (the
+  same content model). }
+procedure TMapper.MapTexts(B: TLandrixGaebDA2000Node; ADescription: TLandrixGaebXmlDescription;
+  APerf: TLandrixGaebXmlPerfDescription);
 var
-  B: TLandrixGaebDA2000Node;
   Long, Short: TLandrixGaebString;
+
+  function Complete: TLandrixGaebXmlCompleteText;
+  begin
+    if ADescription <> nil then
+      Result := ADescription.CompleteText
+    else
+      Result := APerf.CompleteText;
+  end;
+
+  function Outline: TLandrixGaebXmlOutlineText;
+  begin
+    if ADescription <> nil then
+      Result := ADescription.OutlineText
+    else
+      Result := APerf.OutlineText;
+  end;
+
 begin
-  B := Child(ANode, 'Beschreibung');
-  if B = nil then
-    Exit;
   Long := Text(B, 'Langtext');
   Short := Text(B, 'Kurztext');
   if not HasText(Long) then
@@ -756,22 +798,31 @@ begin
     Short := '';
   if Long <> '' then
   begin
-    MapLongText(Long, ADescription.CompleteText.DetailTxt);
-    ADescription.CompleteText.ComplTSA := Yes(B, 'LangtextTA');
-    ADescription.CompleteText.ComplTSB := Yes(B, 'LangtextTB');
+    MapLongText(Long, Complete.DetailTxt);
+    Complete.ComplTSA := Yes(B, 'LangtextTA');
+    Complete.ComplTSB := Yes(B, 'LangtextTB');
     if Short <> '' then
     begin
-      MapShortText(Short, ADescription.CompleteText.OutlineText.OutlTxt);
-      ADescription.CompleteText.OutlineText.OutlTSA := Yes(B, 'KurztextTA');
+      MapShortText(Short, Complete.OutlineText.OutlTxt);
+      Complete.OutlineText.OutlTSA := Yes(B, 'KurztextTA');
     end;
   end
   else if Short <> '' then
   begin
     { without a long text the short text stands alone (CompleteText needs
       DetailTxt) }
-    MapShortText(Short, ADescription.OutlineText.OutlTxt);
-    ADescription.OutlineText.OutlTSA := Yes(B, 'KurztextTA');
+    MapShortText(Short, Outline.OutlTxt);
+    Outline.OutlTSA := Yes(B, 'KurztextTA');
   end;
+end;
+
+procedure TMapper.MapDescription(ANode: TLandrixGaebDA2000Node; ADescription: TLandrixGaebXmlDescription);
+var
+  B: TLandrixGaebDA2000Node;
+begin
+  B := Child(ANode, 'Beschreibung');
+  if B <> nil then
+    MapTexts(B, ADescription, nil);
 end;
 
 procedure TMapper.MapTotals(ANode: TLandrixGaebDA2000Node; ATotals: TLandrixGaebXmlTotals);
@@ -798,7 +849,7 @@ end;
 procedure TMapper.MapBreakdown(ALV: TLandrixGaebDA2000Node; AInfo: TLandrixGaebXmlBoQInfo);
 var
   Info, G: TLandrixGaebDA2000Node;
-  Kind, Lbl: TLandrixGaebString;
+  Kind, Lbl, NumOf, AlignOf: TLandrixGaebString;
   Len: TLandrixGaebDecimal;
   K: string;
   Bkdn: TLandrixGaebXmlBoQBkdn;
@@ -848,6 +899,21 @@ begin
       Break;
     Kind := Enum(G, 'Typ', 'Los|LVStufe|Position|Index', 'Lot|BoQLevel|Item|Index');
     Lbl := Str(G, 'Bez');
+    { not defined by GAEB DA 2000, written by the GAEB Toolbox (owner
+      decision 14.11.2026): Format A (alphanumeric) or N (numeric) and
+      _GAEBXML_Alignment }
+    NumOf := '';
+    if G.Find('Format') <> nil then
+    begin
+      Inc(FFormatKeys);
+      NumOf := Enum(G, 'Format', 'A|N', 'No|Yes');
+    end;
+    AlignOf := '';
+    if G.Find('_GAEBXML_Alignment') <> nil then
+    begin
+      Inc(FAlignKeys);
+      AlignOf := Enum(G, '_GAEBXML_Alignment', 'left|right', 'left|right');
+    end;
     Len.Clear;
     Num(G, 'Laenge', Len);
     K := AsciiOf(Kind);
@@ -861,6 +927,8 @@ begin
     Bkdn.Present := True;
     Bkdn.TypeElement := Kind;
     Bkdn.LblBoQBkdn := Lbl;
+    Bkdn.Num := NumOf;
+    Bkdn.Alignment := AlignOf;
     if FLevels[N - 1].Length > 0 then
       Bkdn.LengthElement := W(IntToStr(FLevels[N - 1].Length));
   until False;
@@ -870,7 +938,7 @@ begin
   if Length(FLevels) = 0 then
     Exit;
   Report(Info, RuleBkdn, gsInformation, 'LVGlied missing: BoQBkdn derived from the ordinal numbers');
-  for N := 0 to High(FLevels) do
+  for N := 0 to Integer(High(FLevels)) do
   begin
     Bkdn := AInfo.BoQBkdn.Add;
     Bkdn.Present := True;
@@ -914,7 +982,7 @@ begin
   AIndex := '';
   Start := 1;
   Depth := -1;
-  for I := 0 to High(FLevels) do
+  for I := 0 to Integer(High(FLevels)) do
   begin
     if (FLevels[I].Kind = 'Lot') or (FLevels[I].Kind = 'BoQLevel') then
     begin
@@ -1036,7 +1104,7 @@ var
   end;
 
 begin
-  Count := Length(FLevels);
+  Count := Integer(Length(FLevels));
   if (Count = 0) or (Integer(AInfo.BoQBkdn.Count) <> Count) then
     Exit;
   Seen := nil;
@@ -1056,7 +1124,10 @@ begin
   end;
   Unused := 0;
   for I := 0 to Count - 1 do
-    if Other[I] then
+    if (AInfo.BoQBkdn[I].Num = 'No') or ((AInfo.BoQBkdn[I].Num = 'Yes') and not Other[I]) then
+      { declared by LVGlied/Format and not contradicted by the values }
+      Continue
+    else if Other[I] then
       AInfo.BoQBkdn[I].Num := 'No'
     else if Seen[I] then
       AInfo.BoQBkdn[I].Num := 'Yes'
@@ -1129,6 +1200,45 @@ begin
   MapDescription(ANode, ARemark.Description);
 end;
 
+{ Execution description (AusfBeschr): AusfNr (num 4,0) -> PerfNo, AusfBez
+  -> PerfLbl, every Beschreibung -> one Description. An AusfNr that is no
+  whole number from 0 to 9999 is reported and left out; a missing part is
+  left missing and counted (GAEB-D2000-MAP-009).
+  DE: Ausfuehrungsbeschreibung (AusfBeschr): AusfNr (num 4,0) -> PerfNo,
+  AusfBez -> PerfLbl, jede Beschreibung -> eine Description. Eine AusfNr,
+  die keine ganze Zahl von 0 bis 9999 ist, wird gemeldet und
+  weggelassen; ein fehlender Teil bleibt fehlend und wird gezaehlt
+  (GAEB-D2000-MAP-009). }
+procedure TMapper.MapPerfDescr(ANode: TLandrixGaebDA2000Node; APerf: TLandrixGaebXmlPerfDescr);
+var
+  No: TLandrixGaebDecimal;
+  B: TLandrixGaebDA2000Node;
+  D: TLandrixGaebXmlPerfDescription;
+begin
+  APerf.Present := True;
+  APerf.ID := NewId('LGP');
+  No.Clear;
+  B := ANode.Find('AusfNr');
+  Num(ANode, 'AusfNr', No);
+  if No.HasValue and (No.Scale = 0) and (No.Coefficient >= 0) and (No.Coefficient <= 9999) then
+    APerf.PerfNo := W(IntToStr(Integer(No.Coefficient)))
+  else if No.HasValue then
+    Report(B, RuleValue, gsWarning, 'AusfNr: no whole number from 0 to 9999, not mapped');
+  APerf.PerfLbl := Str(ANode, 'AusfBez');
+  repeat
+    B := Child(ANode, 'Beschreibung');
+    if B = nil then
+      Break;
+    D := APerf.Description.Add;
+    D.Present := True;
+    MapTexts(B, nil, D);
+  until False;
+  { PerfNo, PerfLbl and a description are required in GAEB DA XML; what
+    is missing stays missing }
+  if (APerf.PerfNo = '') or (TrimW(APerf.PerfLbl) = '') or not APerf.HasDescription then
+    Inc(FIncompletePerf);
+end;
+
 procedure TMapper.MapBody(ANode: TLandrixGaebDA2000Node; ADepth: Integer; ABody: TLandrixGaebXmlBoQBody);
 var
   I: Integer;
@@ -1193,6 +1303,14 @@ begin
         MapRemark(N, ABody.Itemlist.AddRemark)
       else
         MapRemark(N, ABody.AddRemark);
+    end
+    else if CompareText(N.Key, 'AusfBeschr') = 0 then
+    begin
+      N.Used := True;
+      if HasItem or not HasCtgy then
+        MapPerfDescr(N, ABody.Itemlist.AddPerfDescr)
+      else
+        MapPerfDescr(N, ABody.AddPerfDescr);
     end;
   end;
   if ABody.HasItemlist then
@@ -1445,6 +1563,18 @@ begin
     if FControlChars > 0 then
       Report(nil, RuleControl, gsWarning, IntToStr(FControlChars) +
         ' control character(s) removed (not allowed in XML)');
+    if FFormatKeys > 0 then
+      Report(nil, RuleOther, gsInformation, 'LVGlied/Format (not defined in GAEB DA 2000) read as Num (' +
+        IntToStr(FFormatKeys) + ' time(s))');
+    if FAlignKeys > 0 then
+      Report(nil, RuleOther, gsInformation, 'LVGlied/_GAEBXML_Alignment read as Alignment (' +
+        IntToStr(FAlignKeys) + ' time(s))');
+    if FIncompletePerf > 0 then
+      Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompletePerf) +
+        ' execution description(s) (AusfBeschr) without AusfNr, AusfBez or Beschreibung; left missing');
+    if FPlainMarks > 0 then
+      Report(nil, RuleOther, gsInformation, IntToStr(FPlainMarks) +
+        ' text complement(s) marked in plain text (not defined in GAEB DA 2000) read');
     ReportUnused(Root);
   except
     G.Free;

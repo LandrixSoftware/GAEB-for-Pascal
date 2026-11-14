@@ -33,7 +33,12 @@
   ignored.
 
   A value that does not start with the RTF group (\rtf) is plain
-  text: each line is a paragraph.
+  text: each line is a paragraph. GAEB DA 2000 defines no marks for
+  complements in plain text; the form '[' TAnn or TBnn caption '[' field
+  ']' tail ']' on one line (written by the GAEB Toolbox, the brackets as
+  &#91; and &#93; in the file) is read as a complement and counted in
+  PlainMarks. A mark that opens its field but does not close counts in
+  MarkProblems and stays text.
 
   DE: Texte von GAEB DA 2000 (RTF oder Klartext) als Absaetze aus Klartext
   mit Textergaenzungen. RTF wird Klartext; Schriften, Farben, Zeichen-
@@ -43,7 +48,11 @@
   Unterstrichen und Leerraum bestehendes Feld ist Empty. Unpaarige Marken
   behalten ihren Text als Klartext und zaehlen in MarkProblems. Ein Wert,
   der nicht mit der RTF-Gruppe (\rtf) beginnt, ist Klartext: jede
-  Zeile ein Absatz. }
+  Zeile ein Absatz. GAEB DA 2000 legt keine Marken fuer Ergaenzungen in
+  Klartext fest; die Form '[' TAnn oder TBnn Caption '[' Feld ']' Tail
+  ']' auf einer Zeile (von der GAEB-Toolbox geschrieben, die Klammern in
+  der Datei als &#91; und &#93;) wird als Ergaenzung gelesen und in
+  PlainMarks gezaehlt. }
 
 { API: internal. May change in any release, also after 1.0; use the
   stable units instead (see README).
@@ -82,6 +91,9 @@ type
     Bidder: Boolean;
     { tpkComplement: nn of the mark. DE: nn der Marke. }
     Number: Integer;
+    { tpkComplement: the digits nn as written (e.g. '01').
+      DE: Die Ziffern nn wie geschrieben (etwa '01'). }
+    Mark: TLandrixGaebString;
     { tpkComplement: text before, in and after the field.
       DE: Text vor, in und nach dem Feld. }
     Caption, Body, Tail: TLandrixGaebString;
@@ -119,6 +131,10 @@ type
     Losses: TLandrixGaebDA2000Losses;
     { Bookmarks of complements that did not pair. DE: Unpaarige Marken. }
     MarkProblems: Integer;
+    { Complements read from the marks in plain text (not defined by GAEB
+      DA 2000). DE: Aus den Marken in Klartext gelesene Ergaenzungen
+      (von GAEB DA 2000 nicht festgelegt). }
+    PlainMarks: Integer;
     constructor Create;
     destructor Destroy; override;
     function Count: Integer;
@@ -365,6 +381,7 @@ type
     FMarkOpen: Boolean;
     FMarkBidder: Boolean;
     FMarkNumber: Integer;
+    FMarkDigits: TLandrixGaebString;
     FFieldNumber: Integer;
     FStage: Integer;
     { a field mark of the open complement did not pair }
@@ -498,6 +515,7 @@ begin
   Part.Kind := tpkComplement;
   Part.Bidder := FMarkBidder;
   Part.Number := FMarkNumber;
+  Part.Mark := FMarkDigits;
   Part.Caption := FCaption.Text;
   Part.Body := FBody.Text;
   Part.Tail := FTail.Text;
@@ -543,6 +561,7 @@ begin
       FMarkOpen := True;
       FMarkBidder := Bidder;
       FMarkNumber := N;
+      FMarkDigits := TLandrixGaebString(Copy(AName, 3, MaxInt));
       FStage := 0;
       FBroken := False;
       FCaption.Clear;
@@ -848,10 +867,130 @@ begin
     (S[I + 2] = 'r') and (S[I + 3] = 't') and (S[I + 4] = 'f');
 end;
 
+{ Position after the characters from AFrom on that are no bracket; the
+  bracket found (or #0 at the end) in ABracket. }
+function SkipToBracket(const S: TLandrixGaebString; AFrom: Integer; out ABracket: WideChar): Integer;
+begin
+  Result := AFrom;
+  while (Result <= Length(S)) and (S[Result] <> '[') and (S[Result] <> ']') do
+    Inc(Result);
+  if Result <= Length(S) then
+    ABracket := S[Result]
+  else
+    ABracket := #0;
+end;
+
+{ Reads the complement marked in plain text at S[AStart] = '[' (see the
+  unit comment) into APart; False if there is none. ANext is the position
+  after it; AProblem is True when the mark opened its field but did not
+  close. }
+function PlainMark(const S: TLandrixGaebString; AStart: Integer; APart: TLandrixGaebDA2000TextPart;
+  out ANext: Integer; out AProblem: Boolean): Boolean;
+var
+  P, Digits, C0, F0, T0: Integer;
+  B: WideChar;
+begin
+  Result := False;
+  AProblem := False;
+  ANext := AStart;
+  P := AStart + 1;
+  if (P + 2 > Length(S)) or ((S[P] <> 'T') and (S[P] <> 't')) then
+    Exit;
+  if (S[P + 1] = 'B') or (S[P + 1] = 'b') then
+    APart.Bidder := True
+  else if (S[P + 1] = 'A') or (S[P + 1] = 'a') then
+    APart.Bidder := False
+  else
+    Exit;
+  Inc(P, 2);
+  Digits := P;
+  while (P <= Length(S)) and (S[P] >= '0') and (S[P] <= '9') do
+    Inc(P);
+  if (P = Digits) or (P - Digits > 6) then
+    Exit;
+  APart.Mark := Copy(S, Digits, P - Digits);
+  C0 := P;
+  P := SkipToBracket(S, P, B);
+  if B <> '[' then
+    Exit;
+  APart.Caption := Copy(S, C0, P - C0);
+  { the field is open: what follows must close it }
+  AProblem := True;
+  F0 := P + 1;
+  P := SkipToBracket(S, F0, B);
+  if B <> ']' then
+    Exit;
+  APart.Body := Copy(S, F0, P - F0);
+  T0 := P + 1;
+  P := SkipToBracket(S, T0, B);
+  if B <> ']' then
+    Exit;
+  APart.Tail := Copy(S, T0, P - T0);
+  AProblem := False;
+  APart.Kind := tpkComplement;
+  APart.Number := StrToInt(string(APart.Mark));
+  APart.Empty := IsPlaceholder(APart.Body);
+  if APart.Empty then
+    APart.Body := '';
+  ANext := P + 1;
+  Result := True;
+end;
+
+{ One line of plain text as paragraph APara: text and complements. }
+procedure ReadPlainLine(const S: TLandrixGaebString; APara: TLandrixGaebDA2000Paragraph;
+  AText: TLandrixGaebDA2000Text);
+var
+  I, Start, Next: Integer;
+  Probe, Part: TLandrixGaebDA2000TextPart;
+  Problem: Boolean;
+begin
+  Start := 1;
+  I := 1;
+  Problem := False;
+  Probe := TLandrixGaebDA2000TextPart.Create;
+  try
+    while I <= Length(S) do
+    begin
+      if (S[I] = '[') and PlainMark(S, I, Probe, Next, Problem) then
+      begin
+        if I > Start then
+        begin
+          Part := APara.Add;
+          Part.Kind := tpkText;
+          Part.Text := Copy(S, Start, I - Start);
+        end;
+        Part := APara.Add;
+        Part.Kind := tpkComplement;
+        Part.Bidder := Probe.Bidder;
+        Part.Number := Probe.Number;
+        Part.Mark := Probe.Mark;
+        Part.Caption := Probe.Caption;
+        Part.Body := Probe.Body;
+        Part.Tail := Probe.Tail;
+        Part.Empty := Probe.Empty;
+        Inc(AText.PlainMarks);
+        I := Next;
+        Start := I;
+        Continue;
+      end;
+      if (S[I] = '[') and Problem then
+        Inc(AText.MarkProblems);
+      Inc(I);
+    end;
+  finally
+    Probe.Free;
+  end;
+  if Length(S) >= Start then
+  begin
+    Part := APara.Add;
+    Part.Kind := tpkText;
+    Part.Text := Copy(S, Start, MaxInt);
+  end;
+end;
+
 procedure ReadPlain(const S: TLandrixGaebString; AText: TLandrixGaebDA2000Text);
 var
   I, Start: Integer;
-  Part: TLandrixGaebDA2000TextPart;
   Para: TLandrixGaebDA2000Paragraph;
 begin
   { CR LF, CR and LF end a line }
@@ -863,11 +1002,7 @@ begin
     begin
       Para := AText.Add;
       if I > Start then
-      begin
-        Part := Para.Add;
-        Part.Kind := tpkText;
-        Part.Text := Copy(S, Start, I - Start);
-      end;
+        ReadPlainLine(Copy(S, Start, I - Start), Para, AText);
       if (I < Length(S)) and (S[I] = #13) and (S[I + 1] = #10) then
         Inc(I);
       Start := I + 1;

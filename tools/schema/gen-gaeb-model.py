@@ -2276,6 +2276,170 @@ def cmp_proc(info):
     return "Cmp" + info["name"][len(CLASS_PREFIX):]
 
 
+# children of a text container: compared as plain text in the acceptance mode
+TEXT_CONTAINER_CHILDREN = {"Text", "TextComplement", "TextOutlTxt"}
+
+
+def is_text_container(info):
+    if is_mixed(info):
+        return True
+    for m in info["members"]:
+        if m["kind"] == "children" and any(k["schema"] in TEXT_CONTAINER_CHILDREN for k in m["children"]):
+            return True
+    return False
+
+
+def oth_proc(info):
+    return "Oth" + info["name"][len(CLASS_PREFIX):]
+
+
+# attributes of text elements that only format (not compared in the acceptance
+# mode); ID and IDRef are generated; Empty is not compared (see AcceptText)
+FORMAT_ATTRS = {"class", "style", "align", "valign", "width", "height", "border", "hspace", "vspace",
+                "cellpadding", "frame", "textWidth", "type", "start", "ID", "IDRef", "Empty"}
+
+
+# elements that structure or format a text: no type mark in the acceptance
+# collectors (the plain text compares their effect)
+TEXT_LAYOUT = {"p", "div", "span", "br", "ul", "ol", "li", "table", "tbody", "thead", "tr", "td", "th",
+               "Text", "TextOutlTxt"}
+
+
+def gen_other(w, infos, model):
+    """Collectors for CompareGaebModelsAccept: every value, Base64 and
+    non-text child and every attribute below a node, except the text of
+    spans (compared as plain text), formatting attributes (FORMAT_ATTRS) and
+    style sheets; a text complement is enclosed in #7 and #8 so that what it
+    holds stays its own."""
+    span = CLASS_PREFIX + "Span"
+    skipped = {CLASS_PREFIX + "Style"}
+
+    def own(info, m):
+        return (m["kind"] == "value" and info["name"] != span) or m["kind"] in ("base64", "children")
+
+    def attrs(info):
+        return [a for a in info["attributes"] if a["schema"] not in FORMAT_ATTRS]
+
+    # classes whose collector does something (fixpoint over objects and lists)
+    infos = [i for i in infos if i["name"] not in skipped]
+    active = set(i["name"] for i in infos if attrs(i) or any(own(i, m) for m in i["members"]))
+    changed = True
+    while changed:
+        changed = False
+        for i in infos:
+            if i["name"] in active:
+                continue
+            if any(m["kind"] in ("object", "list") and model.emit[m["type"]]["name"] in active
+                   for m in i["members"]):
+                active.add(i["name"])
+                changed = True
+    infos = [i for i in infos if i["name"] in active]
+    for info in infos:
+        w("procedure %s(A: %s; var S: TLandrixGaebString); forward;" % (oth_proc(info), info["name"]))
+    w("")
+    w("procedure OthNode(ANode: TLandrixGaebXmlNode; var S: TLandrixGaebString);")
+    w("begin")
+    w("  if ANode = nil then")
+    w("    Exit;")
+    w("  if ANode is TLandrixGaebXmlTextNode then")
+    w("    Exit;")
+    w("  if ANode is TLandrixGaebXmlValueNode then")
+    w("  begin")
+    w("    if ANode.ElementName <> 'br' then")
+    w("      S := S + #5 + LandrixXmlUtf8ToWide(ANode.ElementName) + #6 + TLandrixGaebXmlValueNode(ANode).Value;")
+    w("    Exit;")
+    w("  end;")
+    w("  if ANode is TLandrixGaebXmlTextComplement then")
+    w("    S := S + #7;")
+    first = True
+    for info in infos:
+        w("  %sif ANode is %s then" % ("" if first else "else ", info["name"]))
+        w("    %s(%s(ANode), S)" % (oth_proc(info), info["name"]))
+        first = False
+    w("  ;")
+    w("  if ANode is TLandrixGaebXmlTextComplement then")
+    w("    S := S + #8;")
+    w("end;")
+    w("")
+    for info in infos:
+        name = info["name"]
+        lists = [m for m in info["members"] if m["kind"] == "list" and model.emit[m["type"]]["name"] in active]
+        children = [m for m in info["members"] if m["kind"] == "children"]
+        w("procedure %s(A: %s; var S: TLandrixGaebString);" % (oth_proc(info), name))
+        labelled = [m for m in info["members"] if m["kind"] in ("object", "list")
+                    and m["schema"] not in TEXT_LAYOUT and model.emit[m["type"]]["name"] in active]
+        if lists or children or labelled:
+            w("var")
+            if lists or children:
+                w("  I: Integer;")
+            if labelled:
+                w("  L: Integer;")
+        w("begin")
+        for a in attrs(info):
+            if a["vtype"] == "TLandrixGaebString":
+                w("  if A.%s <> '' then" % a["name"])
+                w("    S := S + #5 + '@%s' + #6 + A.%s;" % (a["schema"], a["name"]))
+            else:
+                w("  if A.%s.HasValue then" % a["name"])
+                w("    S := S + #5 + '@%s' + #6 + LandrixXmlUtf8ToWide(A.%s.Text);" % (a["schema"], a["name"]))
+        for m in info["members"]:
+            k = m["kind"]
+            label = m.get("schema") or "#text"
+            if k == "value":
+                if name == span:
+                    continue
+                if m["vtype"] == "TLandrixGaebString":
+                    w("  if A.%s <> '' then" % m["name"])
+                    w("    S := S + #5 + '%s' + #6 + A.%s;" % (label, m["name"]))
+                else:
+                    w("  if A.%s.HasValue then" % m["name"])
+                    w("    S := S + #5 + '%s' + #6 + LandrixXmlUtf8ToWide(A.%s.Text);" % (label, m["name"]))
+            elif k == "base64":
+                w("  if A.Base64 <> '' then")
+                w("    S := S + #5 + '#base64' + #6 + LandrixXmlUtf8ToWide(A.Base64);")
+            elif k == "object" and m["schema"] in TEXT_LAYOUT:
+                if model.emit[m["type"]]["name"] not in active:
+                    continue
+                w("  if A.Has%s then" % m["name"])
+                w("    %s(A.%s, S);" % (oth_proc(model.emit[m["type"]]), m["name"]))
+            elif k == "object":
+                if model.emit[m["type"]]["name"] not in active:
+                    continue
+                w("  if A.Has%s then" % m["name"])
+                w("  begin")
+                w("    L := Length(S);")
+                w("    S := S + #11 + '%s';" % m["schema"])
+                w("    %s(A.%s, S);" % (oth_proc(model.emit[m["type"]]), m["name"]))
+                w("    if Length(S) = L + %d then" % (1 + len(m["schema"])))
+                w("      SetLength(S, L);")
+                w("  end;")
+            elif k == "list" and m["schema"] in TEXT_LAYOUT:
+                if model.emit[m["type"]]["name"] not in active:
+                    continue
+                w("  if A.Has%s then" % m["name"])
+                w("    for I := 0 to Integer(A.%s.Count) - 1 do" % m["name"])
+                w("      %s(A.%s[I], S);" % (oth_proc(model.emit[m["type"]]), m["name"]))
+            elif k == "list":
+                if model.emit[m["type"]]["name"] not in active:
+                    continue
+                w("  if A.Has%s then" % m["name"])
+                w("    for I := 0 to Integer(A.%s.Count) - 1 do" % m["name"])
+                lbl = m["name"] if m["schema"] == "#group" else m["schema"]
+                w("    begin")
+                w("      L := Length(S);")
+                w("      S := S + #11 + '%s';" % lbl)
+                w("      %s(A.%s[I], S);" % (oth_proc(model.emit[m["type"]]), m["name"]))
+                w("      if Length(S) = L + %d then" % (1 + len(lbl)))
+                w("        SetLength(S, L);")
+                w("    end;")
+            elif k == "children":
+                w("  if A.HasChildren then")
+                w("    for I := 0 to Integer(A.Children.Count) - 1 do")
+                w("      OthNode(A.Children[I], S);")
+        w("end;")
+        w("")
+
+
 def gen_compare(model):
     """Test unit: field by field comparison of two syntax models (plan,
     phase 1 step 10). Reports paths only, never values."""
@@ -2297,6 +2461,8 @@ interface
 
 uses
   Classes,
+  LandrixGaebTypes,
+  LandrixGaebXmlBase,
   LandrixGaebXmlModel;
 
 { Adds one line per difference between A and B to ADiffs (empty if equal). }
@@ -2307,16 +2473,120 @@ procedure CompareGaebModels(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings);
   ASkipped; everything else is compared as strictly. }
 procedure CompareGaebModelsSkipText(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings; out ASkipped: Integer);
 
+{ As CompareGaebModels for the acceptance of a reader of another format:
+  attributes ID and IDRef are not compared (IDs are generated), and text
+  containers (DetailTxt, OutlTxt, LblTx, p, ...) are compared by their
+  plain text (as LandrixGaebPlainText, with number, kind, caption, body and
+  tail of each complement, not its mark Empty; spaces at line ends and
+  empty lines ignored) and by what they hold besides it (values, pictures,
+  attachments),
+  not by their structure: formatting is a documented loss. }
+procedure CompareGaebModelsAccept(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings);
+
+{ The plain text CompareGaebModelsAccept compares for a text container. }
+function CompareAcceptText(ANode: TLandrixGaebXmlNode): TLandrixGaebString;
+
 implementation
 
 uses
   SysUtils,
   LandrixXmlBase,
-  LandrixGaebXmlBase;
+  LandrixGaebBoQ;
 
 var
   SkipText: Boolean;
   Skipped: Integer;
+  { acceptance mode (CompareGaebModelsAccept) }
+  Accept: Boolean;
+
+function AcceptText(ANode: TLandrixGaebXmlNode): TLandrixGaebString; forward;
+procedure OthNode(ANode: TLandrixGaebXmlNode; var S: TLandrixGaebString); forward;
+
+{ What a text container holds besides its plain text (values, pictures,
+  attachments; not attributes, which are formatting), in document order. }
+function OtherContent(ANode: TLandrixGaebXmlNode): TLandrixGaebString;
+begin
+  Result := '';
+  OthNode(ANode, Result);
+end;
+
+type
+  { Plain text for the acceptance: as LandrixGaebPlainText, but a
+    complement with its number, kind, caption, body and tail (not the
+    mark Empty). }
+  TAcceptText = class(TLandrixGaebTextVisitor)
+  public
+    Text: TLandrixGaebString;
+    procedure Visit(const AEvent: TLandrixGaebTextEvent); override;
+  end;
+
+procedure TAcceptText.Visit(const AEvent: TLandrixGaebTextEvent);
+var
+  C: TLandrixGaebXmlTextComplement;
+begin
+  case AEvent.Kind of
+    gteText:
+      Text := Text + AEvent.Text;
+    gteBeginParagraph, gteEndParagraph, gteBeginListItem, gteEndListItem, gteBeginRow, gteEndRow,
+    gteLineBreak:
+      Text := Text + #10;
+    gteBeginCell:
+      Text := Text + #9;
+    gteImage:
+      Text := Text + #4;
+    gteComplement:
+      begin
+        C := TLandrixGaebXmlTextComplement(AEvent.Node);
+        { Empty is not compared: the body is (a reader may mark an empty
+          field, another program may not) }
+        { control characters as separators: XML text cannot hold them }
+        Text := Text + #1 + C.MarkLbl + #2 + C.Kind + #2;
+        if C.HasComplCaption then
+          Text := Text + AcceptText(C.ComplCaption);
+        Text := Text + #2;
+        if C.HasComplBody then
+          Text := Text + AcceptText(C.ComplBody);
+        Text := Text + #2;
+        if C.HasComplTail then
+          Text := Text + AcceptText(C.ComplTail);
+        Text := Text + #3;
+      end;
+  else
+    ;
+  end;
+end;
+
+{ Plain text of a text container with the spaces at line ends and the
+  empty lines removed: line breaks and paragraphs are the same, empty
+  lines are layout. }
+function AcceptText(ANode: TLandrixGaebXmlNode): TLandrixGaebString;
+var
+  R: TAcceptText;
+  S: TLandrixGaebString;
+  I: Integer;
+begin
+  R := TAcceptText.Create;
+  try
+    LandrixGaebVisitText(ANode, R);
+    S := R.Text;
+  finally
+    R.Free;
+  end;
+  Result := '';
+  for I := 1 to Length(S) do
+    if S[I] = #10 then
+    begin
+      while (Result <> '') and ((Result[Length(Result)] = ' ') or (Result[Length(Result)] = #9)) do
+        SetLength(Result, Length(Result) - 1);
+      if (Result <> '') and (Result[Length(Result)] <> #10) then
+        Result := Result + #10;
+    end
+    else
+      Result := Result + S[I];
+  while (Result <> '') and ((Result[Length(Result)] = ' ') or (Result[Length(Result)] = #9) or
+    (Result[Length(Result)] = #10)) do
+    SetLength(Result, Length(Result) - 1);
+end;
 
 procedure CmpNode(const P: string; A, B: TLandrixGaebXmlNode; D: TStrings); forward;
 """)
@@ -2392,6 +2662,7 @@ begin
     D.Add(P + ' (unknown node class)');
 end;
 """)
+    gen_other(w, infos, model)
     for info in infos:
         name = info["name"]
         w("procedure %s(const P: string; A, B: %s; D: TStrings);" % (cmp_proc(info), name))
@@ -2402,11 +2673,22 @@ end;
         w("begin")
         w("  if A.IsPresent <> B.IsPresent then")
         w("    D.Add(P + ' (presence)');")
+        if is_text_container(info):
+            w("  if Accept then")
+            w("  begin")
+            w("    if AcceptText(A) <> AcceptText(B) then")
+            w("      D.Add(P + ' (plain text)');")
+            w("    if OtherContent(A) <> OtherContent(B) then")
+            w("      D.Add(P + ' (other content)');")
+            w("    Exit;")
+            w("  end;")
         for a in info["attributes"]:
+            ref = a["schema"] in ("ID", "IDRef")
             if a["vtype"] == "TLandrixGaebString":
-                w("  if A.%s <> B.%s then" % (a["name"], a["name"]))
+                w("  if %sA.%s <> B.%s%s then" % ("not Accept and (" if ref else "", a["name"], a["name"],
+                                                ")" if ref else ""))
             else:
-                w("  if not A.%s.Equals(B.%s) then" % (a["name"], a["name"]))
+                w("  if %snot A.%s.Equals(B.%s) then" % ("not Accept and " if ref else "", a["name"], a["name"]))
             w("    D.Add(P + '/@%s');" % a["schema"])
             w("  if A.IsMarkedEmpty('@%s') <> B.IsMarkedEmpty('@%s') then" % (a["schema"], a["schema"]))
             w("    D.Add(P + '/@%s (empty mark)');" % a["schema"])
@@ -2458,6 +2740,22 @@ end;
     w("begin")
     w("  SkipText := False;")
     w("  %s('/GAEB', A, B, ADiffs);" % cmp_proc(root))
+    w("end;")
+    w("")
+    w("function CompareAcceptText(ANode: TLandrixGaebXmlNode): TLandrixGaebString;")
+    w("begin")
+    w("  Result := AcceptText(ANode);")
+    w("end;")
+    w("")
+    w("procedure CompareGaebModelsAccept(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings);")
+    w("begin")
+    w("  SkipText := False;")
+    w("  Accept := True;")
+    w("  try")
+    w("    %s('/GAEB', A, B, ADiffs);" % cmp_proc(root))
+    w("  finally")
+    w("    Accept := False;")
+    w("  end;")
     w("end;")
     w("")
     w("procedure CompareGaebModelsSkipText(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings; out ASkipped: Integer);")

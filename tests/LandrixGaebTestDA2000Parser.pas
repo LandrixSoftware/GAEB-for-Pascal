@@ -409,18 +409,18 @@ var
   I: Integer;
 begin
   A := LandrixGaebDA2000SplitStructure('a|b\|c|');
-  CheckEquals(3, Length(A), 'three components');
+  CheckEquals(3, Integer(Length(A)), 'three components');
   CheckEqualsGaebStr('a', A[0], 'first');
   CheckEqualsGaebStr('b|c', A[1], 'escaped bar');
   CheckEqualsGaebStr('', A[2], 'empty last');
   A := LandrixGaebDA2000SplitStructure('');
-  CheckEquals(1, Length(A), 'one empty component');
+  CheckEquals(1, Integer(Length(A)), 'one empty component');
   A := LandrixGaebDA2000SplitStructure('\|x\||y|\');
-  CheckEquals(3, Length(A), 'escapes at the edges');
+  CheckEquals(3, Integer(Length(A)), 'escapes at the edges');
   CheckEqualsGaebStr('|x|', A[0], 'escaped bars at both ends');
   CheckEqualsGaebStr('\', A[2], 'a lone backslash is text');
   A := LandrixGaebDA2000SplitStructure('a|');
-  CheckEquals(2, Length(A), 'trailing separator');
+  CheckEquals(2, Integer(Length(A)), 'trailing separator');
   { linear in the length: many escapes and many separators }
   Big := '';
   SetLength(Big, 200000);
@@ -430,12 +430,12 @@ begin
     Big[2 * I] := '|';
   end;
   A := LandrixGaebDA2000SplitStructure(Big);
-  CheckEquals(1, Length(A), 'one component of escapes');
+  CheckEquals(1, Integer(Length(A)), 'one component of escapes');
   CheckEquals(100000, Length(A[0]), 'escapes resolved');
   for I := 1 to 100000 do
     Big[2 * I - 1] := 'x';
   A := LandrixGaebDA2000SplitStructure(Big);
-  CheckEquals(100001, Length(A), 'many components');
+  CheckEquals(100001, Integer(Length(A)), 'many components');
 end;
 
 { ---- local corpus ---- }

@@ -33,6 +33,8 @@ interface
 
 uses
   Classes,
+  LandrixGaebTypes,
+  LandrixGaebXmlBase,
   LandrixGaebXmlModel;
 
 { Adds one line per difference between A and B to ADiffs (empty if equal). }
@@ -43,16 +45,120 @@ procedure CompareGaebModels(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings);
   ASkipped; everything else is compared as strictly. }
 procedure CompareGaebModelsSkipText(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings; out ASkipped: Integer);
 
+{ As CompareGaebModels for the acceptance of a reader of another format:
+  attributes ID and IDRef are not compared (IDs are generated), and text
+  containers (DetailTxt, OutlTxt, LblTx, p, ...) are compared by their
+  plain text (as LandrixGaebPlainText, with number, kind, caption, body and
+  tail of each complement, not its mark Empty; spaces at line ends and
+  empty lines ignored) and by what they hold besides it (values, pictures,
+  attachments),
+  not by their structure: formatting is a documented loss. }
+procedure CompareGaebModelsAccept(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings);
+
+{ The plain text CompareGaebModelsAccept compares for a text container. }
+function CompareAcceptText(ANode: TLandrixGaebXmlNode): TLandrixGaebString;
+
 implementation
 
 uses
   SysUtils,
   LandrixXmlBase,
-  LandrixGaebXmlBase;
+  LandrixGaebBoQ;
 
 var
   SkipText: Boolean;
   Skipped: Integer;
+  { acceptance mode (CompareGaebModelsAccept) }
+  Accept: Boolean;
+
+function AcceptText(ANode: TLandrixGaebXmlNode): TLandrixGaebString; forward;
+procedure OthNode(ANode: TLandrixGaebXmlNode; var S: TLandrixGaebString); forward;
+
+{ What a text container holds besides its plain text (values, pictures,
+  attachments; not attributes, which are formatting), in document order. }
+function OtherContent(ANode: TLandrixGaebXmlNode): TLandrixGaebString;
+begin
+  Result := '';
+  OthNode(ANode, Result);
+end;
+
+type
+  { Plain text for the acceptance: as LandrixGaebPlainText, but a
+    complement with its number, kind, caption, body and tail (not the
+    mark Empty). }
+  TAcceptText = class(TLandrixGaebTextVisitor)
+  public
+    Text: TLandrixGaebString;
+    procedure Visit(const AEvent: TLandrixGaebTextEvent); override;
+  end;
+
+procedure TAcceptText.Visit(const AEvent: TLandrixGaebTextEvent);
+var
+  C: TLandrixGaebXmlTextComplement;
+begin
+  case AEvent.Kind of
+    gteText:
+      Text := Text + AEvent.Text;
+    gteBeginParagraph, gteEndParagraph, gteBeginListItem, gteEndListItem, gteBeginRow, gteEndRow,
+    gteLineBreak:
+      Text := Text + #10;
+    gteBeginCell:
+      Text := Text + #9;
+    gteImage:
+      Text := Text + #4;
+    gteComplement:
+      begin
+        C := TLandrixGaebXmlTextComplement(AEvent.Node);
+        { Empty is not compared: the body is (a reader may mark an empty
+          field, another program may not) }
+        { control characters as separators: XML text cannot hold them }
+        Text := Text + #1 + C.MarkLbl + #2 + C.Kind + #2;
+        if C.HasComplCaption then
+          Text := Text + AcceptText(C.ComplCaption);
+        Text := Text + #2;
+        if C.HasComplBody then
+          Text := Text + AcceptText(C.ComplBody);
+        Text := Text + #2;
+        if C.HasComplTail then
+          Text := Text + AcceptText(C.ComplTail);
+        Text := Text + #3;
+      end;
+  else
+    ;
+  end;
+end;
+
+{ Plain text of a text container with the spaces at line ends and the
+  empty lines removed: line breaks and paragraphs are the same, empty
+  lines are layout. }
+function AcceptText(ANode: TLandrixGaebXmlNode): TLandrixGaebString;
+var
+  R: TAcceptText;
+  S: TLandrixGaebString;
+  I: Integer;
+begin
+  R := TAcceptText.Create;
+  try
+    LandrixGaebVisitText(ANode, R);
+    S := R.Text;
+  finally
+    R.Free;
+  end;
+  Result := '';
+  for I := 1 to Length(S) do
+    if S[I] = #10 then
+    begin
+      while (Result <> '') and ((Result[Length(Result)] = ' ') or (Result[Length(Result)] = #9)) do
+        SetLength(Result, Length(Result) - 1);
+      if (Result <> '') and (Result[Length(Result)] <> #10) then
+        Result := Result + #10;
+    end
+    else
+      Result := Result + S[I];
+  while (Result <> '') and ((Result[Length(Result)] = ' ') or (Result[Length(Result)] = #9) or
+    (Result[Length(Result)] = #10)) do
+    SetLength(Result, Length(Result) - 1);
+end;
 
 procedure CmpNode(const P: string; A, B: TLandrixGaebXmlNode; D: TStrings); forward;
 
@@ -405,6 +511,2554 @@ begin
     CmpUlTC(P, TLandrixGaebXmlUlTC(A), TLandrixGaebXmlUlTC(B), D)
   else
     D.Add(P + ' (unknown node class)');
+end;
+
+procedure OthAddText(A: TLandrixGaebXmlAddText; var S: TLandrixGaebString); forward;
+procedure OthAddress(A: TLandrixGaebXmlAddress; var S: TLandrixGaebString); forward;
+procedure OthArticle(A: TLandrixGaebXmlArticle; var S: TLandrixGaebString); forward;
+procedure OthAward(A: TLandrixGaebXmlAward; var S: TLandrixGaebString); forward;
+procedure OthAwardCnstSiteGroup(A: TLandrixGaebXmlAwardCnstSiteGroup; var S: TLandrixGaebString); forward;
+procedure OthAwardInfo(A: TLandrixGaebXmlAwardInfo; var S: TLandrixGaebString); forward;
+procedure OthBank(A: TLandrixGaebXmlBank; var S: TLandrixGaebString); forward;
+procedure OthBoQ(A: TLandrixGaebXmlBoQ; var S: TLandrixGaebString); forward;
+procedure OthBoQBkdn(A: TLandrixGaebXmlBoQBkdn; var S: TLandrixGaebString); forward;
+procedure OthBoQBody(A: TLandrixGaebXmlBoQBody; var S: TLandrixGaebString); forward;
+procedure OthBoQCtgy(A: TLandrixGaebXmlBoQCtgy; var S: TLandrixGaebString); forward;
+procedure OthBoQInfo(A: TLandrixGaebXmlBoQInfo; var S: TLandrixGaebString); forward;
+procedure OthBoQText(A: TLandrixGaebXmlBoQText; var S: TLandrixGaebString); forward;
+procedure OthCOInfo(A: TLandrixGaebXmlCOInfo; var S: TLandrixGaebString); forward;
+procedure OthCPVCode(A: TLandrixGaebXmlCPVCode; var S: TLandrixGaebString); forward;
+procedure OthCTR(A: TLandrixGaebXmlCTR; var S: TLandrixGaebString); forward;
+procedure OthCashDiscount(A: TLandrixGaebXmlCashDiscount; var S: TLandrixGaebString); forward;
+procedure OthCashDiscountCashDiscDays(A: TLandrixGaebXmlCashDiscountCashDiscDays; var S: TLandrixGaebString); forward;
+procedure OthCnstSite(A: TLandrixGaebXmlCnstSite; var S: TLandrixGaebString); forward;
+procedure OthComplBodyDec(A: TLandrixGaebXmlComplBodyDec; var S: TLandrixGaebString); forward;
+procedure OthComplBodyInt(A: TLandrixGaebXmlComplBodyInt; var S: TLandrixGaebString); forward;
+procedure OthCompleteText(A: TLandrixGaebXmlCompleteText; var S: TLandrixGaebString); forward;
+procedure OthContrValCode(A: TLandrixGaebXmlContrValCode; var S: TLandrixGaebString); forward;
+procedure OthCostApproach(A: TLandrixGaebXmlCostApproach; var S: TLandrixGaebString); forward;
+procedure OthCostType(A: TLandrixGaebXmlCostType; var S: TLandrixGaebString); forward;
+procedure OthCtlg(A: TLandrixGaebXmlCtlg; var S: TLandrixGaebString); forward;
+procedure OthCtlgAssign(A: TLandrixGaebXmlCtlgAssign; var S: TLandrixGaebString); forward;
+procedure OthCtlgAssignQuantity(A: TLandrixGaebXmlCtlgAssignQuantity; var S: TLandrixGaebString); forward;
+procedure OthDescription(A: TLandrixGaebXmlDescription; var S: TLandrixGaebString); forward;
+procedure OthFText(A: TLandrixGaebXmlFText; var S: TLandrixGaebString); forward;
+procedure OthFTextTC(A: TLandrixGaebXmlFTextTC; var S: TLandrixGaebString); forward;
+procedure OthGAEB(A: TLandrixGaebXmlGAEB; var S: TLandrixGaebString); forward;
+procedure OthGAEBInfo(A: TLandrixGaebXmlGAEBInfo; var S: TLandrixGaebString); forward;
+procedure OthImage(A: TLandrixGaebXmlImage; var S: TLandrixGaebString); forward;
+procedure OthIndivAgrInfo(A: TLandrixGaebXmlIndivAgrInfo; var S: TLandrixGaebString); forward;
+procedure OthInsAs(A: TLandrixGaebXmlInsAs; var S: TLandrixGaebString); forward;
+procedure OthItem(A: TLandrixGaebXmlItem; var S: TLandrixGaebString); forward;
+procedure OthItemlist(A: TLandrixGaebXmlItemlist; var S: TLandrixGaebString); forward;
+procedure OthLblUpComp(A: TLandrixGaebXmlLblUpComp; var S: TLandrixGaebString); forward;
+procedure OthLotGrp(A: TLandrixGaebXmlLotGrp; var S: TLandrixGaebString); forward;
+procedure OthMLText(A: TLandrixGaebXmlMLText; var S: TLandrixGaebString); forward;
+procedure OthMaintInfo(A: TLandrixGaebXmlMaintInfo; var S: TLandrixGaebString); forward;
+procedure OthMarkupItem(A: TLandrixGaebXmlMarkupItem; var S: TLandrixGaebString); forward;
+procedure OthMarkupSubQty(A: TLandrixGaebXmlMarkupSubQty; var S: TLandrixGaebString); forward;
+procedure OthMastAgrInfo(A: TLandrixGaebXmlMastAgrInfo; var S: TLandrixGaebString); forward;
+procedure OthNotifSite(A: TLandrixGaebXmlNotifSite; var S: TLandrixGaebString); forward;
+procedure OthOWN(A: TLandrixGaebXmlOWN; var S: TLandrixGaebString); forward;
+procedure OthOutlTxt(A: TLandrixGaebXmlOutlTxt; var S: TLandrixGaebString); forward;
+procedure OthOutlineText(A: TLandrixGaebXmlOutlineText; var S: TLandrixGaebString); forward;
+procedure OthPerfDescr(A: TLandrixGaebXmlPerfDescr; var S: TLandrixGaebString); forward;
+procedure OthPerfDescription(A: TLandrixGaebXmlPerfDescription; var S: TLandrixGaebString); forward;
+procedure OthPrjInfo(A: TLandrixGaebXmlPrjInfo; var S: TLandrixGaebString); forward;
+procedure OthProduct(A: TLandrixGaebXmlProduct; var S: TLandrixGaebString); forward;
+procedure OthQDetermItem(A: TLandrixGaebXmlQDetermItem; var S: TLandrixGaebString); forward;
+procedure OthQDetermItemQTakeoff(A: TLandrixGaebXmlQDetermItemQTakeoff; var S: TLandrixGaebString); forward;
+procedure OthQtyDeterm(A: TLandrixGaebXmlQtyDeterm; var S: TLandrixGaebString); forward;
+procedure OthQtyDetermInfo(A: TLandrixGaebXmlQtyDetermInfo; var S: TLandrixGaebString); forward;
+procedure OthQtySplit(A: TLandrixGaebXmlQtySplit; var S: TLandrixGaebString); forward;
+procedure OthRemark(A: TLandrixGaebXmlRemark; var S: TLandrixGaebString); forward;
+procedure OthRequester(A: TLandrixGaebXmlRequester; var S: TLandrixGaebString); forward;
+procedure OthSTLBBau(A: TLandrixGaebXmlSTLBBau; var S: TLandrixGaebString); forward;
+procedure OthSTLBBauCtlg(A: TLandrixGaebXmlSTLBBauCtlg; var S: TLandrixGaebString); forward;
+procedure OthSTLBBauID(A: TLandrixGaebXmlSTLBBauID; var S: TLandrixGaebString); forward;
+procedure OthStLNo(A: TLandrixGaebXmlStLNo; var S: TLandrixGaebString); forward;
+procedure OthSubDescr(A: TLandrixGaebXmlSubDescr; var S: TLandrixGaebString); forward;
+procedure OthTextComplement(A: TLandrixGaebXmlTextComplement; var S: TLandrixGaebString); forward;
+procedure OthTotalNetUpComp(A: TLandrixGaebXmlTotalNetUpComp; var S: TLandrixGaebString); forward;
+procedure OthTotals(A: TLandrixGaebXmlTotals; var S: TLandrixGaebString); forward;
+procedure OthVATPart(A: TLandrixGaebXmlVATPart; var S: TLandrixGaebString); forward;
+procedure OthWgChange(A: TLandrixGaebXmlWgChange; var S: TLandrixGaebString); forward;
+procedure OthWgChangeRefGroup(A: TLandrixGaebXmlWgChangeRefGroup; var S: TLandrixGaebString); forward;
+procedure OthDiv(A: TLandrixGaebXmlDiv; var S: TLandrixGaebString); forward;
+procedure OthDivTC(A: TLandrixGaebXmlDivTC; var S: TLandrixGaebString); forward;
+procedure OthLi(A: TLandrixGaebXmlLi; var S: TLandrixGaebString); forward;
+procedure OthLiTC(A: TLandrixGaebXmlLiTC; var S: TLandrixGaebString); forward;
+procedure OthOl(A: TLandrixGaebXmlOl; var S: TLandrixGaebString); forward;
+procedure OthOlTC(A: TLandrixGaebXmlOlTC; var S: TLandrixGaebString); forward;
+procedure OthP(A: TLandrixGaebXmlP; var S: TLandrixGaebString); forward;
+procedure OthPMLText(A: TLandrixGaebXmlPMLText; var S: TLandrixGaebString); forward;
+procedure OthPTC(A: TLandrixGaebXmlPTC; var S: TLandrixGaebString); forward;
+procedure OthTable(A: TLandrixGaebXmlTable; var S: TLandrixGaebString); forward;
+procedure OthTableTC(A: TLandrixGaebXmlTableTC; var S: TLandrixGaebString); forward;
+procedure OthTd(A: TLandrixGaebXmlTd; var S: TLandrixGaebString); forward;
+procedure OthTdTC(A: TLandrixGaebXmlTdTC; var S: TLandrixGaebString); forward;
+procedure OthTh(A: TLandrixGaebXmlTh; var S: TLandrixGaebString); forward;
+procedure OthTr(A: TLandrixGaebXmlTr; var S: TLandrixGaebString); forward;
+procedure OthTrTC(A: TLandrixGaebXmlTrTC; var S: TLandrixGaebString); forward;
+procedure OthUl(A: TLandrixGaebXmlUl; var S: TLandrixGaebString); forward;
+procedure OthUlTC(A: TLandrixGaebXmlUlTC; var S: TLandrixGaebString); forward;
+
+procedure OthNode(ANode: TLandrixGaebXmlNode; var S: TLandrixGaebString);
+begin
+  if ANode = nil then
+    Exit;
+  if ANode is TLandrixGaebXmlTextNode then
+    Exit;
+  if ANode is TLandrixGaebXmlValueNode then
+  begin
+    if ANode.ElementName <> 'br' then
+      S := S + #5 + LandrixXmlUtf8ToWide(ANode.ElementName) + #6 + TLandrixGaebXmlValueNode(ANode).Value;
+    Exit;
+  end;
+  if ANode is TLandrixGaebXmlTextComplement then
+    S := S + #7;
+  if ANode is TLandrixGaebXmlAddText then
+    OthAddText(TLandrixGaebXmlAddText(ANode), S)
+  else if ANode is TLandrixGaebXmlAddress then
+    OthAddress(TLandrixGaebXmlAddress(ANode), S)
+  else if ANode is TLandrixGaebXmlArticle then
+    OthArticle(TLandrixGaebXmlArticle(ANode), S)
+  else if ANode is TLandrixGaebXmlAward then
+    OthAward(TLandrixGaebXmlAward(ANode), S)
+  else if ANode is TLandrixGaebXmlAwardCnstSiteGroup then
+    OthAwardCnstSiteGroup(TLandrixGaebXmlAwardCnstSiteGroup(ANode), S)
+  else if ANode is TLandrixGaebXmlAwardInfo then
+    OthAwardInfo(TLandrixGaebXmlAwardInfo(ANode), S)
+  else if ANode is TLandrixGaebXmlBank then
+    OthBank(TLandrixGaebXmlBank(ANode), S)
+  else if ANode is TLandrixGaebXmlBoQ then
+    OthBoQ(TLandrixGaebXmlBoQ(ANode), S)
+  else if ANode is TLandrixGaebXmlBoQBkdn then
+    OthBoQBkdn(TLandrixGaebXmlBoQBkdn(ANode), S)
+  else if ANode is TLandrixGaebXmlBoQBody then
+    OthBoQBody(TLandrixGaebXmlBoQBody(ANode), S)
+  else if ANode is TLandrixGaebXmlBoQCtgy then
+    OthBoQCtgy(TLandrixGaebXmlBoQCtgy(ANode), S)
+  else if ANode is TLandrixGaebXmlBoQInfo then
+    OthBoQInfo(TLandrixGaebXmlBoQInfo(ANode), S)
+  else if ANode is TLandrixGaebXmlBoQText then
+    OthBoQText(TLandrixGaebXmlBoQText(ANode), S)
+  else if ANode is TLandrixGaebXmlCOInfo then
+    OthCOInfo(TLandrixGaebXmlCOInfo(ANode), S)
+  else if ANode is TLandrixGaebXmlCPVCode then
+    OthCPVCode(TLandrixGaebXmlCPVCode(ANode), S)
+  else if ANode is TLandrixGaebXmlCTR then
+    OthCTR(TLandrixGaebXmlCTR(ANode), S)
+  else if ANode is TLandrixGaebXmlCashDiscount then
+    OthCashDiscount(TLandrixGaebXmlCashDiscount(ANode), S)
+  else if ANode is TLandrixGaebXmlCashDiscountCashDiscDays then
+    OthCashDiscountCashDiscDays(TLandrixGaebXmlCashDiscountCashDiscDays(ANode), S)
+  else if ANode is TLandrixGaebXmlCnstSite then
+    OthCnstSite(TLandrixGaebXmlCnstSite(ANode), S)
+  else if ANode is TLandrixGaebXmlComplBodyDec then
+    OthComplBodyDec(TLandrixGaebXmlComplBodyDec(ANode), S)
+  else if ANode is TLandrixGaebXmlComplBodyInt then
+    OthComplBodyInt(TLandrixGaebXmlComplBodyInt(ANode), S)
+  else if ANode is TLandrixGaebXmlCompleteText then
+    OthCompleteText(TLandrixGaebXmlCompleteText(ANode), S)
+  else if ANode is TLandrixGaebXmlContrValCode then
+    OthContrValCode(TLandrixGaebXmlContrValCode(ANode), S)
+  else if ANode is TLandrixGaebXmlCostApproach then
+    OthCostApproach(TLandrixGaebXmlCostApproach(ANode), S)
+  else if ANode is TLandrixGaebXmlCostType then
+    OthCostType(TLandrixGaebXmlCostType(ANode), S)
+  else if ANode is TLandrixGaebXmlCtlg then
+    OthCtlg(TLandrixGaebXmlCtlg(ANode), S)
+  else if ANode is TLandrixGaebXmlCtlgAssign then
+    OthCtlgAssign(TLandrixGaebXmlCtlgAssign(ANode), S)
+  else if ANode is TLandrixGaebXmlCtlgAssignQuantity then
+    OthCtlgAssignQuantity(TLandrixGaebXmlCtlgAssignQuantity(ANode), S)
+  else if ANode is TLandrixGaebXmlDescription then
+    OthDescription(TLandrixGaebXmlDescription(ANode), S)
+  else if ANode is TLandrixGaebXmlFText then
+    OthFText(TLandrixGaebXmlFText(ANode), S)
+  else if ANode is TLandrixGaebXmlFTextTC then
+    OthFTextTC(TLandrixGaebXmlFTextTC(ANode), S)
+  else if ANode is TLandrixGaebXmlGAEB then
+    OthGAEB(TLandrixGaebXmlGAEB(ANode), S)
+  else if ANode is TLandrixGaebXmlGAEBInfo then
+    OthGAEBInfo(TLandrixGaebXmlGAEBInfo(ANode), S)
+  else if ANode is TLandrixGaebXmlImage then
+    OthImage(TLandrixGaebXmlImage(ANode), S)
+  else if ANode is TLandrixGaebXmlIndivAgrInfo then
+    OthIndivAgrInfo(TLandrixGaebXmlIndivAgrInfo(ANode), S)
+  else if ANode is TLandrixGaebXmlInsAs then
+    OthInsAs(TLandrixGaebXmlInsAs(ANode), S)
+  else if ANode is TLandrixGaebXmlItem then
+    OthItem(TLandrixGaebXmlItem(ANode), S)
+  else if ANode is TLandrixGaebXmlItemlist then
+    OthItemlist(TLandrixGaebXmlItemlist(ANode), S)
+  else if ANode is TLandrixGaebXmlLblUpComp then
+    OthLblUpComp(TLandrixGaebXmlLblUpComp(ANode), S)
+  else if ANode is TLandrixGaebXmlLotGrp then
+    OthLotGrp(TLandrixGaebXmlLotGrp(ANode), S)
+  else if ANode is TLandrixGaebXmlMLText then
+    OthMLText(TLandrixGaebXmlMLText(ANode), S)
+  else if ANode is TLandrixGaebXmlMaintInfo then
+    OthMaintInfo(TLandrixGaebXmlMaintInfo(ANode), S)
+  else if ANode is TLandrixGaebXmlMarkupItem then
+    OthMarkupItem(TLandrixGaebXmlMarkupItem(ANode), S)
+  else if ANode is TLandrixGaebXmlMarkupSubQty then
+    OthMarkupSubQty(TLandrixGaebXmlMarkupSubQty(ANode), S)
+  else if ANode is TLandrixGaebXmlMastAgrInfo then
+    OthMastAgrInfo(TLandrixGaebXmlMastAgrInfo(ANode), S)
+  else if ANode is TLandrixGaebXmlNotifSite then
+    OthNotifSite(TLandrixGaebXmlNotifSite(ANode), S)
+  else if ANode is TLandrixGaebXmlOWN then
+    OthOWN(TLandrixGaebXmlOWN(ANode), S)
+  else if ANode is TLandrixGaebXmlOutlTxt then
+    OthOutlTxt(TLandrixGaebXmlOutlTxt(ANode), S)
+  else if ANode is TLandrixGaebXmlOutlineText then
+    OthOutlineText(TLandrixGaebXmlOutlineText(ANode), S)
+  else if ANode is TLandrixGaebXmlPerfDescr then
+    OthPerfDescr(TLandrixGaebXmlPerfDescr(ANode), S)
+  else if ANode is TLandrixGaebXmlPerfDescription then
+    OthPerfDescription(TLandrixGaebXmlPerfDescription(ANode), S)
+  else if ANode is TLandrixGaebXmlPrjInfo then
+    OthPrjInfo(TLandrixGaebXmlPrjInfo(ANode), S)
+  else if ANode is TLandrixGaebXmlProduct then
+    OthProduct(TLandrixGaebXmlProduct(ANode), S)
+  else if ANode is TLandrixGaebXmlQDetermItem then
+    OthQDetermItem(TLandrixGaebXmlQDetermItem(ANode), S)
+  else if ANode is TLandrixGaebXmlQDetermItemQTakeoff then
+    OthQDetermItemQTakeoff(TLandrixGaebXmlQDetermItemQTakeoff(ANode), S)
+  else if ANode is TLandrixGaebXmlQtyDeterm then
+    OthQtyDeterm(TLandrixGaebXmlQtyDeterm(ANode), S)
+  else if ANode is TLandrixGaebXmlQtyDetermInfo then
+    OthQtyDetermInfo(TLandrixGaebXmlQtyDetermInfo(ANode), S)
+  else if ANode is TLandrixGaebXmlQtySplit then
+    OthQtySplit(TLandrixGaebXmlQtySplit(ANode), S)
+  else if ANode is TLandrixGaebXmlRemark then
+    OthRemark(TLandrixGaebXmlRemark(ANode), S)
+  else if ANode is TLandrixGaebXmlRequester then
+    OthRequester(TLandrixGaebXmlRequester(ANode), S)
+  else if ANode is TLandrixGaebXmlSTLBBau then
+    OthSTLBBau(TLandrixGaebXmlSTLBBau(ANode), S)
+  else if ANode is TLandrixGaebXmlSTLBBauCtlg then
+    OthSTLBBauCtlg(TLandrixGaebXmlSTLBBauCtlg(ANode), S)
+  else if ANode is TLandrixGaebXmlSTLBBauID then
+    OthSTLBBauID(TLandrixGaebXmlSTLBBauID(ANode), S)
+  else if ANode is TLandrixGaebXmlStLNo then
+    OthStLNo(TLandrixGaebXmlStLNo(ANode), S)
+  else if ANode is TLandrixGaebXmlSubDescr then
+    OthSubDescr(TLandrixGaebXmlSubDescr(ANode), S)
+  else if ANode is TLandrixGaebXmlTextComplement then
+    OthTextComplement(TLandrixGaebXmlTextComplement(ANode), S)
+  else if ANode is TLandrixGaebXmlTotalNetUpComp then
+    OthTotalNetUpComp(TLandrixGaebXmlTotalNetUpComp(ANode), S)
+  else if ANode is TLandrixGaebXmlTotals then
+    OthTotals(TLandrixGaebXmlTotals(ANode), S)
+  else if ANode is TLandrixGaebXmlVATPart then
+    OthVATPart(TLandrixGaebXmlVATPart(ANode), S)
+  else if ANode is TLandrixGaebXmlWgChange then
+    OthWgChange(TLandrixGaebXmlWgChange(ANode), S)
+  else if ANode is TLandrixGaebXmlWgChangeRefGroup then
+    OthWgChangeRefGroup(TLandrixGaebXmlWgChangeRefGroup(ANode), S)
+  else if ANode is TLandrixGaebXmlDiv then
+    OthDiv(TLandrixGaebXmlDiv(ANode), S)
+  else if ANode is TLandrixGaebXmlDivTC then
+    OthDivTC(TLandrixGaebXmlDivTC(ANode), S)
+  else if ANode is TLandrixGaebXmlLi then
+    OthLi(TLandrixGaebXmlLi(ANode), S)
+  else if ANode is TLandrixGaebXmlLiTC then
+    OthLiTC(TLandrixGaebXmlLiTC(ANode), S)
+  else if ANode is TLandrixGaebXmlOl then
+    OthOl(TLandrixGaebXmlOl(ANode), S)
+  else if ANode is TLandrixGaebXmlOlTC then
+    OthOlTC(TLandrixGaebXmlOlTC(ANode), S)
+  else if ANode is TLandrixGaebXmlP then
+    OthP(TLandrixGaebXmlP(ANode), S)
+  else if ANode is TLandrixGaebXmlPMLText then
+    OthPMLText(TLandrixGaebXmlPMLText(ANode), S)
+  else if ANode is TLandrixGaebXmlPTC then
+    OthPTC(TLandrixGaebXmlPTC(ANode), S)
+  else if ANode is TLandrixGaebXmlTable then
+    OthTable(TLandrixGaebXmlTable(ANode), S)
+  else if ANode is TLandrixGaebXmlTableTC then
+    OthTableTC(TLandrixGaebXmlTableTC(ANode), S)
+  else if ANode is TLandrixGaebXmlTd then
+    OthTd(TLandrixGaebXmlTd(ANode), S)
+  else if ANode is TLandrixGaebXmlTdTC then
+    OthTdTC(TLandrixGaebXmlTdTC(ANode), S)
+  else if ANode is TLandrixGaebXmlTh then
+    OthTh(TLandrixGaebXmlTh(ANode), S)
+  else if ANode is TLandrixGaebXmlTr then
+    OthTr(TLandrixGaebXmlTr(ANode), S)
+  else if ANode is TLandrixGaebXmlTrTC then
+    OthTrTC(TLandrixGaebXmlTrTC(ANode), S)
+  else if ANode is TLandrixGaebXmlUl then
+    OthUl(TLandrixGaebXmlUl(ANode), S)
+  else if ANode is TLandrixGaebXmlUlTC then
+    OthUlTC(TLandrixGaebXmlUlTC(ANode), S)
+  ;
+  if ANode is TLandrixGaebXmlTextComplement then
+    S := S + #8;
+end;
+
+procedure OthAddText(A: TLandrixGaebXmlAddText; var S: TLandrixGaebString);
+var
+  L: Integer;
+begin
+  if A.HasOutlineAddText then
+  begin
+    L := Length(S);
+    S := S + #11 + 'OutlineAddText';
+    OthMLText(A.OutlineAddText, S);
+    if Length(S) = L + 15 then
+      SetLength(S, L);
+  end;
+  if A.HasDetailAddText then
+  begin
+    L := Length(S);
+    S := S + #11 + 'DetailAddText';
+    OthFText(A.DetailAddText, S);
+    if Length(S) = L + 14 then
+      SetLength(S, L);
+  end;
+end;
+
+procedure OthAddress(A: TLandrixGaebXmlAddress; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.Name1 <> '' then
+    S := S + #5 + 'Name1' + #6 + A.Name1;
+  if A.Name2 <> '' then
+    S := S + #5 + 'Name2' + #6 + A.Name2;
+  if A.Name3 <> '' then
+    S := S + #5 + 'Name3' + #6 + A.Name3;
+  if A.Name4 <> '' then
+    S := S + #5 + 'Name4' + #6 + A.Name4;
+  if A.Street <> '' then
+    S := S + #5 + 'Street' + #6 + A.Street;
+  if A.PCode <> '' then
+    S := S + #5 + 'PCode' + #6 + A.PCode;
+  if A.City <> '' then
+    S := S + #5 + 'City' + #6 + A.City;
+  if A.Country <> '' then
+    S := S + #5 + 'Country' + #6 + A.Country;
+  if A.ILN <> '' then
+    S := S + #5 + 'ILN' + #6 + A.ILN;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+  if A.Contact <> '' then
+    S := S + #5 + 'Contact' + #6 + A.Contact;
+  if A.Phone <> '' then
+    S := S + #5 + 'Phone' + #6 + A.Phone;
+  if A.Fax <> '' then
+    S := S + #5 + 'Fax' + #6 + A.Fax;
+  if A.Email <> '' then
+    S := S + #5 + 'Email' + #6 + A.Email;
+  if A.VATID <> '' then
+    S := S + #5 + 'VATID' + #6 + A.VATID;
+  if A.HasBank then
+    for I := 0 to Integer(A.Bank.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'Bank';
+      OthBank(A.Bank[I], S);
+      if Length(S) = L + 5 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthArticle(A: TLandrixGaebXmlArticle; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.Brand <> '' then
+    S := S + #5 + 'Brand' + #6 + A.Brand;
+  if A.ArtNo <> '' then
+    S := S + #5 + 'ArtNo' + #6 + A.ArtNo;
+  if A.Qty.HasValue then
+    S := S + #5 + 'Qty' + #6 + LandrixXmlUtf8ToWide(A.Qty.Text);
+  if A.QU <> '' then
+    S := S + #5 + 'QU' + #6 + A.QU;
+  if A.HasArtOutline then
+  begin
+    L := Length(S);
+    S := S + #11 + 'ArtOutline';
+    OthMLText(A.ArtOutline, S);
+    if Length(S) = L + 11 then
+      SetLength(S, L);
+  end;
+  if A.HasAddText then
+    for I := 0 to Integer(A.AddText.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'AddText';
+      OthAddText(A.AddText[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthAward(A: TLandrixGaebXmlAward; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.DP <> '' then
+    S := S + #5 + 'DP' + #6 + A.DP;
+  if A.HasAwardInfo then
+  begin
+    L := Length(S);
+    S := S + #11 + 'AwardInfo';
+    OthAwardInfo(A.AwardInfo, S);
+    if Length(S) = L + 10 then
+      SetLength(S, L);
+  end;
+  if A.HasIndivAgrInfo then
+  begin
+    L := Length(S);
+    S := S + #11 + 'IndivAgrInfo';
+    OthIndivAgrInfo(A.IndivAgrInfo, S);
+    if Length(S) = L + 13 then
+      SetLength(S, L);
+  end;
+  if A.HasOWN then
+  begin
+    L := Length(S);
+    S := S + #11 + 'OWN';
+    OthOWN(A.OWN, S);
+    if Length(S) = L + 4 then
+      SetLength(S, L);
+  end;
+  if A.HasRequester then
+    for I := 0 to Integer(A.Requester.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'Requester';
+      OthRequester(A.Requester[I], S);
+      if Length(S) = L + 10 then
+        SetLength(S, L);
+    end;
+  if A.HasCTR then
+  begin
+    L := Length(S);
+    S := S + #11 + 'CTR';
+    OthCTR(A.CTR, S);
+    if Length(S) = L + 4 then
+      SetLength(S, L);
+  end;
+  if A.HasCnstSiteGroup then
+    for I := 0 to Integer(A.CnstSiteGroup.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CnstSiteGroup';
+      OthAwardCnstSiteGroup(A.CnstSiteGroup[I], S);
+      if Length(S) = L + 14 then
+        SetLength(S, L);
+    end;
+  if A.HasAddText then
+    for I := 0 to Integer(A.AddText.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'AddText';
+      OthAddText(A.AddText[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+  if A.HasBoQ then
+  begin
+    L := Length(S);
+    S := S + #11 + 'BoQ';
+    OthBoQ(A.BoQ, S);
+    if Length(S) = L + 4 then
+      SetLength(S, L);
+  end;
+  if A.HasWgChange then
+  begin
+    L := Length(S);
+    S := S + #11 + 'WgChange';
+    OthWgChange(A.WgChange, S);
+    if Length(S) = L + 9 then
+      SetLength(S, L);
+  end;
+end;
+
+procedure OthAwardCnstSiteGroup(A: TLandrixGaebXmlAwardCnstSiteGroup; var S: TLandrixGaebString);
+var
+  L: Integer;
+begin
+  if A.HasCnstSite then
+  begin
+    L := Length(S);
+    S := S + #11 + 'CnstSite';
+    OthCnstSite(A.CnstSite, S);
+    if Length(S) = L + 9 then
+      SetLength(S, L);
+  end;
+  if A.HasNotifSite then
+  begin
+    L := Length(S);
+    S := S + #11 + 'NotifSite';
+    OthNotifSite(A.NotifSite, S);
+    if Length(S) = L + 10 then
+      SetLength(S, L);
+  end;
+end;
+
+procedure OthAwardInfo(A: TLandrixGaebXmlAwardInfo; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.BoQID <> '' then
+    S := S + #5 + 'BoQID' + #6 + A.BoQID;
+  if A.Cat <> '' then
+    S := S + #5 + 'Cat' + #6 + A.Cat;
+  if A.SpecialType <> '' then
+    S := S + #5 + 'SpecialType' + #6 + A.SpecialType;
+  if A.Cur <> '' then
+    S := S + #5 + 'Cur' + #6 + A.Cur;
+  if A.CurLbl <> '' then
+    S := S + #5 + 'CurLbl' + #6 + A.CurLbl;
+  if A.BidDate <> '' then
+    S := S + #5 + 'BidDate' + #6 + A.BidDate;
+  if A.OpenDate <> '' then
+    S := S + #5 + 'OpenDate' + #6 + A.OpenDate;
+  if A.OpenTime <> '' then
+    S := S + #5 + 'OpenTime' + #6 + A.OpenTime;
+  if A.EvalEnd <> '' then
+    S := S + #5 + 'EvalEnd' + #6 + A.EvalEnd;
+  if A.SubmLoc <> '' then
+    S := S + #5 + 'SubmLoc' + #6 + A.SubmLoc;
+  if A.CnstStart <> '' then
+    S := S + #5 + 'CnstStart' + #6 + A.CnstStart;
+  if A.CnstEnd <> '' then
+    S := S + #5 + 'CnstEnd' + #6 + A.CnstEnd;
+  if A.ContrNo <> '' then
+    S := S + #5 + 'ContrNo' + #6 + A.ContrNo;
+  if A.ContrDate <> '' then
+    S := S + #5 + 'ContrDate' + #6 + A.ContrDate;
+  if A.AcceptType <> '' then
+    S := S + #5 + 'AcceptType' + #6 + A.AcceptType;
+  if A.AcceptDate <> '' then
+    S := S + #5 + 'AcceptDate' + #6 + A.AcceptDate;
+  if A.WarrDur <> '' then
+    S := S + #5 + 'WarrDur' + #6 + A.WarrDur;
+  if A.WarrUnit <> '' then
+    S := S + #5 + 'WarrUnit' + #6 + A.WarrUnit;
+  if A.WarrEnd <> '' then
+    S := S + #5 + 'WarrEnd' + #6 + A.WarrEnd;
+  if A.PerformPcnt.HasValue then
+    S := S + #5 + 'PerformPcnt' + #6 + LandrixXmlUtf8ToWide(A.PerformPcnt.Text);
+  if A.WarrantPcnt.HasValue then
+    S := S + #5 + 'WarrantPcnt' + #6 + LandrixXmlUtf8ToWide(A.WarrantPcnt.Text);
+  if A.HasCOInfo then
+    for I := 0 to Integer(A.COInfo.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'COInfo';
+      OthCOInfo(A.COInfo[I], S);
+      if Length(S) = L + 7 then
+        SetLength(S, L);
+    end;
+  if A.HasMaintInfo then
+  begin
+    L := Length(S);
+    S := S + #11 + 'MaintInfo';
+    OthMaintInfo(A.MaintInfo, S);
+    if Length(S) = L + 10 then
+      SetLength(S, L);
+  end;
+  if A.HasMastAgrInfo then
+  begin
+    L := Length(S);
+    S := S + #11 + 'MastAgrInfo';
+    OthMastAgrInfo(A.MastAgrInfo, S);
+    if Length(S) = L + 12 then
+      SetLength(S, L);
+  end;
+  if A.HasCashDiscount then
+    for I := 0 to Integer(A.CashDiscount.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CashDiscount';
+      OthCashDiscount(A.CashDiscount[I], S);
+      if Length(S) = L + 13 then
+        SetLength(S, L);
+    end;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthBank(A: TLandrixGaebXmlBank; var S: TLandrixGaebString);
+begin
+  if A.LblBank <> '' then
+    S := S + #5 + 'LblBank' + #6 + A.LblBank;
+  if A.BRNo <> '' then
+    S := S + #5 + 'BRNo' + #6 + A.BRNo;
+  if A.AcctNo <> '' then
+    S := S + #5 + 'AcctNo' + #6 + A.AcctNo;
+  if A.BIC <> '' then
+    S := S + #5 + 'BIC' + #6 + A.BIC;
+  if A.IBAN <> '' then
+    S := S + #5 + 'IBAN' + #6 + A.IBAN;
+end;
+
+procedure OthBoQ(A: TLandrixGaebXmlBoQ; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasBoQInfo then
+  begin
+    L := Length(S);
+    S := S + #11 + 'BoQInfo';
+    OthBoQInfo(A.BoQInfo, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.HasBoQBody then
+  begin
+    L := Length(S);
+    S := S + #11 + 'BoQBody';
+    OthBoQBody(A.BoQBody, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.HasLotGrp then
+    for I := 0 to Integer(A.LotGrp.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'LotGrp';
+      OthLotGrp(A.LotGrp[I], S);
+      if Length(S) = L + 7 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthBoQBkdn(A: TLandrixGaebXmlBoQBkdn; var S: TLandrixGaebString);
+begin
+  if A.TypeElement <> '' then
+    S := S + #5 + 'Type' + #6 + A.TypeElement;
+  if A.LblBoQBkdn <> '' then
+    S := S + #5 + 'LblBoQBkdn' + #6 + A.LblBoQBkdn;
+  if A.LengthElement <> '' then
+    S := S + #5 + 'Length' + #6 + A.LengthElement;
+  if A.Num <> '' then
+    S := S + #5 + 'Num' + #6 + A.Num;
+  if A.Alignment <> '' then
+    S := S + #5 + 'Alignment' + #6 + A.Alignment;
+end;
+
+procedure OthBoQBody(A: TLandrixGaebXmlBoQBody; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+  if A.HasItemlist then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Itemlist';
+    OthItemlist(A.Itemlist, S);
+    if Length(S) = L + 9 then
+      SetLength(S, L);
+  end;
+end;
+
+procedure OthBoQCtgy(A: TLandrixGaebXmlBoQCtgy; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.RNoPart <> '' then
+    S := S + #5 + '@RNoPart' + #6 + A.RNoPart;
+  if A.HasLblTx then
+  begin
+    L := Length(S);
+    S := S + #11 + 'LblTx';
+    OthMLText(A.LblTx, S);
+    if Length(S) = L + 6 then
+      SetLength(S, L);
+  end;
+  if A.HasCPVCode then
+    for I := 0 to Integer(A.CPVCode.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CPVCode';
+      OthCPVCode(A.CPVCode[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+  if A.CONo <> '' then
+    S := S + #5 + 'CONo' + #6 + A.CONo;
+  if A.COStatus <> '' then
+    S := S + #5 + 'COStatus' + #6 + A.COStatus;
+  if A.ALNBGroupNo <> '' then
+    S := S + #5 + 'ALNBGroupNo' + #6 + A.ALNBGroupNo;
+  if A.ALNBSerNo <> '' then
+    S := S + #5 + 'ALNBSerNo' + #6 + A.ALNBSerNo;
+  if A.Accepted <> '' then
+    S := S + #5 + 'Accepted' + #6 + A.Accepted;
+  if A.NotApplBoQ <> '' then
+    S := S + #5 + 'NotApplBoQ' + #6 + A.NotApplBoQ;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+  if A.HasBoQBody then
+  begin
+    L := Length(S);
+    S := S + #11 + 'BoQBody';
+    OthBoQBody(A.BoQBody, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.HasTotals then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Totals';
+    OthTotals(A.Totals, S);
+    if Length(S) = L + 7 then
+      SetLength(S, L);
+  end;
+  if A.AlterBidStatus <> '' then
+    S := S + #5 + 'AlterBidStatus' + #6 + A.AlterBidStatus;
+end;
+
+procedure OthBoQInfo(A: TLandrixGaebXmlBoQInfo; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.Name <> '' then
+    S := S + #5 + 'Name' + #6 + A.Name;
+  if A.LblBoQ <> '' then
+    S := S + #5 + 'LblBoQ' + #6 + A.LblBoQ;
+  if A.HasCPVCode then
+    for I := 0 to Integer(A.CPVCode.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CPVCode';
+      OthCPVCode(A.CPVCode[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+  if A.CONo <> '' then
+    S := S + #5 + 'CONo' + #6 + A.CONo;
+  if A.COStatus <> '' then
+    S := S + #5 + 'COStatus' + #6 + A.COStatus;
+  if A.Date <> '' then
+    S := S + #5 + 'Date' + #6 + A.Date;
+  if A.OutlCompl <> '' then
+    S := S + #5 + 'OutlCompl' + #6 + A.OutlCompl;
+  if A.HasBoQBkdn then
+    for I := 0 to Integer(A.BoQBkdn.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'BoQBkdn';
+      OthBoQBkdn(A.BoQBkdn[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+  if A.NoUPComps <> '' then
+    S := S + #5 + 'NoUPComps' + #6 + A.NoUPComps;
+  if A.HasLblUPComp1 then
+  begin
+    L := Length(S);
+    S := S + #11 + 'LblUPComp1';
+    OthLblUpComp(A.LblUPComp1, S);
+    if Length(S) = L + 11 then
+      SetLength(S, L);
+  end;
+  if A.HasLblUPComp2 then
+  begin
+    L := Length(S);
+    S := S + #11 + 'LblUPComp2';
+    OthLblUpComp(A.LblUPComp2, S);
+    if Length(S) = L + 11 then
+      SetLength(S, L);
+  end;
+  if A.HasLblUPComp3 then
+  begin
+    L := Length(S);
+    S := S + #11 + 'LblUPComp3';
+    OthLblUpComp(A.LblUPComp3, S);
+    if Length(S) = L + 11 then
+      SetLength(S, L);
+  end;
+  if A.HasLblUPComp4 then
+  begin
+    L := Length(S);
+    S := S + #11 + 'LblUPComp4';
+    OthLblUpComp(A.LblUPComp4, S);
+    if Length(S) = L + 11 then
+      SetLength(S, L);
+  end;
+  if A.HasLblUPComp5 then
+  begin
+    L := Length(S);
+    S := S + #11 + 'LblUPComp5';
+    OthLblUpComp(A.LblUPComp5, S);
+    if Length(S) = L + 11 then
+      SetLength(S, L);
+  end;
+  if A.HasLblUPComp6 then
+  begin
+    L := Length(S);
+    S := S + #11 + 'LblUPComp6';
+    OthLblUpComp(A.LblUPComp6, S);
+    if Length(S) = L + 11 then
+      SetLength(S, L);
+  end;
+  if A.LblTime <> '' then
+    S := S + #5 + 'LblTime' + #6 + A.LblTime;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+  if A.HasTotals then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Totals';
+    OthTotals(A.Totals, S);
+    if Length(S) = L + 7 then
+      SetLength(S, L);
+  end;
+  if A.HasCtlg then
+    for I := 0 to Integer(A.Ctlg.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'Ctlg';
+      OthCtlg(A.Ctlg[I], S);
+      if Length(S) = L + 5 then
+        SetLength(S, L);
+    end;
+  if A.HasCostType then
+    for I := 0 to Integer(A.CostType.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CostType';
+      OthCostType(A.CostType[I], S);
+      if Length(S) = L + 9 then
+        SetLength(S, L);
+    end;
+  if A.HasQtyDetermInfo then
+  begin
+    L := Length(S);
+    S := S + #11 + 'QtyDetermInfo';
+    OthQtyDetermInfo(A.QtyDetermInfo, S);
+    if Length(S) = L + 14 then
+      SetLength(S, L);
+  end;
+end;
+
+procedure OthBoQText(A: TLandrixGaebXmlBoQText; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthCOInfo(A: TLandrixGaebXmlCOInfo; var S: TLandrixGaebString);
+var
+  L: Integer;
+begin
+  if A.CONo <> '' then
+    S := S + #5 + 'CONo' + #6 + A.CONo;
+  if A.COPhase <> '' then
+    S := S + #5 + 'COPhase' + #6 + A.COPhase;
+  if A.COStatus <> '' then
+    S := S + #5 + 'COStatus' + #6 + A.COStatus;
+  if A.COInit <> '' then
+    S := S + #5 + 'COInit' + #6 + A.COInit;
+  if A.HasCOReas then
+  begin
+    L := Length(S);
+    S := S + #11 + 'COReas';
+    OthFText(A.COReas, S);
+    if Length(S) = L + 7 then
+      SetLength(S, L);
+  end;
+  if A.RefBoQCOInfo <> '' then
+    S := S + #5 + 'RefBoQCOInfo' + #6 + A.RefBoQCOInfo;
+  if A.CODate <> '' then
+    S := S + #5 + 'CODate' + #6 + A.CODate;
+end;
+
+procedure OthCPVCode(A: TLandrixGaebXmlCPVCode; var S: TLandrixGaebString);
+begin
+  if A.CPVNo <> '' then
+    S := S + #5 + 'CPVNo' + #6 + A.CPVNo;
+  if A.CPVText <> '' then
+    S := S + #5 + 'CPVText' + #6 + A.CPVText;
+end;
+
+procedure OthCTR(A: TLandrixGaebXmlCTR; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasAddress then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Address';
+    OthAddress(A.Address, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.DPNo <> '' then
+    S := S + #5 + 'DPNo' + #6 + A.DPNo;
+  if A.AwardNo <> '' then
+    S := S + #5 + 'AwardNo' + #6 + A.AwardNo;
+  if A.AcctsPayNo <> '' then
+    S := S + #5 + 'AcctsPayNo' + #6 + A.AcctsPayNo;
+  if A.BidderNo <> '' then
+    S := S + #5 + 'BidderNo' + #6 + A.BidderNo;
+  if A.CntryType <> '' then
+    S := S + #5 + 'CntryType' + #6 + A.CntryType;
+  if A.CntryName <> '' then
+    S := S + #5 + 'CntryName' + #6 + A.CntryName;
+  if A.SectorType <> '' then
+    S := S + #5 + 'SectorType' + #6 + A.SectorType;
+  if A.PrefBidType <> '' then
+    S := S + #5 + 'PrefBidType' + #6 + A.PrefBidType;
+  if A.SCType <> '' then
+    S := S + #5 + 'SCType' + #6 + A.SCType;
+  if A.HasInsAs then
+  begin
+    L := Length(S);
+    S := S + #11 + 'InsAs';
+    OthInsAs(A.InsAs, S);
+    if Length(S) = L + 6 then
+      SetLength(S, L);
+  end;
+  if A.HasAddText then
+    for I := 0 to Integer(A.AddText.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'AddText';
+      OthAddText(A.AddText[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthCashDiscount(A: TLandrixGaebXmlCashDiscount; var S: TLandrixGaebString);
+var
+  L: Integer;
+begin
+  if A.HasCashDiscDays then
+  begin
+    L := Length(S);
+    S := S + #11 + 'CashDiscDays';
+    OthCashDiscountCashDiscDays(A.CashDiscDays, S);
+    if Length(S) = L + 13 then
+      SetLength(S, L);
+  end;
+  if A.CashDiscDate <> '' then
+    S := S + #5 + 'CashDiscDate' + #6 + A.CashDiscDate;
+  if A.DiscountPcnt.HasValue then
+    S := S + #5 + 'DiscountPcnt' + #6 + LandrixXmlUtf8ToWide(A.DiscountPcnt.Text);
+end;
+
+procedure OthCashDiscountCashDiscDays(A: TLandrixGaebXmlCashDiscountCashDiscDays; var S: TLandrixGaebString);
+begin
+  if A.TypeOfDays <> '' then
+    S := S + #5 + '@TypeOfDays' + #6 + A.TypeOfDays;
+  if A.Days <> '' then
+    S := S + #5 + '@Days' + #6 + A.Days;
+end;
+
+procedure OthCnstSite(A: TLandrixGaebXmlCnstSite; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasAddress then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Address';
+    OthAddress(A.Address, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.CnstSiteIDNo <> '' then
+    S := S + #5 + 'CnstSiteIDNo' + #6 + A.CnstSiteIDNo;
+  if A.CnstSiteName <> '' then
+    S := S + #5 + 'CnstSiteName' + #6 + A.CnstSiteName;
+  if A.HasAddText then
+    for I := 0 to Integer(A.AddText.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'AddText';
+      OthAddText(A.AddText[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthComplBodyDec(A: TLandrixGaebXmlComplBodyDec; var S: TLandrixGaebString);
+begin
+  if A.Value.HasValue then
+    S := S + #5 + '@Value' + #6 + LandrixXmlUtf8ToWide(A.Value.Text);
+end;
+
+procedure OthComplBodyInt(A: TLandrixGaebXmlComplBodyInt; var S: TLandrixGaebString);
+begin
+  if A.Value <> '' then
+    S := S + #5 + '@Value' + #6 + A.Value;
+end;
+
+procedure OthCompleteText(A: TLandrixGaebXmlCompleteText; var S: TLandrixGaebString);
+var
+  L: Integer;
+begin
+  if A.ComplTSA <> '' then
+    S := S + #5 + 'ComplTSA' + #6 + A.ComplTSA;
+  if A.ComplTSB <> '' then
+    S := S + #5 + 'ComplTSB' + #6 + A.ComplTSB;
+  if A.HasDetailTxt then
+  begin
+    L := Length(S);
+    S := S + #11 + 'DetailTxt';
+    OthBoQText(A.DetailTxt, S);
+    if Length(S) = L + 10 then
+      SetLength(S, L);
+  end;
+  if A.HasOutlineText then
+  begin
+    L := Length(S);
+    S := S + #11 + 'OutlineText';
+    OthOutlineText(A.OutlineText, S);
+    if Length(S) = L + 12 then
+      SetLength(S, L);
+  end;
+end;
+
+procedure OthContrValCode(A: TLandrixGaebXmlContrValCode; var S: TLandrixGaebString);
+begin
+  if A.Percent.HasValue then
+    S := S + #5 + 'Percent' + #6 + LandrixXmlUtf8ToWide(A.Percent.Text);
+  if A.Number <> '' then
+    S := S + #5 + 'Number' + #6 + A.Number;
+end;
+
+procedure OthCostApproach(A: TLandrixGaebXmlCostApproach; var S: TLandrixGaebString);
+begin
+  if A.Key <> '' then
+    S := S + #5 + '@Key' + #6 + A.Key;
+  if A.CostApproachQty.HasValue then
+    S := S + #5 + 'CostApproachQty' + #6 + LandrixXmlUtf8ToWide(A.CostApproachQty.Text);
+  if A.CostApproachQU <> '' then
+    S := S + #5 + 'CostApproachQU' + #6 + A.CostApproachQU;
+  if A.Performance.HasValue then
+    S := S + #5 + 'Performance' + #6 + LandrixXmlUtf8ToWide(A.Performance.Text);
+  if A.Value.HasValue then
+    S := S + #5 + 'Value' + #6 + LandrixXmlUtf8ToWide(A.Value.Text);
+end;
+
+procedure OthCostType(A: TLandrixGaebXmlCostType; var S: TLandrixGaebString);
+var
+  L: Integer;
+begin
+  if A.Key <> '' then
+    S := S + #5 + '@Key' + #6 + A.Key;
+  if A.HasCostDescription then
+  begin
+    L := Length(S);
+    S := S + #11 + 'CostDescription';
+    OthPMLText(A.CostDescription, S);
+    if Length(S) = L + 16 then
+      SetLength(S, L);
+  end;
+  if A.CostTypeUnit <> '' then
+    S := S + #5 + 'CostTypeUnit' + #6 + A.CostTypeUnit;
+  if A.Markup.HasValue then
+    S := S + #5 + 'Markup' + #6 + LandrixXmlUtf8ToWide(A.Markup.Text);
+end;
+
+procedure OthCtlg(A: TLandrixGaebXmlCtlg; var S: TLandrixGaebString);
+begin
+  if A.CtlgID <> '' then
+    S := S + #5 + 'CtlgID' + #6 + A.CtlgID;
+  if A.CtlgType <> '' then
+    S := S + #5 + 'CtlgType' + #6 + A.CtlgType;
+  if A.CtlgName <> '' then
+    S := S + #5 + 'CtlgName' + #6 + A.CtlgName;
+  if A.CtlgAssignType <> '' then
+    S := S + #5 + 'CtlgAssignType' + #6 + A.CtlgAssignType;
+end;
+
+procedure OthCtlgAssign(A: TLandrixGaebXmlCtlgAssign; var S: TLandrixGaebString);
+var
+  L: Integer;
+begin
+  if A.CtlgID <> '' then
+    S := S + #5 + 'CtlgID' + #6 + A.CtlgID;
+  if A.CtlgCode <> '' then
+    S := S + #5 + 'CtlgCode' + #6 + A.CtlgCode;
+  if A.HasQuantity then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Quantity';
+    OthCtlgAssignQuantity(A.Quantity, S);
+    if Length(S) = L + 9 then
+      SetLength(S, L);
+  end;
+end;
+
+procedure OthCtlgAssignQuantity(A: TLandrixGaebXmlCtlgAssignQuantity; var S: TLandrixGaebString);
+begin
+  if A.TypeAttr <> '' then
+    S := S + #5 + '@Type' + #6 + A.TypeAttr;
+  if A.Value.HasValue then
+    S := S + #5 + '#text' + #6 + LandrixXmlUtf8ToWide(A.Value.Text);
+end;
+
+procedure OthDescription(A: TLandrixGaebXmlDescription; var S: TLandrixGaebString);
+var
+  L: Integer;
+begin
+  if A.HasSTLBBau then
+  begin
+    L := Length(S);
+    S := S + #11 + 'STLBBau';
+    OthSTLBBau(A.STLBBau, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.HasStLNo then
+  begin
+    L := Length(S);
+    S := S + #11 + 'StLNo';
+    OthStLNo(A.StLNo, S);
+    if Length(S) = L + 6 then
+      SetLength(S, L);
+  end;
+  if A.WICNo <> '' then
+    S := S + #5 + 'WICNo' + #6 + A.WICNo;
+  if A.HasCompleteText then
+  begin
+    L := Length(S);
+    S := S + #11 + 'CompleteText';
+    OthCompleteText(A.CompleteText, S);
+    if Length(S) = L + 13 then
+      SetLength(S, L);
+  end;
+  if A.HasOutlineText then
+  begin
+    L := Length(S);
+    S := S + #11 + 'OutlineText';
+    OthOutlineText(A.OutlineText, S);
+    if Length(S) = L + 12 then
+      SetLength(S, L);
+  end;
+  if A.HasSubmissionComment then
+  begin
+    L := Length(S);
+    S := S + #11 + 'SubmissionComment';
+    OthMLText(A.SubmissionComment, S);
+    if Length(S) = L + 18 then
+      SetLength(S, L);
+  end;
+end;
+
+procedure OthFText(A: TLandrixGaebXmlFText; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthFTextTC(A: TLandrixGaebXmlFTextTC; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthGAEB(A: TLandrixGaebXmlGAEB; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasGAEBInfo then
+  begin
+    L := Length(S);
+    S := S + #11 + 'GAEBInfo';
+    OthGAEBInfo(A.GAEBInfo, S);
+    if Length(S) = L + 9 then
+      SetLength(S, L);
+  end;
+  if A.HasPrjInfo then
+  begin
+    L := Length(S);
+    S := S + #11 + 'PrjInfo';
+    OthPrjInfo(A.PrjInfo, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.HasAward then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Award';
+    OthAward(A.Award, S);
+    if Length(S) = L + 6 then
+      SetLength(S, L);
+  end;
+  if A.HasAddText then
+    for I := 0 to Integer(A.AddText.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'AddText';
+      OthAddText(A.AddText[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthGAEBInfo(A: TLandrixGaebXmlGAEBInfo; var S: TLandrixGaebString);
+begin
+  if A.Version <> '' then
+    S := S + #5 + 'Version' + #6 + A.Version;
+  if A.VersDate <> '' then
+    S := S + #5 + 'VersDate' + #6 + A.VersDate;
+  if A.Date <> '' then
+    S := S + #5 + 'Date' + #6 + A.Date;
+  if A.Time <> '' then
+    S := S + #5 + 'Time' + #6 + A.Time;
+  if A.ProgSystem <> '' then
+    S := S + #5 + 'ProgSystem' + #6 + A.ProgSystem;
+  if A.ProgName <> '' then
+    S := S + #5 + 'ProgName' + #6 + A.ProgName;
+  if A.Certific <> '' then
+    S := S + #5 + 'Certific' + #6 + A.Certific;
+end;
+
+procedure OthImage(A: TLandrixGaebXmlImage; var S: TLandrixGaebString);
+begin
+  if A.TypeAttr <> '' then
+    S := S + #5 + '@Type' + #6 + A.TypeAttr;
+  if A.Name <> '' then
+    S := S + #5 + '@Name' + #6 + A.Name;
+  if A.Encoding <> '' then
+    S := S + #5 + '@Encoding' + #6 + A.Encoding;
+  if A.Base64 <> '' then
+    S := S + #5 + '#base64' + #6 + LandrixXmlUtf8ToWide(A.Base64);
+end;
+
+procedure OthIndivAgrInfo(A: TLandrixGaebXmlIndivAgrInfo; var S: TLandrixGaebString);
+var
+  L: Integer;
+begin
+  if A.InfoPerson <> '' then
+    S := S + #5 + 'InfoPerson' + #6 + A.InfoPerson;
+  if A.AttestPerson <> '' then
+    S := S + #5 + 'AttestPerson' + #6 + A.AttestPerson;
+  if A.HasCnstSiteLoc then
+  begin
+    L := Length(S);
+    S := S + #11 + 'CnstSiteLoc';
+    OthMLText(A.CnstSiteLoc, S);
+    if Length(S) = L + 12 then
+      SetLength(S, L);
+  end;
+end;
+
+procedure OthInsAs(A: TLandrixGaebXmlInsAs; var S: TLandrixGaebString);
+begin
+  if A.InsAsName <> '' then
+    S := S + #5 + 'InsAsName' + #6 + A.InsAsName;
+  if A.InsAsDate <> '' then
+    S := S + #5 + 'InsAsDate' + #6 + A.InsAsDate;
+  if A.InsAsNo <> '' then
+    S := S + #5 + 'InsAsNo' + #6 + A.InsAsNo;
+end;
+
+procedure OthItem(A: TLandrixGaebXmlItem; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.RNoPart <> '' then
+    S := S + #5 + '@RNoPart' + #6 + A.RNoPart;
+  if A.RNoIndex <> '' then
+    S := S + #5 + '@RNoIndex' + #6 + A.RNoIndex;
+  if A.ALNGroupNo <> '' then
+    S := S + #5 + 'ALNGroupNo' + #6 + A.ALNGroupNo;
+  if A.ALNSerNo <> '' then
+    S := S + #5 + 'ALNSerNo' + #6 + A.ALNSerNo;
+  if A.Accepted <> '' then
+    S := S + #5 + 'Accepted' + #6 + A.Accepted;
+  if A.Provis <> '' then
+    S := S + #5 + 'Provis' + #6 + A.Provis;
+  if A.ProvisAccpt <> '' then
+    S := S + #5 + 'ProvisAccpt' + #6 + A.ProvisAccpt;
+  if A.LumpSumItem <> '' then
+    S := S + #5 + 'LumpSumItem' + #6 + A.LumpSumItem;
+  if A.NotAppl <> '' then
+    S := S + #5 + 'NotAppl' + #6 + A.NotAppl;
+  if A.HourIt <> '' then
+    S := S + #5 + 'HourIt' + #6 + A.HourIt;
+  if A.KeyIt <> '' then
+    S := S + #5 + 'KeyIt' + #6 + A.KeyIt;
+  if A.UPBkdn <> '' then
+    S := S + #5 + 'UPBkdn' + #6 + A.UPBkdn;
+  if A.MarkupIt <> '' then
+    S := S + #5 + 'MarkupIt' + #6 + A.MarkupIt;
+  if A.CONo <> '' then
+    S := S + #5 + 'CONo' + #6 + A.CONo;
+  if A.COStatus <> '' then
+    S := S + #5 + 'COStatus' + #6 + A.COStatus;
+  if A.RefDescr <> '' then
+    S := S + #5 + 'RefDescr' + #6 + A.RefDescr;
+  if A.HoldOutType <> '' then
+    S := S + #5 + 'HoldOutType' + #6 + A.HoldOutType;
+  if A.UseDur.HasValue then
+    S := S + #5 + 'UseDur' + #6 + LandrixXmlUtf8ToWide(A.UseDur.Text);
+  if A.UseDurLblTime <> '' then
+    S := S + #5 + 'UseDurLblTime' + #6 + A.UseDurLblTime;
+  if A.QtyTBD <> '' then
+    S := S + #5 + 'QtyTBD' + #6 + A.QtyTBD;
+  if A.NotOffered <> '' then
+    S := S + #5 + 'NotOffered' + #6 + A.NotOffered;
+  if A.Qty.HasValue then
+    S := S + #5 + 'Qty' + #6 + LandrixXmlUtf8ToWide(A.Qty.Text);
+  if A.HasQtySplit then
+    for I := 0 to Integer(A.QtySplit.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'QtySplit';
+      OthQtySplit(A.QtySplit[I], S);
+      if Length(S) = L + 9 then
+        SetLength(S, L);
+    end;
+  if A.PredQty.HasValue then
+    S := S + #5 + 'PredQty' + #6 + LandrixXmlUtf8ToWide(A.PredQty.Text);
+  if A.BillQty.HasValue then
+    S := S + #5 + 'BillQty' + #6 + LandrixXmlUtf8ToWide(A.BillQty.Text);
+  if A.QU <> '' then
+    S := S + #5 + 'QU' + #6 + A.QU;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+  if A.UP.HasValue then
+    S := S + #5 + 'UP' + #6 + LandrixXmlUtf8ToWide(A.UP.Text);
+  if A.UP110.HasValue then
+    S := S + #5 + 'UP110' + #6 + LandrixXmlUtf8ToWide(A.UP110.Text);
+  if A.UPComp1.HasValue then
+    S := S + #5 + 'UPComp1' + #6 + LandrixXmlUtf8ToWide(A.UPComp1.Text);
+  if A.UPComp2.HasValue then
+    S := S + #5 + 'UPComp2' + #6 + LandrixXmlUtf8ToWide(A.UPComp2.Text);
+  if A.UPComp3.HasValue then
+    S := S + #5 + 'UPComp3' + #6 + LandrixXmlUtf8ToWide(A.UPComp3.Text);
+  if A.UPComp4.HasValue then
+    S := S + #5 + 'UPComp4' + #6 + LandrixXmlUtf8ToWide(A.UPComp4.Text);
+  if A.UPComp5.HasValue then
+    S := S + #5 + 'UPComp5' + #6 + LandrixXmlUtf8ToWide(A.UPComp5.Text);
+  if A.UPComp6.HasValue then
+    S := S + #5 + 'UPComp6' + #6 + LandrixXmlUtf8ToWide(A.UPComp6.Text);
+  if A.DiscountPcnt.HasValue then
+    S := S + #5 + 'DiscountPcnt' + #6 + LandrixXmlUtf8ToWide(A.DiscountPcnt.Text);
+  if A.UPFrom.HasValue then
+    S := S + #5 + 'UPFrom' + #6 + LandrixXmlUtf8ToWide(A.UPFrom.Text);
+  if A.UPAvg.HasValue then
+    S := S + #5 + 'UPAvg' + #6 + LandrixXmlUtf8ToWide(A.UPAvg.Text);
+  if A.UPTo.HasValue then
+    S := S + #5 + 'UPTo' + #6 + LandrixXmlUtf8ToWide(A.UPTo.Text);
+  if A.UPWgFrom.HasValue then
+    S := S + #5 + 'UPWgFrom' + #6 + LandrixXmlUtf8ToWide(A.UPWgFrom.Text);
+  if A.UPWgAvg.HasValue then
+    S := S + #5 + 'UPWgAvg' + #6 + LandrixXmlUtf8ToWide(A.UPWgAvg.Text);
+  if A.UPWgTo.HasValue then
+    S := S + #5 + 'UPWgTo' + #6 + LandrixXmlUtf8ToWide(A.UPWgTo.Text);
+  if A.IT.HasValue then
+    S := S + #5 + 'IT' + #6 + LandrixXmlUtf8ToWide(A.IT.Text);
+  if A.VAT.HasValue then
+    S := S + #5 + 'VAT' + #6 + LandrixXmlUtf8ToWide(A.VAT.Text);
+  if A.PriceInfo <> '' then
+    S := S + #5 + 'PriceInfo' + #6 + A.PriceInfo;
+  if A.TimeQu.HasValue then
+    S := S + #5 + 'TimeQu' + #6 + LandrixXmlUtf8ToWide(A.TimeQu.Text);
+  if A.HasDescription then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Description';
+    OthDescription(A.Description, S);
+    if Length(S) = L + 12 then
+      SetLength(S, L);
+  end;
+  if A.HasBidComm then
+    for I := 0 to Integer(A.BidComm.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'BidComm';
+      OthMLText(A.BidComm[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+  if A.SumDescr <> '' then
+    S := S + #5 + 'SumDescr' + #6 + A.SumDescr;
+  if A.HasSubDescr then
+    for I := 0 to Integer(A.SubDescr.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'SubDescr';
+      OthSubDescr(A.SubDescr[I], S);
+      if Length(S) = L + 9 then
+        SetLength(S, L);
+    end;
+  if A.HasProduct then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Product';
+    OthProduct(A.Product, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.AlterBidStatus <> '' then
+    S := S + #5 + 'AlterBidStatus' + #6 + A.AlterBidStatus;
+  if A.HasCostApproach then
+    for I := 0 to Integer(A.CostApproach.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CostApproach';
+      OthCostApproach(A.CostApproach[I], S);
+      if Length(S) = L + 13 then
+        SetLength(S, L);
+    end;
+  if A.HasQtyDeterm then
+  begin
+    L := Length(S);
+    S := S + #11 + 'QtyDeterm';
+    OthQtyDeterm(A.QtyDeterm, S);
+    if Length(S) = L + 10 then
+      SetLength(S, L);
+  end;
+end;
+
+procedure OthItemlist(A: TLandrixGaebXmlItemlist; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthLblUpComp(A: TLandrixGaebXmlLblUpComp; var S: TLandrixGaebString);
+begin
+  if A.TypeAttr <> '' then
+    S := S + #5 + '@Type' + #6 + A.TypeAttr;
+  if A.Value <> '' then
+    S := S + #5 + '#text' + #6 + A.Value;
+end;
+
+procedure OthLotGrp(A: TLandrixGaebXmlLotGrp; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.LotGrNo <> '' then
+    S := S + #5 + 'LotGrNo' + #6 + A.LotGrNo;
+  if A.HasTotals then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Totals';
+    OthTotals(A.Totals, S);
+    if Length(S) = L + 7 then
+      SetLength(S, L);
+  end;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthMLText(A: TLandrixGaebXmlMLText; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthMaintInfo(A: TLandrixGaebXmlMaintInfo; var S: TLandrixGaebString);
+begin
+  if A.MaintType <> '' then
+    S := S + #5 + 'MaintType' + #6 + A.MaintType;
+  if A.ProcessType <> '' then
+    S := S + #5 + 'ProcessType' + #6 + A.ProcessType;
+  if A.ContrTransDate <> '' then
+    S := S + #5 + 'ContrTransDate' + #6 + A.ContrTransDate;
+  if A.ContrTransTime <> '' then
+    S := S + #5 + 'ContrTransTime' + #6 + A.ContrTransTime;
+  if A.ContrLaw <> '' then
+    S := S + #5 + 'ContrLaw' + #6 + A.ContrLaw;
+  if A.Deadline <> '' then
+    S := S + #5 + 'Deadline' + #6 + A.Deadline;
+end;
+
+procedure OthMarkupItem(A: TLandrixGaebXmlMarkupItem; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.RNoPart <> '' then
+    S := S + #5 + '@RNoPart' + #6 + A.RNoPart;
+  if A.RNoIndex <> '' then
+    S := S + #5 + '@RNoIndex' + #6 + A.RNoIndex;
+  if A.ALNGroupNo <> '' then
+    S := S + #5 + 'ALNGroupNo' + #6 + A.ALNGroupNo;
+  if A.ALNSerNo <> '' then
+    S := S + #5 + 'ALNSerNo' + #6 + A.ALNSerNo;
+  if A.Accepted <> '' then
+    S := S + #5 + 'Accepted' + #6 + A.Accepted;
+  if A.Provis <> '' then
+    S := S + #5 + 'Provis' + #6 + A.Provis;
+  if A.ProvisAccpt <> '' then
+    S := S + #5 + 'ProvisAccpt' + #6 + A.ProvisAccpt;
+  if A.NotAppl <> '' then
+    S := S + #5 + 'NotAppl' + #6 + A.NotAppl;
+  if A.HourIt <> '' then
+    S := S + #5 + 'HourIt' + #6 + A.HourIt;
+  if A.KeyIt <> '' then
+    S := S + #5 + 'KeyIt' + #6 + A.KeyIt;
+  if A.CONo <> '' then
+    S := S + #5 + 'CONo' + #6 + A.CONo;
+  if A.COStatus <> '' then
+    S := S + #5 + 'COStatus' + #6 + A.COStatus;
+  if A.RefDescr <> '' then
+    S := S + #5 + 'RefDescr' + #6 + A.RefDescr;
+  if A.MarkupType <> '' then
+    S := S + #5 + 'MarkupType' + #6 + A.MarkupType;
+  if A.HasMarkupSubQty then
+    for I := 0 to Integer(A.MarkupSubQty.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'MarkupSubQty';
+      OthMarkupSubQty(A.MarkupSubQty[I], S);
+      if Length(S) = L + 13 then
+        SetLength(S, L);
+    end;
+  if A.ITMarkup.HasValue then
+    S := S + #5 + 'ITMarkup' + #6 + LandrixXmlUtf8ToWide(A.ITMarkup.Text);
+  if A.Markup.HasValue then
+    S := S + #5 + 'Markup' + #6 + LandrixXmlUtf8ToWide(A.Markup.Text);
+  if A.DiscountPcnt.HasValue then
+    S := S + #5 + 'DiscountPcnt' + #6 + LandrixXmlUtf8ToWide(A.DiscountPcnt.Text);
+  if A.IT.HasValue then
+    S := S + #5 + 'IT' + #6 + LandrixXmlUtf8ToWide(A.IT.Text);
+  if A.HasDescription then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Description';
+    OthDescription(A.Description, S);
+    if Length(S) = L + 12 then
+      SetLength(S, L);
+  end;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+  if A.AlterBidStatus <> '' then
+    S := S + #5 + 'AlterBidStatus' + #6 + A.AlterBidStatus;
+end;
+
+procedure OthMarkupSubQty(A: TLandrixGaebXmlMarkupSubQty; var S: TLandrixGaebString);
+begin
+  if A.SubQty.HasValue then
+    S := S + #5 + 'SubQty' + #6 + LandrixXmlUtf8ToWide(A.SubQty.Text);
+end;
+
+procedure OthMastAgrInfo(A: TLandrixGaebXmlMastAgrInfo; var S: TLandrixGaebString);
+var
+  L: Integer;
+begin
+  if A.BidUpDown <> '' then
+    S := S + #5 + 'BidUpDown' + #6 + A.BidUpDown;
+  if A.HasMastAgrLbl then
+  begin
+    L := Length(S);
+    S := S + #11 + 'MastAgrLbl';
+    OthMLText(A.MastAgrLbl, S);
+    if Length(S) = L + 11 then
+      SetLength(S, L);
+  end;
+  if A.MastAgrNo <> '' then
+    S := S + #5 + 'MastAgrNo' + #6 + A.MastAgrNo;
+  if A.HasDescrip then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Descrip';
+    OthFText(A.Descrip, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.MastAgrBeg <> '' then
+    S := S + #5 + 'MastAgrBeg' + #6 + A.MastAgrBeg;
+  if A.MastAgrDur <> '' then
+    S := S + #5 + 'MastAgrDur' + #6 + A.MastAgrDur;
+  if A.MastAgrEnd <> '' then
+    S := S + #5 + 'MastAgrEnd' + #6 + A.MastAgrEnd;
+  if A.MastAgrDate <> '' then
+    S := S + #5 + 'MastAgrDate' + #6 + A.MastAgrDate;
+  if A.MastAgrVers <> '' then
+    S := S + #5 + 'MastAgrVers' + #6 + A.MastAgrVers;
+  if A.TotContrVal.HasValue then
+    S := S + #5 + 'TotContrVal' + #6 + LandrixXmlUtf8ToWide(A.TotContrVal.Text);
+  if A.MinContrVal.HasValue then
+    S := S + #5 + 'MinContrVal' + #6 + LandrixXmlUtf8ToWide(A.MinContrVal.Text);
+  if A.MinContrAwd.HasValue then
+    S := S + #5 + 'MinContrAwd' + #6 + LandrixXmlUtf8ToWide(A.MinContrAwd.Text);
+  if A.MaxContrVal.HasValue then
+    S := S + #5 + 'MaxContrVal' + #6 + LandrixXmlUtf8ToWide(A.MaxContrVal.Text);
+  if A.HasContrValCode then
+  begin
+    L := Length(S);
+    S := S + #11 + 'ContrValCode';
+    OthContrValCode(A.ContrValCode, S);
+    if Length(S) = L + 13 then
+      SetLength(S, L);
+  end;
+  if A.HasAwardAgencyAdr then
+  begin
+    L := Length(S);
+    S := S + #11 + 'AwardAgencyAdr';
+    OthAddress(A.AwardAgencyAdr, S);
+    if Length(S) = L + 15 then
+      SetLength(S, L);
+  end;
+  if A.HasCostResponsible then
+  begin
+    L := Length(S);
+    S := S + #11 + 'CostResponsible';
+    OthMLText(A.CostResponsible, S);
+    if Length(S) = L + 16 then
+      SetLength(S, L);
+  end;
+end;
+
+procedure OthNotifSite(A: TLandrixGaebXmlNotifSite; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasAddress then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Address';
+    OthAddress(A.Address, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.NotifSiteIDNo <> '' then
+    S := S + #5 + 'NotifSiteIDNo' + #6 + A.NotifSiteIDNo;
+  if A.NotifSiteName <> '' then
+    S := S + #5 + 'NotifSiteName' + #6 + A.NotifSiteName;
+  if A.HasAddText then
+    for I := 0 to Integer(A.AddText.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'AddText';
+      OthAddText(A.AddText[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthOWN(A: TLandrixGaebXmlOWN; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasAddress then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Address';
+    OthAddress(A.Address, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.DPNo <> '' then
+    S := S + #5 + 'DPNo' + #6 + A.DPNo;
+  if A.AwardNo <> '' then
+    S := S + #5 + 'AwardNo' + #6 + A.AwardNo;
+  if A.AcctRecNo <> '' then
+    S := S + #5 + 'AcctRecNo' + #6 + A.AcctRecNo;
+  if A.CntryType <> '' then
+    S := S + #5 + 'CntryType' + #6 + A.CntryType;
+  if A.CntryName <> '' then
+    S := S + #5 + 'CntryName' + #6 + A.CntryName;
+  if A.HasAddText then
+    for I := 0 to Integer(A.AddText.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'AddText';
+      OthAddText(A.AddText[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthOutlTxt(A: TLandrixGaebXmlOutlTxt; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthOutlineText(A: TLandrixGaebXmlOutlineText; var S: TLandrixGaebString);
+var
+  L: Integer;
+begin
+  if A.OutlTSA <> '' then
+    S := S + #5 + 'OutlTSA' + #6 + A.OutlTSA;
+  if A.HasOutlTxt then
+  begin
+    L := Length(S);
+    S := S + #11 + 'OutlTxt';
+    OthOutlTxt(A.OutlTxt, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+end;
+
+procedure OthPerfDescr(A: TLandrixGaebXmlPerfDescr; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.PerfNo <> '' then
+    S := S + #5 + 'PerfNo' + #6 + A.PerfNo;
+  if A.PerfLbl <> '' then
+    S := S + #5 + 'PerfLbl' + #6 + A.PerfLbl;
+  if A.HasDescription then
+    for I := 0 to Integer(A.Description.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'Description';
+      OthPerfDescription(A.Description[I], S);
+      if Length(S) = L + 12 then
+        SetLength(S, L);
+    end;
+  if A.CONo <> '' then
+    S := S + #5 + 'CONo' + #6 + A.CONo;
+  if A.AlterBidStatus <> '' then
+    S := S + #5 + 'AlterBidStatus' + #6 + A.AlterBidStatus;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthPerfDescription(A: TLandrixGaebXmlPerfDescription; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasSTLBBau then
+  begin
+    L := Length(S);
+    S := S + #11 + 'STLBBau';
+    OthSTLBBau(A.STLBBau, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.HasStLNo then
+  begin
+    L := Length(S);
+    S := S + #11 + 'StLNo';
+    OthStLNo(A.StLNo, S);
+    if Length(S) = L + 6 then
+      SetLength(S, L);
+  end;
+  if A.WICNo <> '' then
+    S := S + #5 + 'WICNo' + #6 + A.WICNo;
+  if A.HasCompleteText then
+  begin
+    L := Length(S);
+    S := S + #11 + 'CompleteText';
+    OthCompleteText(A.CompleteText, S);
+    if Length(S) = L + 13 then
+      SetLength(S, L);
+  end;
+  if A.HasOutlineText then
+  begin
+    L := Length(S);
+    S := S + #11 + 'OutlineText';
+    OthOutlineText(A.OutlineText, S);
+    if Length(S) = L + 12 then
+      SetLength(S, L);
+  end;
+  if A.HasSubmissionComment then
+  begin
+    L := Length(S);
+    S := S + #11 + 'SubmissionComment';
+    OthMLText(A.SubmissionComment, S);
+    if Length(S) = L + 18 then
+      SetLength(S, L);
+  end;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthPrjInfo(A: TLandrixGaebXmlPrjInfo; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.NamePrj <> '' then
+    S := S + #5 + 'NamePrj' + #6 + A.NamePrj;
+  if A.PrjID <> '' then
+    S := S + #5 + 'PrjID' + #6 + A.PrjID;
+  if A.LblPrj <> '' then
+    S := S + #5 + 'LblPrj' + #6 + A.LblPrj;
+  if A.HasDescrip then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Descrip';
+    OthFText(A.Descrip, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.Cur <> '' then
+    S := S + #5 + 'Cur' + #6 + A.Cur;
+  if A.CurLbl <> '' then
+    S := S + #5 + 'CurLbl' + #6 + A.CurLbl;
+  if A.BidCommPerm <> '' then
+    S := S + #5 + 'BidCommPerm' + #6 + A.BidCommPerm;
+  if A.AlterBidPerm <> '' then
+    S := S + #5 + 'AlterBidPerm' + #6 + A.AlterBidPerm;
+  if A.HasAddText then
+    for I := 0 to Integer(A.AddText.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'AddText';
+      OthAddText(A.AddText[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+  if A.UPFracDig <> '' then
+    S := S + #5 + 'UPFracDig' + #6 + A.UPFracDig;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthProduct(A: TLandrixGaebXmlProduct; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasAddress then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Address';
+    OthAddress(A.Address, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.HasAddText then
+    for I := 0 to Integer(A.AddText.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'AddText';
+      OthAddText(A.AddText[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+  if A.HasArticle then
+    for I := 0 to Integer(A.Article.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'Article';
+      OthArticle(A.Article[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthQDetermItem(A: TLandrixGaebXmlQDetermItem; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasQTakeoff then
+  begin
+    L := Length(S);
+    S := S + #11 + 'QTakeoff';
+    OthQDetermItemQTakeoff(A.QTakeoff, S);
+    if Length(S) = L + 9 then
+      SetLength(S, L);
+  end;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthQDetermItemQTakeoff(A: TLandrixGaebXmlQDetermItemQTakeoff; var S: TLandrixGaebString);
+begin
+  if A.Row <> '' then
+    S := S + #5 + '@Row' + #6 + A.Row;
+end;
+
+procedure OthQtyDeterm(A: TLandrixGaebXmlQtyDeterm; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.Qty.HasValue then
+    S := S + #5 + 'Qty' + #6 + LandrixXmlUtf8ToWide(A.Qty.Text);
+  if A.HasQDetermItem then
+    for I := 0 to Integer(A.QDetermItem.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'QDetermItem';
+      OthQDetermItem(A.QDetermItem[I], S);
+      if Length(S) = L + 12 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthQtyDetermInfo(A: TLandrixGaebXmlQtyDetermInfo; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.MethodDescription <> '' then
+    S := S + #5 + 'MethodDescription' + #6 + A.MethodDescription;
+  if A.OrdDescr <> '' then
+    S := S + #5 + 'OrdDescr' + #6 + A.OrdDescr;
+  if A.ProjDescr <> '' then
+    S := S + #5 + 'ProjDescr' + #6 + A.ProjDescr;
+  if A.ServiceProvisionStartDate <> '' then
+    S := S + #5 + 'ServiceProvisionStartDate' + #6 + A.ServiceProvisionStartDate;
+  if A.ServiceProvisionEndDate <> '' then
+    S := S + #5 + 'ServiceProvisionEndDate' + #6 + A.ServiceProvisionEndDate;
+  if A.HasCreator then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Creator';
+    OthAddress(A.Creator, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.HasProfiler then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Profiler';
+    OthAddress(A.Profiler, S);
+    if Length(S) = L + 9 then
+      SetLength(S, L);
+  end;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthQtySplit(A: TLandrixGaebXmlQtySplit; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.QtyPcnt.HasValue then
+    S := S + #5 + 'QtyPcnt' + #6 + LandrixXmlUtf8ToWide(A.QtyPcnt.Text);
+  if A.Qty.HasValue then
+    S := S + #5 + 'Qty' + #6 + LandrixXmlUtf8ToWide(A.Qty.Text);
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthRemark(A: TLandrixGaebXmlRemark; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasDescription then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Description';
+    OthDescription(A.Description, S);
+    if Length(S) = L + 12 then
+      SetLength(S, L);
+  end;
+  if A.CONo <> '' then
+    S := S + #5 + 'CONo' + #6 + A.CONo;
+  if A.AlterBidStatus <> '' then
+    S := S + #5 + 'AlterBidStatus' + #6 + A.AlterBidStatus;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthRequester(A: TLandrixGaebXmlRequester; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasAddress then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Address';
+    OthAddress(A.Address, S);
+    if Length(S) = L + 8 then
+      SetLength(S, L);
+  end;
+  if A.RequestIDNo <> '' then
+    S := S + #5 + 'RequestIDNo' + #6 + A.RequestIDNo;
+  if A.RequestName <> '' then
+    S := S + #5 + 'RequestName' + #6 + A.RequestName;
+  if A.HasAddText then
+    for I := 0 to Integer(A.AddText.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'AddText';
+      OthAddText(A.AddText[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthSTLBBau(A: TLandrixGaebXmlSTLBBau; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.HasSTLBBauCtlg then
+  begin
+    L := Length(S);
+    S := S + #11 + 'STLBBauCtlg';
+    OthSTLBBauCtlg(A.STLBBauCtlg, S);
+    if Length(S) = L + 12 then
+      SetLength(S, L);
+  end;
+  if A.HasSTLBBauID then
+    for I := 0 to Integer(A.STLBBauID.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'STLBBauID';
+      OthSTLBBauID(A.STLBBauID[I], S);
+      if Length(S) = L + 10 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthSTLBBauCtlg(A: TLandrixGaebXmlSTLBBauCtlg; var S: TLandrixGaebString);
+begin
+  if A.CtlgName <> '' then
+    S := S + #5 + 'CtlgName' + #6 + A.CtlgName;
+  if A.VersDate <> '' then
+    S := S + #5 + 'VersDate' + #6 + A.VersDate;
+  if A.WCtg <> '' then
+    S := S + #5 + 'WCtg' + #6 + A.WCtg;
+  if A.Group <> '' then
+    S := S + #5 + 'Group' + #6 + A.Group;
+  if A.CostGrp <> '' then
+    S := S + #5 + 'CostGrp' + #6 + A.CostGrp;
+end;
+
+procedure OthSTLBBauID(A: TLandrixGaebXmlSTLBBauID; var S: TLandrixGaebString);
+begin
+  if A.ArtChrIdent <> '' then
+    S := S + #5 + 'ArtChrIdent' + #6 + A.ArtChrIdent;
+  if A.ArtChIdx <> '' then
+    S := S + #5 + 'ArtChIdx' + #6 + A.ArtChIdx;
+  if A.ChVIdent <> '' then
+    S := S + #5 + 'ChVIdent' + #6 + A.ChVIdent;
+  if A.OutlTextPart <> '' then
+    S := S + #5 + 'OutlTextPart' + #6 + A.OutlTextPart;
+end;
+
+procedure OthStLNo(A: TLandrixGaebXmlStLNo; var S: TLandrixGaebString);
+begin
+  if A.TypeAttr <> '' then
+    S := S + #5 + '@Type' + #6 + A.TypeAttr;
+  if A.Value <> '' then
+    S := S + #5 + '#text' + #6 + A.Value;
+end;
+
+procedure OthSubDescr(A: TLandrixGaebXmlSubDescr; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.SubDNo <> '' then
+    S := S + #5 + 'SubDNo' + #6 + A.SubDNo;
+  if A.HasDescription then
+  begin
+    L := Length(S);
+    S := S + #11 + 'Description';
+    OthDescription(A.Description, S);
+    if Length(S) = L + 12 then
+      SetLength(S, L);
+  end;
+  if A.QtySpec <> '' then
+    S := S + #5 + 'QtySpec' + #6 + A.QtySpec;
+  if A.QtyTBD <> '' then
+    S := S + #5 + 'QtyTBD' + #6 + A.QtyTBD;
+  if A.Qty.HasValue then
+    S := S + #5 + 'Qty' + #6 + LandrixXmlUtf8ToWide(A.Qty.Text);
+  if A.QU <> '' then
+    S := S + #5 + 'QU' + #6 + A.QU;
+  if A.UPSpec <> '' then
+    S := S + #5 + 'UPSpec' + #6 + A.UPSpec;
+  if A.UPBkdn <> '' then
+    S := S + #5 + 'UPBkdn' + #6 + A.UPBkdn;
+  if A.UP.HasValue then
+    S := S + #5 + 'UP' + #6 + LandrixXmlUtf8ToWide(A.UP.Text);
+  if A.UPComp1.HasValue then
+    S := S + #5 + 'UPComp1' + #6 + LandrixXmlUtf8ToWide(A.UPComp1.Text);
+  if A.UPComp2.HasValue then
+    S := S + #5 + 'UPComp2' + #6 + LandrixXmlUtf8ToWide(A.UPComp2.Text);
+  if A.UPComp3.HasValue then
+    S := S + #5 + 'UPComp3' + #6 + LandrixXmlUtf8ToWide(A.UPComp3.Text);
+  if A.UPComp4.HasValue then
+    S := S + #5 + 'UPComp4' + #6 + LandrixXmlUtf8ToWide(A.UPComp4.Text);
+  if A.UPComp5.HasValue then
+    S := S + #5 + 'UPComp5' + #6 + LandrixXmlUtf8ToWide(A.UPComp5.Text);
+  if A.UPComp6.HasValue then
+    S := S + #5 + 'UPComp6' + #6 + LandrixXmlUtf8ToWide(A.UPComp6.Text);
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthTextComplement(A: TLandrixGaebXmlTextComplement; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.MarkLbl <> '' then
+    S := S + #5 + '@MarkLbl' + #6 + A.MarkLbl;
+  if A.Kind <> '' then
+    S := S + #5 + '@Kind' + #6 + A.Kind;
+  if A.ArtChrIdent <> '' then
+    S := S + #5 + '@ArtChrIdent' + #6 + A.ArtChrIdent;
+  if A.HasComplCaption then
+  begin
+    L := Length(S);
+    S := S + #11 + 'ComplCaption';
+    OthMLText(A.ComplCaption, S);
+    if Length(S) = L + 13 then
+      SetLength(S, L);
+  end;
+  if A.HasComplBodyDec then
+  begin
+    L := Length(S);
+    S := S + #11 + 'ComplBodyDec';
+    OthComplBodyDec(A.ComplBodyDec, S);
+    if Length(S) = L + 13 then
+      SetLength(S, L);
+  end;
+  if A.HasComplBodyInt then
+  begin
+    L := Length(S);
+    S := S + #11 + 'ComplBodyInt';
+    OthComplBodyInt(A.ComplBodyInt, S);
+    if Length(S) = L + 13 then
+      SetLength(S, L);
+  end;
+  if A.HasComplBody then
+  begin
+    L := Length(S);
+    S := S + #11 + 'ComplBody';
+    OthMLText(A.ComplBody, S);
+    if Length(S) = L + 10 then
+      SetLength(S, L);
+  end;
+  if A.HasComplTail then
+  begin
+    L := Length(S);
+    S := S + #11 + 'ComplTail';
+    OthMLText(A.ComplTail, S);
+    if Length(S) = L + 10 then
+      SetLength(S, L);
+  end;
+  if A.HasCtlgAssign then
+    for I := 0 to Integer(A.CtlgAssign.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'CtlgAssign';
+      OthCtlgAssign(A.CtlgAssign[I], S);
+      if Length(S) = L + 11 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthTotalNetUpComp(A: TLandrixGaebXmlTotalNetUpComp; var S: TLandrixGaebString);
+begin
+  if A.UpComp1.HasValue then
+    S := S + #5 + 'UpComp1' + #6 + LandrixXmlUtf8ToWide(A.UpComp1.Text);
+  if A.UpComp2.HasValue then
+    S := S + #5 + 'UpComp2' + #6 + LandrixXmlUtf8ToWide(A.UpComp2.Text);
+  if A.UpComp3.HasValue then
+    S := S + #5 + 'UpComp3' + #6 + LandrixXmlUtf8ToWide(A.UpComp3.Text);
+  if A.UpComp4.HasValue then
+    S := S + #5 + 'UpComp4' + #6 + LandrixXmlUtf8ToWide(A.UpComp4.Text);
+  if A.UpComp5.HasValue then
+    S := S + #5 + 'UpComp5' + #6 + LandrixXmlUtf8ToWide(A.UpComp5.Text);
+  if A.UpComp6.HasValue then
+    S := S + #5 + 'UpComp6' + #6 + LandrixXmlUtf8ToWide(A.UpComp6.Text);
+end;
+
+procedure OthTotals(A: TLandrixGaebXmlTotals; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.Total.HasValue then
+    S := S + #5 + 'Total' + #6 + LandrixXmlUtf8ToWide(A.Total.Text);
+  if A.DiscountPcnt.HasValue then
+    S := S + #5 + 'DiscountPcnt' + #6 + LandrixXmlUtf8ToWide(A.DiscountPcnt.Text);
+  if A.DiscountAmt.HasValue then
+    S := S + #5 + 'DiscountAmt' + #6 + LandrixXmlUtf8ToWide(A.DiscountAmt.Text);
+  if A.TotAfterDisc.HasValue then
+    S := S + #5 + 'TotAfterDisc' + #6 + LandrixXmlUtf8ToWide(A.TotAfterDisc.Text);
+  if A.TotalLSUM.HasValue then
+    S := S + #5 + 'TotalLSUM' + #6 + LandrixXmlUtf8ToWide(A.TotalLSUM.Text);
+  if A.VAT.HasValue then
+    S := S + #5 + 'VAT' + #6 + LandrixXmlUtf8ToWide(A.VAT.Text);
+  if A.TotalNet.HasValue then
+    S := S + #5 + 'TotalNet' + #6 + LandrixXmlUtf8ToWide(A.TotalNet.Text);
+  if A.HasTotalNetUpComp then
+  begin
+    L := Length(S);
+    S := S + #11 + 'TotalNetUpComp';
+    OthTotalNetUpComp(A.TotalNetUpComp, S);
+    if Length(S) = L + 15 then
+      SetLength(S, L);
+  end;
+  if A.HasVATPart then
+    for I := 0 to Integer(A.VATPart.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'VATPart';
+      OthVATPart(A.VATPart[I], S);
+      if Length(S) = L + 8 then
+        SetLength(S, L);
+    end;
+  if A.VATAmount.HasValue then
+    S := S + #5 + 'VATAmount' + #6 + LandrixXmlUtf8ToWide(A.VATAmount.Text);
+  if A.TotalGross.HasValue then
+    S := S + #5 + 'TotalGross' + #6 + LandrixXmlUtf8ToWide(A.TotalGross.Text);
+end;
+
+procedure OthVATPart(A: TLandrixGaebXmlVATPart; var S: TLandrixGaebString);
+begin
+  if A.VATPcnt.HasValue then
+    S := S + #5 + '@VATPcnt' + #6 + LandrixXmlUtf8ToWide(A.VATPcnt.Text);
+  if A.TotalNetPart.HasValue then
+    S := S + #5 + 'TotalNetPart' + #6 + LandrixXmlUtf8ToWide(A.TotalNetPart.Text);
+  if A.VATAmount.HasValue then
+    S := S + #5 + 'VATAmount' + #6 + LandrixXmlUtf8ToWide(A.VATAmount.Text);
+end;
+
+procedure OthWgChange(A: TLandrixGaebXmlWgChange; var S: TLandrixGaebString);
+var
+  I: Integer;
+  L: Integer;
+begin
+  if A.LblRefWage <> '' then
+    S := S + #5 + 'LblRefWage' + #6 + A.LblRefWage;
+  if A.RedPriceComp.HasValue then
+    S := S + #5 + 'RedPriceComp' + #6 + LandrixXmlUtf8ToWide(A.RedPriceComp.Text);
+  if A.HasRefGroup then
+    for I := 0 to Integer(A.RefGroup.Count) - 1 do
+    begin
+      L := Length(S);
+      S := S + #11 + 'RefGroup';
+      OthWgChangeRefGroup(A.RefGroup[I], S);
+      if Length(S) = L + 9 then
+        SetLength(S, L);
+    end;
+end;
+
+procedure OthWgChangeRefGroup(A: TLandrixGaebXmlWgChangeRefGroup; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+  if A.WgChangeRate.HasValue then
+    S := S + #5 + 'WgChangeRate' + #6 + LandrixXmlUtf8ToWide(A.WgChangeRate.Text);
+end;
+
+procedure OthDiv(A: TLandrixGaebXmlDiv; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthDivTC(A: TLandrixGaebXmlDivTC; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthLi(A: TLandrixGaebXmlLi; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthLiTC(A: TLandrixGaebXmlLiTC; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthOl(A: TLandrixGaebXmlOl; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasLi then
+    for I := 0 to Integer(A.Li.Count) - 1 do
+      OthLi(A.Li[I], S);
+end;
+
+procedure OthOlTC(A: TLandrixGaebXmlOlTC; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasLi then
+    for I := 0 to Integer(A.Li.Count) - 1 do
+      OthLiTC(A.Li[I], S);
+end;
+
+procedure OthP(A: TLandrixGaebXmlP; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthPMLText(A: TLandrixGaebXmlPMLText; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthPTC(A: TLandrixGaebXmlPTC; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthTable(A: TLandrixGaebXmlTable; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.Org <> '' then
+    S := S + #5 + '@org' + #6 + A.Org;
+  if A.HasTr then
+    for I := 0 to Integer(A.Tr.Count) - 1 do
+      OthTr(A.Tr[I], S);
+end;
+
+procedure OthTableTC(A: TLandrixGaebXmlTableTC; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.Org <> '' then
+    S := S + #5 + '@org' + #6 + A.Org;
+  if A.HasTr then
+    for I := 0 to Integer(A.Tr.Count) - 1 do
+      OthTrTC(A.Tr[I], S);
+end;
+
+procedure OthTd(A: TLandrixGaebXmlTd; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.Colspan <> '' then
+    S := S + #5 + '@colspan' + #6 + A.Colspan;
+  if A.Rowspan <> '' then
+    S := S + #5 + '@rowspan' + #6 + A.Rowspan;
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthTdTC(A: TLandrixGaebXmlTdTC; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.Colspan <> '' then
+    S := S + #5 + '@colspan' + #6 + A.Colspan;
+  if A.Rowspan <> '' then
+    S := S + #5 + '@rowspan' + #6 + A.Rowspan;
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthTh(A: TLandrixGaebXmlTh; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthTr(A: TLandrixGaebXmlTr; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthTrTC(A: TLandrixGaebXmlTrTC; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasChildren then
+    for I := 0 to Integer(A.Children.Count) - 1 do
+      OthNode(A.Children[I], S);
+end;
+
+procedure OthUl(A: TLandrixGaebXmlUl; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasLi then
+    for I := 0 to Integer(A.Li.Count) - 1 do
+      OthLi(A.Li[I], S);
+end;
+
+procedure OthUlTC(A: TLandrixGaebXmlUlTC; var S: TLandrixGaebString);
+var
+  I: Integer;
+begin
+  if A.HasLi then
+    for I := 0 to Integer(A.Li.Count) - 1 do
+      OthLiTC(A.Li[I], S);
 end;
 
 procedure CmpAddText(const P: string; A, B: TLandrixGaebXmlAddText; D: TStrings);
@@ -803,7 +3457,7 @@ var
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.ID <> B.ID then
+  if not Accept and (A.ID <> B.ID) then
     D.Add(P + '/@ID');
   if A.IsMarkedEmpty('@ID') <> B.IsMarkedEmpty('@ID') then
     D.Add(P + '/@ID (empty mark)');
@@ -875,7 +3529,7 @@ var
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.ID <> B.ID then
+  if not Accept and (A.ID <> B.ID) then
     D.Add(P + '/@ID');
   if A.IsMarkedEmpty('@ID') <> B.IsMarkedEmpty('@ID') then
     D.Add(P + '/@ID (empty mark)');
@@ -1085,6 +3739,14 @@ procedure CmpBoQText(const P: string; A, B: TLandrixGaebXmlBoQText; D: TStrings)
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.StyleAttr <> B.StyleAttr then
     D.Add(P + '/@style');
   if A.IsMarkedEmpty('@style') <> B.IsMarkedEmpty('@style') then
@@ -1435,7 +4097,7 @@ procedure CmpDescription(const P: string; A, B: TLandrixGaebXmlDescription; D: T
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.ID <> B.ID then
+  if not Accept and (A.ID <> B.ID) then
     D.Add(P + '/@ID');
   if A.IsMarkedEmpty('@ID') <> B.IsMarkedEmpty('@ID') then
     D.Add(P + '/@ID (empty mark)');
@@ -1469,6 +4131,14 @@ procedure CmpFText(const P: string; A, B: TLandrixGaebXmlFText; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.StyleAttr <> B.StyleAttr then
     D.Add(P + '/@style');
   if A.IsMarkedEmpty('@style') <> B.IsMarkedEmpty('@style') then
@@ -1487,6 +4157,14 @@ procedure CmpFTextTC(const P: string; A, B: TLandrixGaebXmlFTextTC; D: TStrings)
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.StyleAttr <> B.StyleAttr then
     D.Add(P + '/@style');
   if A.IsMarkedEmpty('@style') <> B.IsMarkedEmpty('@style') then
@@ -1649,7 +4327,7 @@ var
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.ID <> B.ID then
+  if not Accept and (A.ID <> B.ID) then
     D.Add(P + '/@ID');
   if A.IsMarkedEmpty('@ID') <> B.IsMarkedEmpty('@ID') then
     D.Add(P + '/@ID (empty mark)');
@@ -1959,7 +4637,7 @@ var
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.ID <> B.ID then
+  if not Accept and (A.ID <> B.ID) then
     D.Add(P + '/@ID');
   if A.IsMarkedEmpty('@ID') <> B.IsMarkedEmpty('@ID') then
     D.Add(P + '/@ID (empty mark)');
@@ -2001,6 +4679,14 @@ procedure CmpMLText(const P: string; A, B: TLandrixGaebXmlMLText; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.StyleAttr <> B.StyleAttr then
     D.Add(P + '/@style');
   if A.IsMarkedEmpty('@style') <> B.IsMarkedEmpty('@style') then
@@ -2051,7 +4737,7 @@ var
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.ID <> B.ID then
+  if not Accept and (A.ID <> B.ID) then
     D.Add(P + '/@ID');
   if A.IsMarkedEmpty('@ID') <> B.IsMarkedEmpty('@ID') then
     D.Add(P + '/@ID (empty mark)');
@@ -2333,6 +5019,14 @@ procedure CmpOutlTxt(const P: string; A, B: TLandrixGaebXmlOutlTxt; D: TStrings)
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.StyleAttr <> B.StyleAttr then
     D.Add(P + '/@style');
   if A.IsMarkedEmpty('@style') <> B.IsMarkedEmpty('@style') then
@@ -2367,7 +5061,7 @@ var
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.ID <> B.ID then
+  if not Accept and (A.ID <> B.ID) then
     D.Add(P + '/@ID');
   if A.IsMarkedEmpty('@ID') <> B.IsMarkedEmpty('@ID') then
     D.Add(P + '/@ID (empty mark)');
@@ -2419,7 +5113,7 @@ var
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.ID <> B.ID then
+  if not Accept and (A.ID <> B.ID) then
     D.Add(P + '/@ID');
   if A.IsMarkedEmpty('@ID') <> B.IsMarkedEmpty('@ID') then
     D.Add(P + '/@ID (empty mark)');
@@ -2629,7 +5323,7 @@ var
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.ID <> B.ID then
+  if not Accept and (A.ID <> B.ID) then
     D.Add(P + '/@ID');
   if A.IsMarkedEmpty('@ID') <> B.IsMarkedEmpty('@ID') then
     D.Add(P + '/@ID (empty mark)');
@@ -2707,7 +5401,7 @@ procedure CmpRefBoQ(const P: string; A, B: TLandrixGaebXmlRefBoQ; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.IDRef <> B.IDRef then
+  if not Accept and (A.IDRef <> B.IDRef) then
     D.Add(P + '/@IDRef');
   if A.IsMarkedEmpty('@IDRef') <> B.IsMarkedEmpty('@IDRef') then
     D.Add(P + '/@IDRef (empty mark)');
@@ -2717,7 +5411,7 @@ procedure CmpRefBoQCtgy(const P: string; A, B: TLandrixGaebXmlRefBoQCtgy; D: TSt
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.IDRef <> B.IDRef then
+  if not Accept and (A.IDRef <> B.IDRef) then
     D.Add(P + '/@IDRef');
   if A.IsMarkedEmpty('@IDRef') <> B.IsMarkedEmpty('@IDRef') then
     D.Add(P + '/@IDRef (empty mark)');
@@ -2727,7 +5421,7 @@ procedure CmpRefItem(const P: string; A, B: TLandrixGaebXmlRefItem; D: TStrings)
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.IDRef <> B.IDRef then
+  if not Accept and (A.IDRef <> B.IDRef) then
     D.Add(P + '/@IDRef');
   if A.IsMarkedEmpty('@IDRef') <> B.IsMarkedEmpty('@IDRef') then
     D.Add(P + '/@IDRef (empty mark)');
@@ -2737,7 +5431,7 @@ procedure CmpRefLotGrp(const P: string; A, B: TLandrixGaebXmlRefLotGrp; D: TStri
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.IDRef <> B.IDRef then
+  if not Accept and (A.IDRef <> B.IDRef) then
     D.Add(P + '/@IDRef');
   if A.IsMarkedEmpty('@IDRef') <> B.IsMarkedEmpty('@IDRef') then
     D.Add(P + '/@IDRef (empty mark)');
@@ -2749,7 +5443,7 @@ var
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.ID <> B.ID then
+  if not Accept and (A.ID <> B.ID) then
     D.Add(P + '/@ID');
   if A.IsMarkedEmpty('@ID') <> B.IsMarkedEmpty('@ID') then
     D.Add(P + '/@ID (empty mark)');
@@ -2993,7 +5687,7 @@ var
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
-  if A.ID <> B.ID then
+  if not Accept and (A.ID <> B.ID) then
     D.Add(P + '/@ID');
   if A.IsMarkedEmpty('@ID') <> B.IsMarkedEmpty('@ID') then
     D.Add(P + '/@ID (empty mark)');
@@ -3201,6 +5895,14 @@ procedure CmpDiv(const P: string; A, B: TLandrixGaebXmlDiv; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.ClassAttr <> B.ClassAttr then
     D.Add(P + '/@class');
   if A.IsMarkedEmpty('@class') <> B.IsMarkedEmpty('@class') then
@@ -3219,6 +5921,14 @@ procedure CmpDivTC(const P: string; A, B: TLandrixGaebXmlDivTC; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.ClassAttr <> B.ClassAttr then
     D.Add(P + '/@class');
   if A.IsMarkedEmpty('@class') <> B.IsMarkedEmpty('@class') then
@@ -3237,6 +5947,14 @@ procedure CmpLi(const P: string; A, B: TLandrixGaebXmlLi; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.ClassAttr <> B.ClassAttr then
     D.Add(P + '/@class');
   if A.IsMarkedEmpty('@class') <> B.IsMarkedEmpty('@class') then
@@ -3255,6 +5973,14 @@ procedure CmpLiTC(const P: string; A, B: TLandrixGaebXmlLiTC; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.ClassAttr <> B.ClassAttr then
     D.Add(P + '/@class');
   if A.IsMarkedEmpty('@class') <> B.IsMarkedEmpty('@class') then
@@ -3337,6 +6063,14 @@ procedure CmpP(const P: string; A, B: TLandrixGaebXmlP; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.ClassAttr <> B.ClassAttr then
     D.Add(P + '/@class');
   if A.IsMarkedEmpty('@class') <> B.IsMarkedEmpty('@class') then
@@ -3355,6 +6089,14 @@ procedure CmpPMLText(const P: string; A, B: TLandrixGaebXmlPMLText; D: TStrings)
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.ClassAttr <> B.ClassAttr then
     D.Add(P + '/@class');
   if A.IsMarkedEmpty('@class') <> B.IsMarkedEmpty('@class') then
@@ -3373,6 +6115,14 @@ procedure CmpPTC(const P: string; A, B: TLandrixGaebXmlPTC; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.ClassAttr <> B.ClassAttr then
     D.Add(P + '/@class');
   if A.IsMarkedEmpty('@class') <> B.IsMarkedEmpty('@class') then
@@ -3519,6 +6269,14 @@ procedure CmpTd(const P: string; A, B: TLandrixGaebXmlTd; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.ClassAttr <> B.ClassAttr then
     D.Add(P + '/@class');
   if A.IsMarkedEmpty('@class') <> B.IsMarkedEmpty('@class') then
@@ -3553,6 +6311,14 @@ procedure CmpTdTC(const P: string; A, B: TLandrixGaebXmlTdTC; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.ClassAttr <> B.ClassAttr then
     D.Add(P + '/@class');
   if A.IsMarkedEmpty('@class') <> B.IsMarkedEmpty('@class') then
@@ -3587,6 +6353,14 @@ procedure CmpTh(const P: string; A, B: TLandrixGaebXmlTh; D: TStrings);
 begin
   if A.IsPresent <> B.IsPresent then
     D.Add(P + ' (presence)');
+  if Accept then
+  begin
+    if AcceptText(A) <> AcceptText(B) then
+      D.Add(P + ' (plain text)');
+    if OtherContent(A) <> OtherContent(B) then
+      D.Add(P + ' (other content)');
+    Exit;
+  end;
   if A.ClassAttr <> B.ClassAttr then
     D.Add(P + '/@class');
   if A.IsMarkedEmpty('@class') <> B.IsMarkedEmpty('@class') then
@@ -3721,6 +6495,22 @@ procedure CompareGaebModels(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings);
 begin
   SkipText := False;
   CmpGAEB('/GAEB', A, B, ADiffs);
+end;
+
+function CompareAcceptText(ANode: TLandrixGaebXmlNode): TLandrixGaebString;
+begin
+  Result := AcceptText(ANode);
+end;
+
+procedure CompareGaebModelsAccept(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings);
+begin
+  SkipText := False;
+  Accept := True;
+  try
+    CmpGAEB('/GAEB', A, B, ADiffs);
+  finally
+    Accept := False;
+  end;
 end;
 
 procedure CompareGaebModelsSkipText(A, B: TLandrixGaebXmlGAEB; ADiffs: TStrings; out ASkipped: Integer);

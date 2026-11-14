@@ -200,6 +200,67 @@ begin
   end;
 end;
 
+{ Complements marked in plain text as the GAEB Toolbox writes them. }
+procedure TestPlainMarks;
+var
+  T: TLandrixGaebDA2000Text;
+  P: TLandrixGaebDA2000TextPart;
+begin
+  T := ReadText('Liefern [TB01Fabrikat: [....] einsetzen] und [ta2Farbe [RAL 7016]].');
+  try
+    Check(not T.IsRtf, 'plain');
+    CheckEquals(1, T.Count, 'one paragraph');
+    CheckEquals(5, T[0].Count, 'text, complement, text, complement, text');
+    CheckEquals(2, T.ComplementCount, 'two complements');
+    CheckEquals(2, T.PlainMarks, 'counted as plain marks');
+    CheckEquals(0, T.MarkProblems, 'no problems');
+    CheckEqualsGaebStr('Liefern ', T[0][0].Text, 'text before');
+    P := T[0][1];
+    Check((P.Kind = tpkComplement) and P.Bidder and (P.Number = 1), 'TB01');
+    CheckEqualsGaebStr('01', P.Mark, 'digits as written');
+    CheckEqualsGaebStr('Fabrikat: ', P.Caption, 'caption');
+    Check(P.Empty and (P.Body = ''), 'dots are a placeholder');
+    CheckEqualsGaebStr(' einsetzen', P.Tail, 'tail');
+    CheckEqualsGaebStr(' und ', T[0][2].Text, 'text between');
+    P := T[0][3];
+    Check((not P.Bidder) and (P.Number = 2) and (not P.Empty), 'ta2 filled');
+    CheckEqualsGaebStr('2', P.Mark, 'one digit');
+    CheckEqualsGaebStr('RAL 7016', P.Body, 'body');
+    CheckEqualsGaebStr('', P.Tail, 'no tail');
+    CheckEqualsGaebStr('.', T[0][4].Text, 'text after');
+  finally
+    T.Free;
+  end;
+  { no marks: other brackets, no digits, too many digits, no field }
+  T := ReadText('[a] [TX01 [b]] [TB [c]] [TB1234567 [d]] [TB01 ohne Feld] [TB02]');
+  try
+    CheckEquals(0, T.ComplementCount, 'no complement');
+    CheckEquals(0, T.MarkProblems, 'no problem');
+    CheckEqualsGaebStr('[a] [TX01 [b]] [TB [c]] [TB1234567 [d]] [TB01 ohne Feld] [TB02]', ParaText(T, 0),
+      'text kept');
+  finally
+    T.Free;
+  end;
+  { a field opened but not closed on its line: a problem, the text stays }
+  T := ReadText('a [TB01x [' + #13#10 + 'y]] b [TA03c [d] e');
+  try
+    CheckEquals(0, T.ComplementCount, 'no complement');
+    CheckEquals(2, T.MarkProblems, 'open field and missing end');
+    CheckEqualsGaebStr('a [TB01x [', ParaText(T, 0), 'first line kept');
+    CheckEqualsGaebStr('y]] b [TA03c [d] e', ParaText(T, 1), 'second line kept');
+  finally
+    T.Free;
+  end;
+  { only plain text: RTF has its own marks }
+  T := ReadText(Head + '[TB01a [b] c]\par}');
+  try
+    CheckEquals(0, T.ComplementCount, 'not read in RTF');
+    CheckEquals(0, T.PlainMarks, 'no plain marks');
+  finally
+    T.Free;
+  end;
+end;
+
 procedure TestComplementProblems;
 var
   T: TLandrixGaebDA2000Text;
@@ -534,6 +595,7 @@ begin
   RegisterTest('DA2000Text.RtfDropped', TestRtfDropped);
   RegisterTest('DA2000Text.Complements', TestComplements);
   RegisterTest('DA2000Text.ComplementProblems', TestComplementProblems);
+  RegisterTest('DA2000Text.PlainMarks', TestPlainMarks);
   RegisterTest('DA2000Text.Robust', TestRobust);
   RegisterTest('DA2000Text.RtfEdgeCases', TestRtfEdgeCases);
   RegisterTest('Local.DA2000Texts', TestLocalTexts);

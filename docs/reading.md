@@ -65,6 +65,14 @@ What the target phase does not allow stays in the model and is left out on savin
 reported and skipped; `ELandrixGaebError` is raised for a file that cannot be read as a whole,
 a file without `Vergabe` and the phases without an XML counterpart (for example 88).
 
+Some programs write forms GAEB DA 2000 does not define. The reader takes those of the GAEB
+Toolbox and reports each kind once as information `GAEB-D2000-MAP-008`: text complements
+marked in plain text (`[TB01Caption: [field] tail]`, the brackets written as `&#91;` and
+`&#93;`), `LVGlied/Format` (`A` and `N` give `Num`) and `LVGlied/_GAEBXML_Alignment` (gives
+`Alignment`). The model read from the `.P83` of a bill equals the model read from its `.X83`
+written by the GAEB Toolbox, apart from IDs, text formatting and two differences: the total of
+the bill, which X83 does not carry, and `LumpSumItem`, which the reader sets for the unit `psch`.
+
 `LandrixGaebDA2000ReadFile` (and `...Stream`, `...Buffer`) return only the syntax model, as it
 is mapped (no totals computed), with the detection of the file and the target of the model.
 

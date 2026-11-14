@@ -61,7 +61,7 @@ var
   I: Integer;
 begin
   Result := '';
-  for I := 0 to High(A) do
+  for I := 0 to Integer(High(A)) do
     Result := Result + A[I] + CRLF;
 end;
 
@@ -180,7 +180,7 @@ begin
     CheckEquals(0, Errors, 'written without errors: ' + CheckDiags.ToText);
     CheckDiags.Clear;
     Check(Contains(Xml, '<TextComplement') and Contains(Xml, 'Kind="Bidder"') and
-      Contains(Xml, 'MarkLbl="1"') and Contains(Xml, 'Empty="Yes"'), 'text complement written');
+      Contains(Xml, 'MarkLbl="01"') and Contains(Xml, 'Empty="Yes"'), 'text complement written');
     Check(Contains(Xml, '<ComplCaption><p><span>Fabrikat: </span></p></ComplCaption>'), 'caption');
     Check(Contains(Xml, '<span>Boden ausheben</span>'), 'long text paragraph');
     Check(LandrixGaebXmlCheckModel(G, T, CheckDiags), 'content model: ' + CheckDiags.ToText);
@@ -416,6 +416,95 @@ begin
       G.Free;
     end;
   finally
+    Diags.Free;
+  end;
+end;
+
+{ AusfBeschr -> PerfDescr; the GAEB Toolbox forms LVGlied/Format,
+  LVGlied/_GAEBXML_Alignment and complements marked in plain text. }
+procedure TestToolboxForms;
+var
+  Diags, CheckDiags: TLandrixGaebDiagnostics;
+  G: TLandrixGaebXmlGAEB;
+  T: TLandrixGaebTarget;
+  Ctgy: TLandrixGaebXmlBoQCtgy;
+  Perf: TLandrixGaebXmlPerfDescr;
+  Xml: TLandrixXmlUtf8;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  CheckDiags := TLandrixGaebDiagnostics.Create;
+  G := MapText(Head('83') + Lines(['#begin[LV]', '#begin[LVInfo]', '[Name]LV1[end]', '[Bez]Rohbau[end]', '[KurzLang]1[end]',
+    '#begin[LVGlied]', '[Typ]LVStufe[end]', '[Bez]Titel[end]', '[Laenge]2[end]', '[Format]N[end]',
+    '[_GAEBXML_Alignment]right[end]', '#end[LVGlied]',
+    '#begin[LVGlied]', '[Typ]Position[end]', '[Laenge]4[end]', '[Format]A[end]',
+    '[_GAEBXML_Alignment]Left[end]', '#end[LVGlied]',
+    '#begin[LVGlied]', '[Typ]Index[end]', '[Laenge]1[end]', '[Format]X[end]',
+    '[_GAEBXML_Alignment]middle[end]', '#end[LVGlied]',
+    '#end[LVInfo]',
+    '#begin[AusfBeschr]', '[AusfNr]7[end]', '[AusfBez]Allgemein[end]', '#begin[Beschreibung]',
+    '[Kurztext]Vorgabe[end]', '#end[Beschreibung]', '#end[AusfBeschr]',
+    '#begin[LVBereich]', '[OZ]A1[end]', '[Bez]Bereich[end]',
+    '#begin[AusfBeschr]', '[AusfNr]0012[end]', '[AusfBez]Beton[end]',
+    '#begin[Beschreibung]', '[Kurztext]Erste[end]', '[Langtext]Lang eins[end]', '#end[Beschreibung]',
+    '#begin[Beschreibung]', '[Kurztext]Zweite[end]', '#end[Beschreibung]', '#end[AusfBeschr]',
+    '#begin[Position]', '[OZ]A10010[end]', '[Menge]1[end]', '[ME]m[end]',
+    '#begin[Beschreibung]', '[Kurztext]Liefern[end]',
+    '[Langtext]Liefern &#91;TB01Fabrikat: &#91;&#93; einsetzen&#93;[end]', '#end[Beschreibung]',
+    '#end[Position]', '#end[LVBereich]', '#end[LV]']) + Tail, Diags, T);
+  try
+    with G.Award.BoQ.BoQInfo do
+    begin
+      CheckEqualsGaebStr('No', BoQBkdn[0].Num, 'Format N contradicted by the number A1');
+      CheckEqualsGaebStr('right', BoQBkdn[0].Alignment, 'alignment right');
+      CheckEqualsGaebStr('No', BoQBkdn[1].Num, 'Format A');
+      CheckEqualsGaebStr('left', BoQBkdn[1].Alignment, 'alignment in any case');
+      CheckEqualsGaebStr('No', BoQBkdn[2].Num, 'unknown Format: derived (unused index)');
+      CheckEqualsGaebStr('', BoQBkdn[2].Alignment, 'unknown alignment left out');
+    end;
+    CheckEquals(2, Diags.CountOf('GAEB-D2000-MAP-004'), 'unknown Format and alignment: ' + Diags.ToText);
+    CheckEquals(3, Diags.CountOf('GAEB-D2000-MAP-008'), 'Format, alignment, plain marks: ' + Diags.ToText);
+    CheckEquals(0, Diags.CountOf('GAEB-D2000-MAP-001'), 'everything mapped: ' + Diags.ToText);
+    CheckEquals(0, Diags.CountOf('GAEB-D2000-MAP-009'), 'descriptions complete');
+    Check(G.Award.BoQ.BoQBody.Children[0] is TLandrixGaebXmlPerfDescr, 'PerfDescr beside the categories');
+    Perf := TLandrixGaebXmlPerfDescr(G.Award.BoQ.BoQBody.Children[0]);
+    CheckEqualsGaebStr('7', Perf.PerfNo, 'PerfNo');
+    CheckEqualsGaebStr('Allgemein', Perf.PerfLbl, 'PerfLbl');
+    CheckEquals(1, Integer(Perf.Description.Count), 'one description');
+    Check(Perf.Description[0].HasOutlineText, 'short text alone');
+    Ctgy := TLandrixGaebXmlBoQCtgy(G.Award.BoQ.BoQBody.Children[1]);
+    Check(Ctgy.BoQBody.Itemlist.Children[0] is TLandrixGaebXmlPerfDescr, 'PerfDescr in the item list');
+    Perf := TLandrixGaebXmlPerfDescr(Ctgy.BoQBody.Itemlist.Children[0]);
+    CheckEqualsGaebStr('12', Perf.PerfNo, 'leading zeros dropped');
+    CheckEquals(2, Integer(Perf.Description.Count), 'every Beschreibung a description');
+    Check(Perf.Description[0].CompleteText.HasDetailTxt, 'long text');
+    Check(Perf.ID <> '', 'ID generated');
+    Xml := WriteXml(G, T);
+    Check(Contains(Xml, '<TextComplement') and Contains(Xml, 'Kind="Bidder"') and Contains(Xml, 'MarkLbl="01"'),
+      'plain mark read');
+    Check(Contains(Xml, '<ComplCaption><p><span>Fabrikat: </span></p></ComplCaption>'), 'caption');
+    Check(Contains(Xml, '<ComplTail><p><span> einsetzen</span></p></ComplTail>'), 'tail');
+    Check(LandrixGaebXmlCheckModel(G, T, CheckDiags), 'content model: ' + CheckDiags.ToText);
+  finally
+    G.Free;
+  end;
+  { an AusfNr that is no whole number from 0 to 9999 }
+  Diags.Clear;
+  G := MapText(Head('83') + Lines(['#begin[LV]', '#begin[LVInfo]']) + Glied +
+    Lines(['#end[LVInfo]', '#begin[AusfBeschr]', '[AusfNr]12,5[end]', '#end[AusfBeschr]',
+    '#begin[AusfBeschr]', '[AusfNr]10000[end]', '#end[AusfBeschr]', '#begin[Position]',
+    '[OZ]010010[end]', '#end[Position]', '#end[LV]']) + Tail, Diags, T);
+  try
+    CheckEqualsGaebStr('', TLandrixGaebXmlPerfDescr(G.Award.BoQ.BoQBody.Itemlist.Children[0]).PerfNo,
+      'fraction left out');
+    CheckEqualsGaebStr('', TLandrixGaebXmlPerfDescr(G.Award.BoQ.BoQBody.Itemlist.Children[1]).PerfNo,
+      'too large left out');
+    CheckEquals(2, Diags.CountOf('GAEB-D2000-MAP-004'), 'both reported');
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-009'), 'incomplete descriptions reported once');
+    Check(Pos('2 execution description(s)', Diags.ToText) > 0, 'with their count');
+    Check((Pos('12,5', Diags.ToText) = 0) and (Pos('10000', Diags.ToText) = 0), 'no values in messages');
+  finally
+    G.Free;
+    CheckDiags.Free;
     Diags.Free;
   end;
 end;
@@ -667,6 +756,7 @@ begin
   RegisterTest('DA2000Mapping.Levels', TestLevels);
   RegisterTest('DA2000Mapping.Rejected', TestRejected);
   RegisterTest('DA2000Mapping.ReviewCases', TestReviewCases);
+  RegisterTest('DA2000Mapping.ToolboxForms', TestToolboxForms);
   RegisterTest('Local.DA2000Map', TestLocalMap);
 end;
 

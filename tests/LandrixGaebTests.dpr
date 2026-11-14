@@ -40,6 +40,7 @@ uses
   LandrixGaebTestDA2000Text,
   LandrixGaebTestDA2000Mapping,
   LandrixGaebTestDA2000Reader,
+  LandrixGaebTestDA2000Accept,
   LandrixGaebTestXmlModel,
   LandrixGaebTestXmlReader,
   LandrixGaebTestXmlWriter,
@@ -73,6 +74,7 @@ begin
   LandrixGaebTestDA2000Text.Register;
   LandrixGaebTestDA2000Mapping.Register;
   LandrixGaebTestDA2000Reader.Register;
+  LandrixGaebTestDA2000Accept.Register;
   LandrixGaebTestXmlModel.Register;
   LandrixGaebTestXmlReader.Register;
   LandrixGaebTestXmlWriter.Register;

@@ -688,9 +688,13 @@ var
 
   procedure Report(const ARuleId: string; ASeverity: TLandrixGaebSeverity;
     const AMessage: string);
+  var
+    Column, Offset: Integer;
   begin
-    AddDiag(ADiagnostics, ARuleId, ASeverity, LineNo, Integer(Q - LineStart) + 1,
-      Q - PAnsiChar(Buffer), AMessage);
+    { the buffer is at most MaxInt bytes: both fit an Integer }
+    Column := Integer(Q - LineStart) + 1;
+    Offset := Integer(Q - PAnsiChar(Buffer));
+    AddDiag(ADiagnostics, ARuleId, ASeverity, LineNo, Column, Offset, AMessage);
   end;
 
   function KeyIs(const S: string): Boolean;

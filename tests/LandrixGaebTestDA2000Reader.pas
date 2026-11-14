@@ -50,7 +50,7 @@ var
   I: Integer;
 begin
   Result := '';
-  for I := 0 to High(A) do
+  for I := 0 to Integer(High(A)) do
     Result := Result + A[I] + CRLF;
 end;
 

@@ -69,6 +69,15 @@ verirrte Zeilen oder ein `#end` ohne Gegenstück werden gemeldet und übersprung
 `ELandrixGaebError` gibt es für eine Datei, die sich nicht als Ganzes lesen lässt, eine Datei
 ohne `Vergabe` und Phasen ohne XML-Gegenstück (etwa 88).
 
+Manche Programme schreiben Formen, die GAEB DA 2000 nicht festlegt. Der Leser übernimmt die der
+GAEB-Toolbox und meldet jede Art einmal als Hinweis `GAEB-D2000-MAP-008`: Textergänzungen, die
+im Klartext markiert sind (`[TB01Beschriftung: [Feld] Rest]`, die Klammern als `&#91;` und
+`&#93;` geschrieben), `LVGlied/Format` (`A` und `N` ergeben `Num`) und
+`LVGlied/_GAEBXML_Alignment` (ergibt `Alignment`). Das Modell aus der `.P83` eines LV gleicht
+dem Modell aus seiner von der GAEB-Toolbox geschriebenen `.X83` bis auf IDs, Textformatierung
+und zwei Unterschiede: die Summe des LV, die X83 nicht trägt, und `LumpSumItem`, das der Leser
+für die Einheit `psch` setzt.
+
 `LandrixGaebDA2000ReadFile` (und `...Stream`, `...Buffer`) liefern nur das Syntaxmodell, wie
 es abgebildet ist (keine Summen berechnet), mit der Erkennung der Datei und dem Ziel des Modells.
 
