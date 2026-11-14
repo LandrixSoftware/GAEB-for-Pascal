@@ -99,6 +99,10 @@ type
     Suffix: string;
     { Line of #begin[Key] or [Key] (1-based). DE: Zeile (ab 1). }
     Line: Integer;
+    { Set by a consumer (the mapping) for what it took over; what stays
+      False is reported as not mapped. DE: Vom Verbraucher (Abbildung)
+      fuer Uebernommenes gesetzt; was False bleibt, wird gemeldet. }
+    Used: Boolean;
     constructor Create(AParent: TLandrixGaebDA2000Node; const AKey: string;
       AIsObject: Boolean; ALine: Integer);
     destructor Destroy; override;

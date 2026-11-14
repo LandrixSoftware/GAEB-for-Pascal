@@ -101,6 +101,10 @@ type
     function Count: Integer;
     function Add: TLandrixGaebDA2000TextPart;
     property Items[Index: Integer]: TLandrixGaebDA2000TextPart read GetItem; default;
+    { The parts as plain text, a complement as caption, body and tail.
+      DE: Die Teile als Klartext, eine Ergaenzung als Caption, Body und
+      Tail. }
+    function Text: TLandrixGaebString;
   end;
 
   { A text read from a value. DE: Ein aus einem Wert gelesener Text. }
@@ -215,6 +219,28 @@ function TLandrixGaebDA2000Paragraph.Add: TLandrixGaebDA2000TextPart;
 begin
   Result := TLandrixGaebDA2000TextPart.Create;
   FParts.Add(Result);
+end;
+
+function TLandrixGaebDA2000Paragraph.Text: TLandrixGaebString;
+var
+  I: Integer;
+  Buffer: TTextBuffer;
+begin
+  Buffer := TTextBuffer.Create;
+  try
+    for I := 0 to Count - 1 do
+      if Items[I].Kind = tpkText then
+        Buffer.AddText(Items[I].Text)
+      else
+      begin
+        Buffer.AddText(Items[I].Caption);
+        Buffer.AddText(Items[I].Body);
+        Buffer.AddText(Items[I].Tail);
+      end;
+    Result := Buffer.Text;
+  finally
+    Buffer.Free;
+  end;
 end;
 
 function TLandrixGaebDA2000Paragraph.GetItem(Index: Integer): TLandrixGaebDA2000TextPart;
