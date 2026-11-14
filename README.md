@@ -60,10 +60,12 @@ are covered by semantic versioning from release 1.0 on.
   `LandrixGaebXmlModel` (Syntaxmodell / syntax model), `LandrixGaebXmlReader`,
   `LandrixGaebXmlWriter`, `LandrixGaebXmlCheck`, `LandrixGaebXmlXsd` (XSD-Prüfung / XSD
   validation, ab / from 1.1), `LandrixGaebConversion` (Konvertierung prüfen / checking a
-  conversion, ab / from 1.2), `LandrixGaebRules`, `LandrixGaebDetect`.
+  conversion, ab / from 1.2), `LandrixGaebRules`, `LandrixGaebDetect`,
+  `LandrixGaebDA2000Reader` (GAEB DA 2000 lesen / reading GAEB DA 2000, ab / from 1.3).
 - **Intern / internal** (kann sich in jeder Version ändern / may change in any release):
   `LandrixGaebBoQTree`, `LandrixGaebXmlReadBase`, `LandrixGaebXmlWriteBase`,
-  `LandrixGaebXmlProfiles`, `LandrixGaebXmlGrammar`, `LandrixGaebXmlCodes`, `LandrixGaebXmlXsdSums`.
+  `LandrixGaebXmlProfiles`, `LandrixGaebXmlGrammar`, `LandrixGaebXmlCodes`, `LandrixGaebXmlXsdSums`,
+  `LandrixGaebDA2000Parser`, `LandrixGaebDA2000Text`, `LandrixGaebDA2000Mapping`.
 
 Innerhalb von 1.x bleibt der Quelltext kompatibel, nicht das Binärformat: Aufzählungen können
 Werte erhalten (unbekannte Werte in einem `else`-Zweig behandeln, keine Ordinalwerte speichern),

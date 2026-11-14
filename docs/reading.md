@@ -31,6 +31,43 @@ Exceptions:
 | `ELandrixXmlError` (unit `LandrixXmlBase`) | XML that turns out not to be well-formed later, with line and column |
 | `EFOpenError`, `EReadError` | file errors of the runtime library |
 
+## GAEB DA 2000
+
+Since 1.3, `LoadFromFile` and `LoadFromStream` also read GAEB DA 2000 files of the exchange
+phases 81 to 86 (`.P81` to `.P86`, recognised by their content). The file is mapped into the
+GAEB DA XML 3.3 syntax model: `Target` and `OutputTarget` are 3.3 (2021-05) with the phase of the
+file, so saving writes GAEB DA XML. `Source` is the detection of the file (`SourceFormat` =
+`gfDA2000`, `Source.SourceVersion`, `Source.SourcePhase`, `Source.SourceCharset`); a bill made
+with `Create` has `gfUnknown`. The information `GAEB-BOQ-002` notes the reading.
+
+```pascal
+Options := LandrixGaebDA2000DefaultReadOptions;
+Options.Charset := gcsOem;  // the header declares ANSI, the bytes are OEM
+Bill := TLandrixGaebBillOfQuantities.LoadFromDA2000File('bid.p84', Options, Diags);
+```
+
+`LoadFromDA2000File` and `LoadFromDA2000Stream` take options (unit `LandrixGaebDA2000Reader`):
+`MaxSize` and `Charset`, which overrides `Zeichensatz` of the header (a UTF-8 byte order mark
+always means UTF-8). Always start from `LandrixGaebDA2000DefaultReadOptions`.
+
+GAEB DA 2000 files often leave the totals of categories out, which X84 and X86 require. Loading
+computes the missing ones with `LandrixGaebFillMissingTotals` (unit `LandrixGaebProcess`); a bid
+counts by the kinds its file holds. A total present in the file stays, also where it differs; a
+`Summe` the file holds in an unusable form stays missing. Information `GAEB-PRC-005` and
+`GAEB-PRC-006` report how many totals were computed and how many stayed missing.
+
+The mapping reports in `Diagnostics` what the target has no counterpart for or what is not
+mapped yet (`GAEB-D2000-MAP-001`, once per key with a count), formatting, tables and pictures of
+texts (`GAEB-D2000-MAP-002`; texts become plain paragraphs, text complements stay) and unusable
+values (`GAEB-BR-D2000-008` and following). The messages name keys and lines, never values.
+What the target phase does not allow stays in the model and is left out on saving
+(`GAEB-WRT-001`), as with the conversion. Faults such as stray lines or an unpaired `#end` are
+reported and skipped; `ELandrixGaebError` is raised for a file that cannot be read as a whole,
+a file without `Vergabe` and the phases without an XML counterpart (for example 88).
+
+`LandrixGaebDA2000ReadFile` (and `...Stream`, `...Buffer`) return only the syntax model, as it
+is mapped (no totals computed), with the detection of the file and the target of the model.
+
 ## The tree
 
 | Member | Content |
@@ -103,4 +140,5 @@ Without the facade, `LandrixGaebXmlReadFile` (unit `LandrixGaebXmlReader`) reads
 (unit `LandrixGaebDetect`) only detects format and target, also for GAEB DA 2000 and GAEB 90.
 For GAEB DA 2000 it also reports the header as found: `SourceVersion` (1.0, 1.1, 1.2),
 `SourcePhase` (DP, also for phases without an XML counterpart) and `SourceCharset`
-(`Zeichensatz`); `Target` stays empty, it describes GAEB DA XML only.
+(`Zeichensatz`); `Target` stays empty, it describes GAEB DA XML only. Reading GAEB DA 2000:
+see above.

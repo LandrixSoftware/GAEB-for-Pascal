@@ -91,6 +91,8 @@ LandrixGaebBoQ: record tlandrixgaebqtysplit
 LandrixGaebBoQ: record tlandrixgaebreference
 LandrixGaebBoQ: record tlandrixgaebtextevent
 LandrixGaebBoQ: record tlandrixgaebvatpart
+LandrixGaebBoQ: tlandrixgaebbillofquantities class function loadfromda2000file(const string, const tlandrixgaebda2000readoptions, tlandrixgaebdiagnostics): tlandrixgaebbillofquantities
+LandrixGaebBoQ: tlandrixgaebbillofquantities class function loadfromda2000stream(tstream, const tlandrixgaebda2000readoptions, tlandrixgaebdiagnostics): tlandrixgaebbillofquantities
 LandrixGaebBoQ: tlandrixgaebbillofquantities class function loadfromfile(const string, tlandrixgaebdiagnostics, int64): tlandrixgaebbillofquantities
 LandrixGaebBoQ: tlandrixgaebbillofquantities class function loadfromstream(tstream, tlandrixgaebdiagnostics, int64): tlandrixgaebbillofquantities
 LandrixGaebBoQ: tlandrixgaebbillofquantities constructor create(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, boolean)
@@ -150,6 +152,10 @@ LandrixGaebBoQ: tlandrixgaebbillofquantities property projectname write
 LandrixGaebBoQ: tlandrixgaebbillofquantities property projectname: tlandrixgaebstring
 LandrixGaebBoQ: tlandrixgaebbillofquantities property root read
 LandrixGaebBoQ: tlandrixgaebbillofquantities property root: tlandrixgaebnodelist
+LandrixGaebBoQ: tlandrixgaebbillofquantities property source read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property source: tlandrixgaebdetection
+LandrixGaebBoQ: tlandrixgaebbillofquantities property sourceformat read
+LandrixGaebBoQ: tlandrixgaebbillofquantities property sourceformat: tlandrixgaebformat
 LandrixGaebBoQ: tlandrixgaebbillofquantities property target read
 LandrixGaebBoQ: tlandrixgaebbillofquantities property target: tlandrixgaebtarget
 LandrixGaebBoQ: tlandrixgaebbillofquantities property totals read
@@ -410,6 +416,13 @@ LandrixGaebConversion: tlandrixgaebconversionresult field outputtarget: tlandrix
 LandrixGaebConversion: tlandrixgaebconversionresult field rules: tlandrixgaebconversionstate
 LandrixGaebConversion: tlandrixgaebconversionresult field structure: tlandrixgaebconversionstate
 LandrixGaebConversion: tlandrixgaebconversionresult field writing: tlandrixgaebconversionstate
+LandrixGaebDA2000Reader: function landrixgaebda2000defaultreadoptions(): tlandrixgaebda2000readoptions
+LandrixGaebDA2000Reader: function landrixgaebda2000readbuffer(pointer, integer, const tlandrixgaebda2000readoptions, tlandrixgaebdiagnostics, out tlandrixgaebdetection, out tlandrixgaebtarget): tlandrixgaebxmlgaeb
+LandrixGaebDA2000Reader: function landrixgaebda2000readfile(const string, const tlandrixgaebda2000readoptions, tlandrixgaebdiagnostics, out tlandrixgaebdetection, out tlandrixgaebtarget): tlandrixgaebxmlgaeb
+LandrixGaebDA2000Reader: function landrixgaebda2000readstream(tstream, const tlandrixgaebda2000readoptions, tlandrixgaebdiagnostics, out tlandrixgaebdetection, out tlandrixgaebtarget): tlandrixgaebxmlgaeb
+LandrixGaebDA2000Reader: record tlandrixgaebda2000readoptions
+LandrixGaebDA2000Reader: tlandrixgaebda2000readoptions field charset: tlandrixgaebcharset
+LandrixGaebDA2000Reader: tlandrixgaebda2000readoptions field maxsize: int64
 LandrixGaebDetect: const landrixgaebdefaultmaxsize (integer)
 LandrixGaebDetect: enum tlandrixgaebformat
 LandrixGaebDetect: enum tlandrixgaebformat value gfda2000
@@ -464,6 +477,7 @@ LandrixGaebProcess: enum tlandrixgaebmatchkind value gmkpair
 LandrixGaebProcess: function landrixgaebapplytotals(tlandrixgaebbillofquantities, tlandrixgaebmatching): integer
 LandrixGaebProcess: function landrixgaebbuildaward(tlandrixgaebbillofquantities, tlandrixgaebbillofquantities, tlandrixgaebdiagnostics): tlandrixgaebbillofquantities
 LandrixGaebProcess: function landrixgaebcomputesum(tlandrixgaebbillofquantities, tlandrixgaebcategory, tlandrixgaebmatching): tlandrixgaebsum
+LandrixGaebProcess: function landrixgaebfillmissingtotals(tlandrixgaebbillofquantities, tlandrixgaebmatching, tlandrixgaebdiagnostics): integer
 LandrixGaebProcess: record tlandrixgaebmatch
 LandrixGaebProcess: record tlandrixgaebsum
 LandrixGaebProcess: tlandrixgaebmatch field kind: tlandrixgaebmatchkind

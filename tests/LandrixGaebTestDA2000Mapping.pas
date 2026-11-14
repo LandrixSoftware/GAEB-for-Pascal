@@ -113,7 +113,7 @@ var
 begin
   D := LandrixGaebDA2000Parse(Pointer(S), Length(S), gcsUnknown, Diags);
   try
-    Result := LandrixGaebDA2000Map(D, Diags, ATarget);
+    Result := LandrixGaebDA2000Map(D, Diags, nil, ATarget);
   finally
     D.Free;
   end;
@@ -505,7 +505,7 @@ function TryMap(D: TLandrixGaebDA2000Document; Diags: TLandrixGaebDiagnostics;
   out T: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
 begin
   try
-    Result := LandrixGaebDA2000Map(D, Diags, T);
+    Result := LandrixGaebDA2000Map(D, Diags, nil, T);
   except
     on ELandrixGaebError do
       Result := nil;

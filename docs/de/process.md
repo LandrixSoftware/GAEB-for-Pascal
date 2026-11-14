@@ -52,7 +52,10 @@ else
 
 `LandrixGaebApplyTotals(Bill, Kinds)` schreibt die berechneten Summen als `Total` jedes Bereichs und
 des LV und liefert die Zahl der Summen, die sich nicht berechnen ließen. Gerechnet wird exakt und
-nie gerundet.
+nie gerundet. `LandrixGaebFillMissingTotals(Bill, Kinds, Diags)` (seit 1.3) schreibt nur die fehlenden
+Summen und lässt die anderen stehen; es liefert die Zahl der geschriebenen und meldet sie als
+`GAEB-PRC-005`, die fehlend gebliebenen als `GAEB-PRC-006`. Ein X83 hat keine Summen und bleibt
+unverändert. Das Laden einer GAEB-DA-2000-Datei ruft es auf.
 
 ## Den Auftrag zusammensetzen
 

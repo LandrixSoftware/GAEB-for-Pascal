@@ -75,21 +75,55 @@ interface
 uses
   SysUtils,
   Classes,
+  Contnrs,
   LandrixGaebTypes,
   LandrixGaebDiagnostics,
+  LandrixGaebDetect,
   LandrixGaebXmlModel,
   LandrixGaebDA2000Parser;
 
 { Maps ADocument into a new GAEB DA XML 3.3 document. ATarget is
   3.3/2021-05 with the phase of the file. Raises ELandrixGaebError when
   the file holds no object Vergabe or a phase other than 81 to 86.
-  ADiagnostics may be nil.
+  ADiagnostics and AInvalidTotals may be nil; AInvalidTotals (not owning)
+  receives the TLandrixGaebXmlTotals whose Summe the source holds in an unusable form
+  (left unset and reported), so that a caller filling missing totals can
+  pass over them.
   DE: Bildet ADocument in ein neues Dokument GAEB DA XML 3.3 ab. ATarget
   ist 3.3/2021-05 mit der Phase der Datei. Loest ELandrixGaebError aus,
   wenn die Datei kein Objekt Vergabe oder eine andere Phase als 81 bis 86
-  enthaelt. ADiagnostics darf nil sein. }
+  enthaelt. ADiagnostics und AInvalidTotals duerfen nil sein;
+  AInvalidTotals erhaelt die TLandrixGaebXmlTotals, deren Summe die Quelle
+  in unbrauchbarer Form enthaelt (nicht gesetzt und gemeldet), damit ein
+  Aufrufer, der fehlende Summen fuellt, sie uebergehen kann. }
 function LandrixGaebDA2000Map(ADocument: TLandrixGaebDA2000Document;
-  ADiagnostics: TLandrixGaebDiagnostics; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+  ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+
+{ Reads a GAEB DA 2000 file held in Buffer: detection, parser and mapping.
+  AMaxSize <= 0 means LandrixGaebDefaultMaxSize; ACharset as in
+  LandrixGaebDA2000Parse. ADetection describes the input, ATarget the
+  returned document. Raises ELandrixGaebError for input larger than
+  AMaxSize, input that is no GAEB DA 2000 and the errors of the parser and
+  the mapping. The caller owns the result.
+  DE: Liest eine GAEB-DA-2000-Datei aus Buffer: Erkennung, Parser und
+  Abbildung. AMaxSize <= 0 bedeutet LandrixGaebDefaultMaxSize; ACharset wie
+  bei LandrixGaebDA2000Parse. ADetection beschreibt die Eingabe, ATarget
+  das gelieferte Dokument. Loest ELandrixGaebError aus fuer Eingaben ueber
+  AMaxSize, Eingaben, die kein GAEB DA 2000 sind, und die Fehler von Parser
+  und Abbildung. Das Ergebnis gehoert dem Aufrufer. }
+function LandrixGaebDA2000ReadMapped(Buffer: Pointer; Size: Integer; AMaxSize: Int64;
+  ACharset: TLandrixGaebCharset; ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out ADetection: TLandrixGaebDetection; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+
+{ The same for a stream from its current position to its end (it must
+  know its Size); the size limit is checked before anything is read.
+  DE: Dasselbe fuer einen Stream ab der aktuellen Position bis zum Ende
+  (er muss seine Groesse kennen); die Groessengrenze wird geprueft, bevor
+  etwas gelesen wird. }
+function LandrixGaebDA2000ReadMappedStream(AStream: TStream; AMaxSize: Int64;
+  ACharset: TLandrixGaebCharset; ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out ADetection: TLandrixGaebDetection; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
 
 implementation
 
@@ -132,6 +166,8 @@ type
     FBadNumbers: Integer;
     { set while FillNum looks at the numbers: nothing is counted twice }
     FQuiet: Boolean;
+    { totals whose Summe is unusable (may be nil) }
+    FInvalidTotals: TObjectList;
     procedure Report(ANode: TLandrixGaebDA2000Node; const ARuleId: string;
       ASeverity: TLandrixGaebSeverity; const AMessage: string);
     function NewId(const APrefix: string): TLandrixGaebString;
@@ -166,7 +202,7 @@ type
     procedure ReportUnused(ARoot: TLandrixGaebDA2000Node);
   public
     function Map(ADocument: TLandrixGaebDA2000Document; ADiagnostics: TLandrixGaebDiagnostics;
-      out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+      AInvalidTotals: TObjectList; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
   end;
 
 function W(const S: string): TLandrixGaebString;
@@ -739,8 +775,16 @@ begin
 end;
 
 procedure TMapper.MapTotals(ANode: TLandrixGaebDA2000Node; ATotals: TLandrixGaebXmlTotals);
+var
+  N: TLandrixGaebDA2000Node;
 begin
+  N := ANode.Find('Summe');
   Num(ANode, 'Summe', ATotals.Total);
+  { an unusable Summe (no number, or an object instead of a value) is not
+    the same as a missing one: a computed value must not replace it
+    silently }
+  if (N <> nil) and not ATotals.Total.HasValue and (FInvalidTotals <> nil) then
+    FInvalidTotals.Add(ATotals);
   Num(ANode, 'NachlassProz', ATotals.DiscountPcnt);
   Num(ANode, 'NachlassAbs', ATotals.DiscountAmt);
   Num(ANode, 'SummeNachNL', ATotals.TotAfterDisc);
@@ -1209,7 +1253,7 @@ end;
 { ---- document ---- }
 
 function TMapper.Map(ADocument: TLandrixGaebDA2000Document; ADiagnostics: TLandrixGaebDiagnostics;
-  out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+  AInvalidTotals: TObjectList; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
 var
   Root, Info, Prj, V, VI, AG, AN, LV, LI, Adr: TLandrixGaebDA2000Node;
   DP: string;
@@ -1220,6 +1264,7 @@ var
   LossText: string;
 begin
   FDiags := ADiagnostics;
+  FInvalidTotals := AInvalidTotals;
   Root := ADocument.Root;
   Root.Used := True;
   V := Child(Root, 'Vergabe');
@@ -1409,16 +1454,98 @@ begin
 end;
 
 function LandrixGaebDA2000Map(ADocument: TLandrixGaebDA2000Document;
-  ADiagnostics: TLandrixGaebDiagnostics; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+  ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
 var
   M: TMapper;
 begin
   M := TMapper.Create;
   try
-    Result := M.Map(ADocument, ADiagnostics, ATarget);
+    Result := M.Map(ADocument, ADiagnostics, AInvalidTotals, ATarget);
   finally
     M.Free;
   end;
+end;
+
+function SizeLimit(AMaxSize: Int64): Int64;
+begin
+  Result := AMaxSize;
+  if Result <= 0 then
+    Result := LandrixGaebDefaultMaxSize;
+  if Result > MaxInt then
+    Result := MaxInt;
+end;
+
+procedure CheckSize(ASize, AMaxSize: Int64);
+begin
+  if ASize > SizeLimit(AMaxSize) then
+    raise ELandrixGaebError.Create('input of ' + IntToStr(ASize) +
+      ' bytes exceeds the size limit of ' + IntToStr(SizeLimit(AMaxSize)) + ' bytes');
+end;
+
+function LandrixGaebDA2000ReadMapped(Buffer: Pointer; Size: Integer; AMaxSize: Int64;
+  ACharset: TLandrixGaebCharset; ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out ADetection: TLandrixGaebDetection; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+var
+  Own: TLandrixGaebDiagnostics;
+  I: TLandrixGaebListIndex;
+  D: TLandrixGaebDiagnostic;
+  Msg: string;
+  Doc: TLandrixGaebDA2000Document;
+begin
+  CheckSize(Size, AMaxSize);
+  Own := TLandrixGaebDiagnostics.Create;
+  try
+    ADetection := LandrixGaebDetectBuffer(Buffer, Size, False, Own);
+    if not ADetection.Accepted or (ADetection.Format <> gfDA2000) then
+    begin
+      { the rule only: messages of the detection may name values of the
+        input }
+      Msg := 'input is not a readable GAEB DA 2000 file';
+      for I := 0 to Own.Count - 1 do
+        if Own[I].Severity >= gsError then
+        begin
+          Msg := Msg + ' (' + Own[I].RuleId + ')';
+          Break;
+        end;
+      raise ELandrixGaebError.Create(Msg);
+    end;
+    { the parser reports the character set itself, in more detail }
+    if ADiagnostics <> nil then
+      for I := 0 to Own.Count - 1 do
+      begin
+        D := Own[I];
+        if (D.RuleId <> 'GAEB-DET-014') and (D.RuleId <> 'GAEB-DET-015') then
+          ADiagnostics.AddAt(D.RuleId, D.Severity, D.Path, D.Line, D.Column, D.Offset, D.Message);
+      end;
+  finally
+    Own.Free;
+  end;
+  Doc := LandrixGaebDA2000Parse(Buffer, Size, ACharset, ADiagnostics);
+  try
+    Result := LandrixGaebDA2000Map(Doc, ADiagnostics, AInvalidTotals, ATarget);
+  finally
+    Doc.Free;
+  end;
+end;
+
+function LandrixGaebDA2000ReadMappedStream(AStream: TStream; AMaxSize: Int64;
+  ACharset: TLandrixGaebCharset; ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out ADetection: TLandrixGaebDetection; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+var
+  Remaining: Int64;
+  Buffer: AnsiString;
+  Count: Integer;
+begin
+  Remaining := AStream.Size - AStream.Position;
+  CheckSize(Remaining, AMaxSize);
+  Count := Integer(Remaining);
+  Buffer := '';
+  SetLength(Buffer, Count);
+  if Count > 0 then
+    AStream.ReadBuffer(Buffer[1], Count);
+  Result := LandrixGaebDA2000ReadMapped(Pointer(Buffer), Count, AMaxSize, ACharset, ADiagnostics,
+    AInvalidTotals, ADetection, ATarget);
 end;
 
 end.

@@ -156,6 +156,31 @@ function LandrixGaebComputeSum(ABill: TLandrixGaebBillOfQuantities; ACategory: T
   Summen, weil die Summe unbekannt ist. }
 function LandrixGaebApplyTotals(ABill: TLandrixGaebBillOfQuantities; AKinds: TLandrixGaebMatching): Integer;
 
+{ Writes the computed sum (LandrixGaebComputeSum with AKinds) as Total of
+  every category and of the bill that has no Total; a Total present
+  stays, also where it differs from the sum. A missing Total whose sum is
+  unknown (e.g. an item without IT, or a bid X84 without AKinds, whose
+  count status is unknown) stays missing. Returns the number of totals
+  written and reports it as information GAEB-PRC-005; the totals left
+  missing are reported as information GAEB-PRC-006. A bill whose
+  OutputTarget is an X83 is left unchanged: that phase has no totals.
+  ADiagnostics may be nil. LoadFromFile, LoadFromStream and the LoadFromDA2000 functions of
+  TLandrixGaebBillOfQuantities call it for GAEB DA 2000 files, which often
+  leave the totals out. Since 1.3.0.
+  DE: Schreibt die berechnete Summe (LandrixGaebComputeSum mit AKinds) als
+  Total jedes Bereichs und des LV, das kein Total hat; ein vorhandenes
+  Total bleibt, auch wo es von der Summe abweicht. Ein fehlendes Total mit
+  unbekannter Summe (etwa eine Position ohne IT oder ein Angebot X84 ohne
+  AKinds, dessen Zaehlstatus unbestimmt ist) bleibt fehlend. Liefert die
+  Anzahl der geschriebenen Summen und meldet sie als Hinweis
+  GAEB-PRC-005; die fehlend gebliebenen meldet der Hinweis GAEB-PRC-006.
+  Ein LV, dessen OutputTarget ein X83 ist, bleibt unveraendert: diese
+  Phase hat keine Summen. ADiagnostics darf nil sein. LoadFromFile, LoadFromStream und die
+  LoadFromDA2000-Funktionen von TLandrixGaebBillOfQuantities rufen sie fuer
+  GAEB-DA-2000-Dateien auf, die die Summen oft auslassen. Seit 1.3.0. }
+function LandrixGaebFillMissingTotals(ABill: TLandrixGaebBillOfQuantities; AKinds: TLandrixGaebMatching;
+  ADiagnostics: TLandrixGaebDiagnostics): Integer;
+
 { Builds the award (X86, version and edition of the request; for a
   request whose version cannot be written, such as GAEB DA XML 3.0/3.1,
   those of its OutputTarget) from a
@@ -551,6 +576,53 @@ begin
     ABill.Totals.SetValue(gtfTotal, S.Value)
   else
     Inc(Result);
+end;
+
+{ Fills ATotals when its Total is missing; counts what was written and
+  what stayed missing. }
+procedure FillTotal(ABill: TLandrixGaebBillOfQuantities; ACategory: TLandrixGaebCategory;
+  AKinds: TLandrixGaebMatching; ATotals: TLandrixGaebTotals; var AWritten, AMissing: Integer);
+var
+  S: TLandrixGaebSum;
+begin
+  if ATotals.Value(gtfTotal).HasValue then
+    Exit;
+  S := LandrixGaebComputeSum(ABill, ACategory, AKinds);
+  if S.Known then
+  begin
+    ATotals.SetValue(gtfTotal, S.Value);
+    Inc(AWritten);
+  end
+  else
+    Inc(AMissing);
+end;
+
+function LandrixGaebFillMissingTotals(ABill: TLandrixGaebBillOfQuantities; AKinds: TLandrixGaebMatching;
+  ADiagnostics: TLandrixGaebDiagnostics): Integer;
+var
+  I, Missing: Integer;
+  Ctgy: TLandrixGaebCategory;
+begin
+  Result := 0;
+  Missing := 0;
+  if ABill.OutputTarget.Phase = gp83 then
+    Exit;
+  for I := 0 to ABill.NodeCount - 1 do
+    if ABill.Nodes(I) is TLandrixGaebCategory then
+    begin
+      Ctgy := TLandrixGaebCategory(ABill.Nodes(I));
+      FillTotal(ABill, Ctgy, AKinds, Ctgy.Totals, Result, Missing);
+    end;
+  FillTotal(ABill, nil, AKinds, ABill.Totals, Result, Missing);
+  if ADiagnostics <> nil then
+  begin
+    if Result > 0 then
+      ADiagnostics.AddDiagnostic('GAEB-PRC-005', gsInformation, IntToStr(Result) +
+        ' missing total(s) computed from the items');
+    if Missing > 0 then
+      ADiagnostics.AddDiagnostic('GAEB-PRC-006', gsInformation, IntToStr(Missing) +
+        ' total(s) left missing: the sum is unknown');
+  end;
 end;
 
 { Award }
