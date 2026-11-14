@@ -630,6 +630,125 @@ begin
   end;
 end;
 
+{ A bill with the given body (execution descriptions and items) directly
+  in the LV. }
+function WithBody(const ABody: AnsiString): AnsiString;
+begin
+  Result := Head('83') + Lines(['#begin[LV]', '#begin[LVInfo]', '[Name]LV1[end]', '[Bez]Rohbau[end]',
+    '[KurzLang]1[end]']) + Glied + Lines(['#end[LVInfo]']) + ABody + Lines(['#end[LV]']) + Tail;
+end;
+
+{ STLBBau, StLNr, TLKNr, LeitBeschr and UnterBeschr. }
+procedure TestStandard;
+var
+  Diags, CheckDiags: TLandrixGaebDiagnostics;
+  G: TLandrixGaebXmlGAEB;
+  T: TLandrixGaebTarget;
+  I: TLandrixGaebXmlItem;
+  Perf: TLandrixGaebXmlPerfDescr;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  CheckDiags := TLandrixGaebDiagnostics.Create;
+  G := MapText(WithBody(Lines(['#begin[AusfBeschr]', '[AusfNr]1[end]', '[AusfBez]Beton[end]',
+    '#begin[Beschreibung]', '[StLNr]0123[end]', '[Kurztext]Vorgabe[end]', '#end[Beschreibung]',
+    '#end[AusfBeschr]',
+    '#begin[Position]', '[OZ]010010[end]', '[Menge]1[end]', '[ME]m[end]',
+    '#begin[Beschreibung]', '#begin[STLBBau]', '[STLBBauKat]STLB-Bau|4|1998|012|60|[end]',
+    '[STLBBauIdent]2795|0|10[end]', '[StLBBauIdent]-8|0|11[end]', '[STLBBauIdent]||[end]',
+    '#end[STLBBau]', '[StLNr]9601220001040201[end]', '[TLKNr]T1[end]', '[Kurztext]Eins[end]',
+    '#end[Beschreibung]', '[LeitBeschr]J[end]',
+    '#begin[UnterBeschr]', '[UbNr]01[end]', '#begin[Beschreibung]', '[StLNr]9601220001040201[end]',
+    '[Kurztext]Unter eins[end]', '#end[Beschreibung]', '[MeAng]J[end]', '[Menge]2,5[end]', '[ME]m2[end]',
+    '#end[UnterBeschr]',
+    '#begin[UnterBeschr]', '[UbNr]2[end]', '#begin[Beschreibung]', '[Kurztext]Unter zwei[end]',
+    '#end[Beschreibung]', '[MeAng]J[end]', '[FrMenge]J[end]', '#end[UnterBeschr]',
+    '#end[Position]'])), Diags, T);
+  try
+    Perf := TLandrixGaebXmlPerfDescr(G.Award.BoQ.BoQBody.Itemlist.Children[0]);
+    I := TLandrixGaebXmlItem(G.Award.BoQ.BoQBody.Itemlist.Children[1]);
+    CheckEqualsGaebStr('0123', Perf.Description[0].StLNo.Value, 'StLNr of an execution description');
+    Check(I.Description.HasSTLBBau, 'STLBBau mapped');
+    with I.Description.STLBBau do
+    begin
+      CheckEqualsGaebStr('STLB-Bau', STLBBauCtlg.CtlgName, 'catalogue name');
+      CheckEqualsGaebStr('1998-04', STLBBauCtlg.VersDate, 'version from year and month');
+      CheckEqualsGaebStr('012', STLBBauCtlg.WCtg, 'LB');
+      CheckEqualsGaebStr('60', STLBBauCtlg.Group, 'group');
+      CheckEqualsGaebStr('', STLBBauCtlg.CostGrp, 'no cost group');
+      CheckEquals(2, Integer(STLBBauID.Count), 'two identifiers, the blank one left out');
+      CheckEqualsGaebStr('2795', STLBBauID[0].ArtChrIdent, 'SmeId');
+      CheckEqualsGaebStr('0', STLBBauID[0].ArtChIdx, 'SmtSmi');
+      CheckEqualsGaebStr('10', STLBBauID[0].ChVIdent, 'AprId');
+      CheckEqualsGaebStr('-8', STLBBauID[1].ArtChrIdent, 'negative, other spelling of the key');
+    end;
+    Check(not I.Description.HasStLNo, 'StLNr next to STLBBau not mapped');
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-001'), 'and reported: ' + Diags.ToText);
+    Check(Pos('Beschreibung/StLNr', Diags.ToText) > 0, 'the key is named');
+    CheckEqualsGaebStr('T1', I.Description.WICNo, 'TLKNr');
+    CheckEqualsGaebStr('Yes', I.SumDescr, 'LeitBeschr');
+    CheckEquals(2, Integer(I.SubDescr.Count), 'two sub descriptions');
+    CheckEqualsGaebStr('1', I.SubDescr[0].SubDNo, 'UbNr');
+    CheckEqualsGaebStr('9601220001040201', I.SubDescr[0].Description.StLNo.Value, 'its StLNr');
+    CheckEqualsGaebStr('Yes', I.SubDescr[0].QtySpec, 'MeAng');
+    CheckEqualsUtf8('2.5', I.SubDescr[0].Qty.Text, 'Menge');
+    CheckEqualsGaebStr('m2', I.SubDescr[0].QU, 'ME');
+    CheckEqualsGaebStr('Yes', I.SubDescr[1].QtyTBD, 'FrMenge');
+    CheckEquals(0, Diags.CountOf('GAEB-D2000-MAP-004') + Diags.CountOf('GAEB-D2000-MAP-009'),
+      'nothing outside: ' + Diags.ToText);
+    Check(LandrixGaebXmlCheckModel(G, T, CheckDiags), 'content model: ' + CheckDiags.ToText);
+  finally
+    G.Free;
+  end;
+  { values outside: a version that is none, identifiers without SmeId or
+    with a letter, STLBBau without group (then StLNr, here no number), an
+    UbNr out of range and one missing, a key of blank components }
+  Diags.Clear;
+  G := MapText(WithBody(Lines(['#begin[Position]', '[OZ]010010[end]', '[Menge]1[end]', '[ME]m[end]',
+    '#begin[Beschreibung]', '#begin[STLBBau]', '[STLBBauKat]STLB-Bau|-1|-1|012|60|[end]',
+    '[STLBBauIdent]x|0|1[end]', '[STLBBauIdent]5|y|1[end]', '#end[STLBBau]', '[Kurztext]Eins[end]',
+    '#end[Beschreibung]',
+    '#begin[UnterBeschr]', '[UbNr]100[end]', '[MeAng]J[end]', '#end[UnterBeschr]',
+    '#begin[UnterBeschr]', '[MeAng]J[end]', '#end[UnterBeschr]', '#end[Position]',
+    '#begin[Position]', '[OZ]010020[end]', '[Menge]1[end]', '[ME]m[end]',
+    '#begin[Beschreibung]', '#begin[STLBBau]', '[STLBBauKat]STLB-Bau||||[end]',
+    '[STLBBauIdent]1|2|3[end]', '#end[STLBBau]', '[StLNr]12AB[end]', '[Kurztext]Zwei[end]',
+    '#end[Beschreibung]', '#end[Position]',
+    '#begin[Position]', '[OZ]010030[end]', '[Menge]1[end]', '[ME]m[end]',
+    '#begin[Beschreibung]', '#begin[STLBBau]', '[STLBBauKat]|||||[end]', '[STLBBauIdent]||[end]',
+    '#end[STLBBau]', '[Kurztext]Drei[end]', '#end[Beschreibung]', '#end[Position]',
+    '#begin[Position]', '[OZ]010040[end]', '[Menge]1[end]', '[ME]m[end]',
+    '#begin[Beschreibung]', '#begin[STLBBau]',
+    '[STLBBauKat]ABCDEFGHIJK|4|0000|1234|60|123456789012345678901[end]',
+    '#end[STLBBau]', '[Kurztext]Vier[end]', '#end[Beschreibung]', '#end[Position]'])), Diags, T);
+  try
+    I := TLandrixGaebXmlItem(G.Award.BoQ.BoQBody.Itemlist.Children[0]);
+    Check(I.Description.HasSTLBBau, 'kept without version');
+    CheckEqualsGaebStr('', I.Description.STLBBau.STLBBauCtlg.VersDate, 'version left out');
+    CheckEquals(1, Integer(I.Description.STLBBau.STLBBauID.Count), 'identifier without SmeId left out');
+    CheckEqualsGaebStr('', I.Description.STLBBau.STLBBauID[0].ArtChIdx, 'letter left out');
+    CheckEqualsGaebStr('', I.SubDescr[0].SubDNo, 'UbNr 100 left out');
+    I := TLandrixGaebXmlItem(G.Award.BoQ.BoQBody.Itemlist.Children[1]);
+    Check(not I.Description.HasSTLBBau, 'without group left out');
+    Check(not I.Description.HasStLNo, 'StLNr with a letter left out');
+    I := TLandrixGaebXmlItem(G.Award.BoQ.BoQBody.Itemlist.Children[2]);
+    Check(not I.Description.HasSTLBBau, 'blank key left out');
+    I := TLandrixGaebXmlItem(G.Award.BoQ.BoQBody.Itemlist.Children[3]);
+    Check(I.Description.HasSTLBBau, 'too long names kept');
+    CheckEqualsGaebStr('', I.Description.STLBBau.STLBBauCtlg.VersDate, 'year 0000 left out');
+    Check(Pos('8 component(s)', Diags.ToText) > 0, 'components counted one by one: ' + Diags.ToText);
+    Check(Pos('1 STLB-Bau key(s)', Diags.ToText) > 0, 'STLBBau without group counted');
+    Check(Pos('2 sub description(s)', Diags.ToText) > 0, 'UnterBeschr without UbNr counted');
+    CheckEquals(2, Diags.CountOf('GAEB-D2000-MAP-004'), 'UbNr and the components: ' + Diags.ToText);
+    CheckEquals(2, Diags.CountOf('GAEB-D2000-MAP-009'), 'STLBBau and UnterBeschr');
+    CheckEquals(0, Diags.CountOf('GAEB-D2000-MAP-001'), 'everything taken: ' + Diags.ToText);
+    Check((Pos('12AB', Diags.ToText) = 0) and (Pos('STLB-Bau|', Diags.ToText) = 0), 'no values in messages');
+  finally
+    G.Free;
+    CheckDiags.Free;
+    Diags.Free;
+  end;
+end;
+
 procedure ExpectRejected(const S: AnsiString; const AMsg: string);
 var
   G: TLandrixGaebXmlGAEB;
@@ -879,6 +998,7 @@ begin
   RegisterTest('DA2000Mapping.ReviewCases', TestReviewCases);
   RegisterTest('DA2000Mapping.ToolboxForms', TestToolboxForms);
   RegisterTest('DA2000Mapping.References', TestReferences);
+  RegisterTest('DA2000Mapping.Standard', TestStandard);
   RegisterTest('Local.DA2000Map', TestLocalMap);
 end;
 

@@ -38,7 +38,13 @@
     description (ExtDatBeschr, KatBez) or the name;
   - Beschreibung -> Description: Kurztext -> OutlineText, Langtext ->
     DetailTxt, as plain paragraphs with text complements
-    (LandrixGaebDA2000Text).
+    (LandrixGaebDA2000Text); STLBBau -> STLBBau (STLBBauKat ->
+    STLBBauCtlg, each STLBBauIdent -> STLBBauID) or, if there is none,
+    StLNr -> StLNo; TLKNr -> WICNo;
+  - LeitBeschr -> SumDescr, each UnterBeschr -> SubDescr (UbNr -> SubDNo,
+    Beschreibung, MeAng -> QtySpec, FrMenge -> QtyTBD, Menge, ME, and the
+    unit price keys EPAng, EPAufgl, EP, EPAnteil1 to 6 that GAEB DA 2000
+    names for internal use only).
   Numbers accept a comma or a point; dates TT.MM.JJJJ become YYYY-MM-DD,
   times HH:MM become HH:MM:SS. IDs are generated (LGB, LGC, LGI, LGR, LGP
   plus a number); they do not exist in GAEB DA 2000.
@@ -58,7 +64,10 @@
     GAEB-D2000-MAP-004 warning      a value outside the values of GAEB DA
                                    2000, not mapped; catalogues with a name
                                    or description too long for GAEB DA
-                                   XML, kept
+                                   XML, kept; components of STLBBau, StLNr
+                                   and TLKNr outside GAEB DA 2000 (numbers
+                                   and versions left out, names kept; once
+                                   per file with a count)
     GAEB-D2000-MAP-005 information  BoQBkdn derived from the ordinal
                                    numbers
     GAEB-D2000-MAP-006 warning      control characters removed from values
@@ -75,8 +84,10 @@
     GAEB-D2000-MAP-009 warning      execution descriptions without
                                    AusfNr, AusfBez or Beschreibung, which
                                    PerfDescr requires, catalogue
-                                   assignments without catalogue or key
-                                   and catalogues of a file without LV
+                                   assignments without catalogue or key,
+                                   catalogues of a file without LV, STLBBau
+                                   without catalogue name or group (left
+                                   out) and UnterBeschr without UbNr
                                    (left missing; once per file and kind
                                    with a count)
     GAEB-D2000-MAP-010 warning      BezugOZ or BezugAusfNr naming no item
@@ -204,6 +215,10 @@ type
     { catalogues with a name or description too long for GAEB DA XML, and
       catalogues of a file without LV (no BoQInfo to define them) }
     FLongCtlg, FCtlgWithoutLV: Integer;
+    { components of STLBBau, StLNr and TLKNr outside GAEB DA 2000 (RuleValue);
+      STLBBau without catalogue name or group and UnterBeschr without UbNr
+      (RuleIncomplete) }
+    FStandardValues, FIncompleteStlb, FIncompleteSub: Integer;
     { numbers of items and execution descriptions with their IDs, and the
       references to resolve after the mapping }
     FItemNos, FItemIds, FPerfNos, FPerfIds: array of TLandrixGaebString;
@@ -244,6 +259,9 @@ type
     function HasText(const AValue: TLandrixGaebString): Boolean;
     procedure MapLongText(const AValue: TLandrixGaebString; ADetail: TLandrixGaebXmlBoQText);
     procedure MapShortText(const AValue: TLandrixGaebString; AOutline: TLandrixGaebXmlOutlTxt);
+    function MapSTLBBau(ANode: TLandrixGaebDA2000Node; AStlb: TLandrixGaebXmlSTLBBau): Boolean;
+    procedure MapStandard(B: TLandrixGaebDA2000Node; ADescription: TLandrixGaebXmlDescription;
+      APerf: TLandrixGaebXmlPerfDescription);
     procedure MapTexts(B: TLandrixGaebDA2000Node; ADescription: TLandrixGaebXmlDescription;
       APerf: TLandrixGaebXmlPerfDescription);
     procedure MapDescription(ANode: TLandrixGaebDA2000Node; ADescription: TLandrixGaebXmlDescription);
@@ -251,6 +269,7 @@ type
     procedure MapBreakdown(ALV: TLandrixGaebDA2000Node; AInfo: TLandrixGaebXmlBoQInfo);
     procedure FillNum(ALV: TLandrixGaebDA2000Node; AInfo: TLandrixGaebXmlBoQInfo);
     function Part(const AOZ: TLandrixGaebString; ALevel: Integer; out AIndex: TLandrixGaebString): TLandrixGaebString;
+    procedure MapSubDescr(ANode: TLandrixGaebDA2000Node; ASub: TLandrixGaebXmlSubDescr);
     procedure MapItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
     procedure MapRemark(ANode: TLandrixGaebDA2000Node; ARemark: TLandrixGaebXmlRemark);
     procedure MapPerfDescr(ANode: TLandrixGaebDA2000Node; APerf: TLandrixGaebXmlPerfDescr);
@@ -807,6 +826,197 @@ begin
   end;
 end;
 
+{ True if S is a whole number: digits with an optional leading minus. }
+function IsWhole(const S: TLandrixGaebString): Boolean;
+var
+  I: Integer;
+begin
+  Result := S <> '';
+  for I := 1 to Length(S) do
+    if not (((S[I] >= '0') and (S[I] <= '9')) or ((I = 1) and (S[I] = '-') and (Length(S) > 1))) then
+    begin
+      Result := False;
+      Exit;
+    end;
+end;
+
+{ Component I (0-based) of a structure, trimmed; '' if there is none. }
+function Component(const AParts: TLandrixGaebStringArray; AIndex: Integer): TLandrixGaebString;
+begin
+  if AIndex < Integer(Length(AParts)) then
+    Result := TrimW(AParts[AIndex])
+  else
+    Result := '';
+end;
+
+{ True if a component of the structure is not blank. }
+function AnyComponent(const AParts: TLandrixGaebStringArray): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 0 to Integer(Length(AParts)) - 1 do
+    if TrimW(AParts[I]) <> '' then
+    begin
+      Result := True;
+      Exit;
+    end;
+end;
+
+{ STLB-Bau (object STLBBau of a Beschreibung) into AStlb: STLBBauKat
+  (KatName|VersMonat|VersJahr|LB|Gruppe|Kgr) -> STLBBauCtlg (CtlgName,
+  VersDate YYYY-MM, WCtg, Group, CostGrp), each STLBBauIdent
+  (SmeId|SmtSmi|AprId) -> STLBBauID (ArtChrIdent, ArtChIdx, ChVIdent).
+  Blank components count as missing. A number or version that is none,
+  and an STLBBauIdent without SmeId, is left out; a name longer than
+  GAEB DA 2000 allows is kept; both are counted (GAEB-D2000-MAP-004).
+  Without catalogue name or group, which GAEB DA XML requires, the whole
+  key is left out and counted (GAEB-D2000-MAP-009); a key of blank
+  components only is left out silently. False if nothing was mapped.
+  DE: STLB-Bau (Objekt STLBBau einer Beschreibung) nach AStlb:
+  STLBBauKat -> STLBBauCtlg (VersDate JJJJ-MM aus Jahr und Monat), jede
+  STLBBauIdent -> STLBBauID. Leere Komponenten gelten als fehlend. Eine
+  Zahl oder Version, die keine ist, und eine STLBBauIdent ohne SmeId
+  werden weggelassen, ein zu langer Name bleibt; beides wird gezaehlt
+  (GAEB-D2000-MAP-004). Ohne Katalogname oder Gruppe, die GAEB DA XML
+  verlangt, entfaellt der ganze Schluessel und wird gezaehlt
+  (GAEB-D2000-MAP-009); einer nur aus leeren Komponenten entfaellt ohne
+  Meldung. False, wenn nichts abgebildet wurde. }
+function TMapper.MapSTLBBau(ANode: TLandrixGaebDA2000Node; AStlb: TLandrixGaebXmlSTLBBau): Boolean;
+var
+  K: TLandrixGaebDA2000Node;
+  Parts: TLandrixGaebStringArray;
+  Month, Year, S: TLandrixGaebString;
+  M: Integer;
+  Ctlg: TLandrixGaebXmlSTLBBauCtlg;
+  Id: TLandrixGaebXmlSTLBBauID;
+  Any: Boolean;
+begin
+  Parts := nil;
+  Any := False;
+  Ctlg := AStlb.STLBBauCtlg;
+  K := Child(ANode, 'STLBBauKat');
+  if (K <> nil) and not K.IsObject then
+  begin
+    Parts := LandrixGaebDA2000SplitStructure(XmlSafe(K.Value, FControlChars));
+    Any := AnyComponent(Parts);
+    Ctlg.CtlgName := Component(Parts, 0);
+    Month := Component(Parts, 1);
+    Year := Component(Parts, 2);
+    Ctlg.WCtg := Component(Parts, 3);
+    S := Component(Parts, 4);
+    if IsWhole(S) then
+      Ctlg.Group := S
+    else if S <> '' then
+      Inc(FStandardValues);
+    Ctlg.CostGrp := Component(Parts, 5);
+    if (Month <> '') or (Year <> '') then
+    begin
+      M := StrToIntDef(AsciiOf(Month), 0);
+      if (Length(Year) = 4) and IsWhole(Year) and (Year[1] <> '-') and (Year <> '0000') and (Length(Month) <= 2) and
+        IsWhole(Month) and (M >= 1) and (M <= 12) then
+        Ctlg.VersDate := Year + W('-' + Copy(IntToStr(100 + M), 2, 2))
+      else
+        Inc(FStandardValues);
+    end;
+    { as long as GAEB DA 2000 allows them: kept, counted }
+    if Length(Ctlg.CtlgName) > 10 then
+      Inc(FStandardValues);
+    if Length(Ctlg.WCtg) > 3 then
+      Inc(FStandardValues);
+    if Length(Ctlg.CostGrp) > 20 then
+      Inc(FStandardValues);
+  end;
+  repeat
+    K := Child(ANode, 'STLBBauIdent');
+    if K = nil then
+      Break;
+    if K.IsObject then
+      Continue;
+    Parts := LandrixGaebDA2000SplitStructure(XmlSafe(K.Value, FControlChars));
+    if not AnyComponent(Parts) then
+      Continue;
+    Any := True;
+    S := Component(Parts, 0);
+    if not IsWhole(S) then
+    begin
+      { ArtChrIdent is required }
+      Inc(FStandardValues);
+      Continue;
+    end;
+    Id := AStlb.STLBBauID.Add;
+    Id.ArtChrIdent := S;
+    S := Component(Parts, 1);
+    if IsWhole(S) then
+      Id.ArtChIdx := S
+    else if S <> '' then
+      Inc(FStandardValues);
+    S := Component(Parts, 2);
+    if IsWhole(S) then
+      Id.ChVIdent := S
+    else if S <> '' then
+      Inc(FStandardValues);
+  until False;
+  Result := (Ctlg.CtlgName <> '') and (Ctlg.Group <> '');
+  if not Result then
+  begin
+    if Any then
+      Inc(FIncompleteStlb);
+    AStlb.Clear;
+  end;
+end;
+
+{ The keys of a Beschreibung B that identify its text: STLBBau ->
+  STLBBau or, if none is mapped, StLNr -> StLNo (GAEB DA XML has one of
+  them; an StLNr next to a mapped STLBBau stays unmapped and is
+  reported); TLKNr -> WICNo. An StLNr that is not 1 to 17 digits is left
+  out, a TLKNr over 40 characters kept; both are counted
+  (GAEB-D2000-MAP-004).
+  DE: Die Schluessel einer Beschreibung B, die ihren Text kennzeichnen:
+  STLBBau -> STLBBau oder, wenn keiner abgebildet ist, StLNr -> StLNo
+  (GAEB DA XML hat einen davon; eine StLNr neben einem abgebildeten
+  STLBBau bleibt unabgebildet und wird gemeldet); TLKNr -> WICNo. Eine
+  StLNr, die nicht aus 1 bis 17 Ziffern besteht, wird weggelassen, eine
+  TLKNr ueber 40 Zeichen bleibt; beides wird gezaehlt. }
+procedure TMapper.MapStandard(B: TLandrixGaebDA2000Node; ADescription: TLandrixGaebXmlDescription;
+  APerf: TLandrixGaebXmlPerfDescription);
+var
+  N: TLandrixGaebDA2000Node;
+  S: TLandrixGaebString;
+  Done: Boolean;
+begin
+  Done := False;
+  N := B.Find('STLBBau');
+  if (N <> nil) and N.IsObject then
+  begin
+    N.Used := True;
+    if ADescription <> nil then
+      Done := MapSTLBBau(N, ADescription.STLBBau)
+    else
+      Done := MapSTLBBau(N, APerf.STLBBau);
+  end;
+  if not Done then
+  begin
+    S := Str(B, 'StLNr');
+    if (S <> '') and (Length(S) <= 17) and IsWhole(S) and (S[1] <> '-') then
+    begin
+      if ADescription <> nil then
+        ADescription.StLNo.Value := S
+      else
+        APerf.StLNo.Value := S;
+    end
+    else if S <> '' then
+      Inc(FStandardValues);
+  end;
+  S := Str(B, 'TLKNr');
+  if Length(S) > 40 then
+    Inc(FStandardValues);
+  if ADescription <> nil then
+    ADescription.WICNo := S
+  else
+    APerf.WICNo := S;
+end;
+
 { Beschreibung B into ADescription or, if that is nil, into APerf (the
   same content model). }
 procedure TMapper.MapTexts(B: TLandrixGaebDA2000Node; ADescription: TLandrixGaebXmlDescription;
@@ -831,6 +1041,7 @@ var
   end;
 
 begin
+  MapStandard(B, ADescription, APerf);
   Long := Text(B, 'Langtext');
   Short := Text(B, 'Kurztext');
   if not HasText(Long) then
@@ -1185,6 +1396,51 @@ begin
       ' breakdown level(s) without any value: Num set to No for an index, Yes otherwise');
 end;
 
+{ Sub description (UnterBeschr) into ASub: UbNr (num 2,0) -> SubDNo,
+  Beschreibung -> Description, MeAng -> QtySpec, FrMenge -> QtyTBD,
+  Menge -> Qty, ME -> QU; EPAng -> UPSpec, EPAufgl -> UPBkdn, EP -> UP,
+  EPAnteil1 to 6 -> UPComp1 to 6 (keys GAEB DA 2000 names for internal
+  use only). An UbNr that is no whole number from 1 to 99 is reported and
+  left out; a missing one is left missing and counted
+  (GAEB-D2000-MAP-009).
+  DE: Unterbeschreibung (UnterBeschr) nach ASub: UbNr -> SubDNo,
+  Beschreibung -> Description, MeAng -> QtySpec, FrMenge -> QtyTBD,
+  Menge -> Qty, ME -> QU; EPAng, EPAufgl, EP, EPAnteil1 bis 6 (von GAEB
+  DA 2000 nur fuer den internen Gebrauch genannt) -> UPSpec, UPBkdn, UP,
+  UPComp1 bis 6. Eine UbNr, die keine ganze Zahl von 1 bis 99 ist, wird
+  gemeldet und weggelassen; eine fehlende bleibt fehlend und wird
+  gezaehlt (GAEB-D2000-MAP-009). }
+procedure TMapper.MapSubDescr(ANode: TLandrixGaebDA2000Node; ASub: TLandrixGaebXmlSubDescr);
+var
+  No: TLandrixGaebDecimal;
+  N: TLandrixGaebDA2000Node;
+begin
+  ASub.Present := True;
+  No.Clear;
+  N := ANode.Find('UbNr');
+  Num(ANode, 'UbNr', No);
+  if No.HasValue and (No.Scale = 0) and (No.Coefficient >= 1) and (No.Coefficient <= 99) then
+    ASub.SubDNo := W(IntToStr(Integer(No.Coefficient)))
+  else if No.HasValue then
+    Report(N, RuleValue, gsWarning, 'UbNr: no whole number from 1 to 99, not mapped');
+  if ASub.SubDNo = '' then
+    Inc(FIncompleteSub);
+  MapDescription(ANode, ASub.Description);
+  ASub.QtySpec := Yes(ANode, 'MeAng');
+  ASub.QtyTBD := Yes(ANode, 'FrMenge');
+  Num(ANode, 'Menge', ASub.Qty);
+  ASub.QU := Str(ANode, 'ME');
+  ASub.UPSpec := Yes(ANode, 'EPAng');
+  ASub.UPBkdn := Yes(ANode, 'EPAufgl');
+  Num(ANode, 'EP', ASub.UP);
+  Num(ANode, 'EPAnteil1', ASub.UPComp1);
+  Num(ANode, 'EPAnteil2', ASub.UPComp2);
+  Num(ANode, 'EPAnteil3', ASub.UPComp3);
+  Num(ANode, 'EPAnteil4', ASub.UPComp4);
+  Num(ANode, 'EPAnteil5', ASub.UPComp5);
+  Num(ANode, 'EPAnteil6', ASub.UPComp6);
+end;
+
 procedure TMapper.MapItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
 var
   OZ, Index, QU, Ref: TLandrixGaebString;
@@ -1257,6 +1513,15 @@ begin
     Report(N, RuleValue, gsWarning, 'BezugAusfNr: no whole number from 0 to 9999, not mapped');
   MapDescription(ANode, AItem.Description);
   MapCatalogs(ANode, AItem.CtlgAssign);
+  { lead description and its sub descriptions (UnterBeschr only with
+    LeitBeschr J: not checked, both kept as the file has them) }
+  AItem.SumDescr := Yes(ANode, 'LeitBeschr');
+  repeat
+    N := Child(ANode, 'UnterBeschr');
+    if N = nil then
+      Break;
+    MapSubDescr(N, AItem.SubDescr.Add);
+  until False;
 end;
 
 procedure TMapper.MapRemark(ANode: TLandrixGaebDA2000Node; ARemark: TLandrixGaebXmlRemark);
@@ -1839,6 +2104,16 @@ begin
     if FCtlgWithoutLV > 0 then
       Report(nil, RuleIncomplete, gsWarning, IntToStr(FCtlgWithoutLV) +
         ' catalogue(s) (KatZuord) in a file without LV: no BoQInfo/Ctlg defines them');
+    if FStandardValues > 0 then
+      Report(nil, RuleValue, gsWarning, IntToStr(FStandardValues) +
+        ' component(s) of STLBBau, StLNr or TLKNr outside GAEB DA 2000; numbers and versions left out, ' +
+        'names kept');
+    if FIncompleteStlb > 0 then
+      Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompleteStlb) +
+        ' STLB-Bau key(s) (STLBBau) without catalogue name or group; left out');
+    if FIncompleteSub > 0 then
+      Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompleteSub) +
+        ' sub description(s) (UnterBeschr) without UbNr; left missing');
     if FUnresolved > 0 then
       Report(nil, RuleReference, gsWarning, IntToStr(FUnresolved) +
         ' reference(s) (BezugOZ, BezugAusfNr) to a number not in the file; left out');
