@@ -41,6 +41,12 @@
     (LandrixGaebDA2000Text); STLBBau -> STLBBau (STLBBauKat ->
     STLBBauCtlg, each STLBBauIdent -> STLBBauID) or, if there is none,
     StLNr -> StLNo; TLKNr -> WICNo;
+  - ZuschlPosition -> MarkupItem (as an item, with ZuschlArt Z/A/P ->
+    MarkupType IdentAsMark/AllInCat/ListInSubQty, each ZuschlTMenge
+    OZ|TMenge -> MarkupSubQty with RefItem and SubQty, GBZuschl ->
+    ITMarkup, Zuschlag -> Markup); Mengensplit -> QtySplit (Menge -> Qty
+    or, without it, MengeProz -> QtyPcnt; KatZuord); BedarfAuftr ->
+    ProvisAccpt;
   - LeitBeschr -> SumDescr, each UnterBeschr -> SubDescr (UbNr -> SubDNo,
     Beschreibung, MeAng -> QtySpec, FrMenge -> QtyTBD, Menge, ME, and the
     unit price keys EPAng, EPAufgl, EP, EPAnteil1 to 6 that GAEB DA 2000
@@ -86,12 +92,14 @@
                                    PerfDescr requires, catalogue
                                    assignments without catalogue or key,
                                    catalogues of a file without LV, STLBBau
-                                   without catalogue name or group (left
-                                   out) and UnterBeschr without UbNr
+                                   without catalogue name or group and
+                                   Mengensplit without Menge or MengeProz
+                                   (left out) and UnterBeschr without UbNr
                                    (left missing; once per file and kind
                                    with a count)
-    GAEB-D2000-MAP-010 warning      BezugOZ or BezugAusfNr naming no item
-                                   or execution description of the file
+    GAEB-D2000-MAP-010 warning      BezugOZ, BezugAusfNr or the OZ of
+                                   ZuschlTMenge naming no item or
+                                   execution description of the file
                                    (left out; once per file with a
                                    count)
   Messages name keys, never values.
@@ -219,6 +227,12 @@ type
       STLBBau without catalogue name or group and UnterBeschr without UbNr
       (RuleIncomplete) }
     FStandardValues, FIncompleteStlb, FIncompleteSub: Integer;
+    { Mengensplit without quantity (RuleIncomplete) }
+    FIncompleteSplit: Integer;
+    { markup items whose MarkupSubQty without a resolved RefItem are
+      removed after ResolveRefs }
+    FMarkups: array of TLandrixGaebXmlMarkupItem;
+    FMarkupCount: Integer;
     { numbers of items and execution descriptions with their IDs, and the
       references to resolve after the mapping }
     FItemNos, FItemIds, FPerfNos, FPerfIds: array of TLandrixGaebString;
@@ -270,7 +284,12 @@ type
     procedure FillNum(ALV: TLandrixGaebDA2000Node; AInfo: TLandrixGaebXmlBoQInfo);
     function Part(const AOZ: TLandrixGaebString; ALevel: Integer; out AIndex: TLandrixGaebString): TLandrixGaebString;
     procedure MapSubDescr(ANode: TLandrixGaebDA2000Node; ASub: TLandrixGaebXmlSubDescr);
+    procedure RegisterItem(const AOZ, AId: TLandrixGaebString);
+    procedure MapRefs(ANode: TLandrixGaebDA2000Node; ARNo, APerfNo: TLandrixGaebXmlRefItem);
+    procedure MapQtySplits(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
     procedure MapItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
+    procedure MapMarkupItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlMarkupItem);
+    procedure DropUnresolvedSubQty;
     procedure MapRemark(ANode: TLandrixGaebDA2000Node; ARemark: TLandrixGaebXmlRemark);
     procedure MapPerfDescr(ANode: TLandrixGaebDA2000Node; APerf: TLandrixGaebXmlPerfDescr);
     procedure MapCatalogs(ANode: TLandrixGaebDA2000Node; AAssign: TLandrixGaebXmlCtlgAssignList);
@@ -469,17 +488,16 @@ begin
   Result := Enum(ANode, AKey, 'J', 'Yes');
 end;
 
-procedure TMapper.Num(ANode: TLandrixGaebDA2000Node; const AKey: string; var ADecimal: TLandrixGaebDecimal);
+{ A number of GAEB DA 2000 (comma or point, at most one, digits, a
+  leading minus; no grouping) into ADecimal; False if AValue is none. }
+function ParseNum(const AValue: TLandrixGaebString; var ADecimal: TLandrixGaebDecimal): Boolean;
 var
-  N: TLandrixGaebDA2000Node;
   S: string;
   I, Seps, Digits: Integer;
   Ok: Boolean;
 begin
-  N := Child(ANode, AKey);
-  if (N = nil) or N.IsObject then
-    Exit;
-  S := AsciiOf(TrimW(N.Value));
+  Result := False;
+  S := AsciiOf(TrimW(AValue));
   { comma or point, at most one, digits, a leading minus; no grouping }
   Seps := 0;
   Digits := 0;
@@ -502,10 +520,19 @@ begin
       S := '-0' + Copy(S, 2, MaxInt);
     if S[Length(S)] = '.' then
       S := S + '0';
-    if ADecimal.TrySetText(LandrixXmlStringToUtf8(S)) then
-      Exit;
+    Result := ADecimal.TrySetText(LandrixXmlStringToUtf8(S));
   end;
-  Report(N, RuleNumber, gsError, AKey + ': no decimal number, not mapped');
+end;
+
+procedure TMapper.Num(ANode: TLandrixGaebDA2000Node; const AKey: string; var ADecimal: TLandrixGaebDecimal);
+var
+  N: TLandrixGaebDA2000Node;
+begin
+  N := Child(ANode, AKey);
+  if (N = nil) or N.IsObject then
+    Exit;
+  if not ParseNum(N.Value, ADecimal) then
+    Report(N, RuleNumber, gsError, AKey + ': no decimal number, not mapped');
 end;
 
 function TwoDigits(const S: string): Boolean;
@@ -1098,6 +1125,13 @@ end;
 
 { ---- breakdown and ordinal numbers ---- }
 
+{ True for the keys of objects with an item number: Position and
+  ZuschlPosition. }
+function IsItemKey(const AKey: string): Boolean;
+begin
+  Result := (CompareText(AKey, 'Position') = 0) or (CompareText(AKey, 'ZuschlPosition') = 0);
+end;
+
 procedure TMapper.MapBreakdown(ALV: TLandrixGaebDA2000Node; AInfo: TLandrixGaebXmlBoQInfo);
 var
   Info, G: TLandrixGaebDA2000Node;
@@ -1116,7 +1150,7 @@ var
     Dummy := 0;
     for I := 0 to ANode.Count - 1 do
       if ANode[I].IsObject and ((CompareText(ANode[I].Key, 'LVBereich') = 0) or
-        (CompareText(ANode[I].Key, 'Position') = 0)) then
+        IsItemKey(ANode[I].Key)) then
       begin
         OZ := XmlSafe(ANode[I].ValueOf('OZ'), Dummy);
         L := Length(OZ) - AUsed;
@@ -1347,7 +1381,7 @@ var
           Note(CategoryRow(ADepth), Part(OZ, ADepth, Index));
           Walk(ANode[J], ADepth + 1);
         end
-        else if CompareText(ANode[J].Key, 'Position') = 0 then
+        else if IsItemKey(ANode[J].Key) then
         begin
           Note(KindRow('Item'), Part(OZ, -1, Index));
           Note(KindRow('Index'), Index);
@@ -1441,30 +1475,201 @@ begin
   Num(ANode, 'EPAnteil6', ASub.UPComp6);
 end;
 
-procedure TMapper.MapItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
-var
-  OZ, Index, QU, Ref: TLandrixGaebString;
-  No: TLandrixGaebDecimal;
-  N: TLandrixGaebDA2000Node;
+{ The number of an item as written (without surrounding spaces), for
+  BezugOZ and ZuschlTMenge of other items. }
+procedure TMapper.RegisterItem(const AOZ, AId: TLandrixGaebString);
 begin
-  AItem.Present := True;
-  AItem.ID := NewId('LGI');
-  OZ := Text(ANode, 'OZ');
-  { the number as written, for BezugOZ of other items }
   if FItemCount >= Length(FItemNos) then
   begin
     SetLength(FItemNos, 2 * FItemCount + 16);
     SetLength(FItemIds, 2 * FItemCount + 16);
   end;
-  FItemNos[FItemCount] := TrimW(OZ);
-  FItemIds[FItemCount] := AItem.ID;
+  FItemNos[FItemCount] := TrimW(AOZ);
+  FItemIds[FItemCount] := AId;
   Inc(FItemCount);
+end;
+
+{ References of an item: BezugOZ -> ARNo, BezugAusfNr (num 4,0) ->
+  APerfNo, resolved after the mapping (ResolveRefs). BezugOZ only with W
+  and excluding BezugAusfNr: not checked, both are kept as the file has
+  them.
+  DE: Bezuege einer Position: BezugOZ -> ARNo, BezugAusfNr -> APerfNo,
+  nach der Abbildung aufgeloest. BezugOZ nur bei W und ohne BezugAusfNr:
+  nicht geprueft, beide bleiben, wie die Datei sie hat. }
+procedure TMapper.MapRefs(ANode: TLandrixGaebDA2000Node; ARNo, APerfNo: TLandrixGaebXmlRefItem);
+var
+  Ref: TLandrixGaebString;
+  No: TLandrixGaebDecimal;
+  N: TLandrixGaebDA2000Node;
+begin
+  Ref := TrimW(Text(ANode, 'BezugOZ'));
+  if Ref <> '' then
+    AddRef(ARNo, Ref, False);
+  No.Clear;
+  N := ANode.Find('BezugAusfNr');
+  Num(ANode, 'BezugAusfNr', No);
+  if No.HasValue and (No.Scale = 0) and (No.Coefficient >= 0) and (No.Coefficient <= 9999) then
+    AddRef(APerfNo, W(IntToStr(Integer(No.Coefficient))), True)
+  else if No.HasValue then
+    Report(N, RuleValue, gsWarning, 'BezugAusfNr: no whole number from 0 to 9999, not mapped');
+end;
+
+{ Quantity splits (Mengensplit) of an item: each one QtySplit with Menge
+  -> Qty or, without Menge, MengeProz -> QtyPcnt (GAEB DA XML has one of
+  them; a MengeProz next to Menge stays unmapped and is reported), and
+  its KatZuord. A split without either is counted (GAEB-D2000-MAP-009)
+  and left out. That the splits add up to the quantity is not checked.
+  DE: Mengensplits einer Position: je ein QtySplit mit Menge -> Qty oder,
+  ohne Menge, MengeProz -> QtyPcnt (GAEB DA XML hat eines davon; eine
+  MengeProz neben Menge bleibt unabgebildet und wird gemeldet) und seiner
+  KatZuord. Ein Split ohne beides wird gezaehlt und weggelassen. Dass die
+  Teilmengen die Menge ergeben, wird nicht geprueft. }
+procedure TMapper.MapQtySplits(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
+var
+  N: TLandrixGaebDA2000Node;
+  Q, P: TLandrixGaebDecimal;
+  S: TLandrixGaebXmlQtySplit;
+begin
+  repeat
+    N := Child(ANode, 'Mengensplit');
+    if N = nil then
+      Break;
+    Q.Clear;
+    P.Clear;
+    Num(N, 'Menge', Q);
+    if not Q.HasValue then
+      Num(N, 'MengeProz', P);
+    if Q.HasValue or P.HasValue then
+    begin
+      S := AItem.QtySplit.Add;
+      S.Present := True;
+      S.Qty := Q;
+      S.QtyPcnt := P;
+      MapCatalogs(N, S.CtlgAssign);
+    end
+    else
+      Inc(FIncompleteSplit);
+  until False;
+end;
+
+{ Markup item (ZuschlPosition): the keys it shares with Position as
+  there; ZuschlArt Z/A/P -> MarkupType IdentAsMark/AllInCat/ListInSubQty,
+  each ZuschlTMenge (structure OZ|TMenge) -> MarkupSubQty (RefItem to the
+  item with that number, resolved after the mapping; SubQty = TMenge,
+  missing for the whole quantity), GBZuschl -> ITMarkup, Zuschlag ->
+  Markup, NachlassProz -> DiscountPcnt, GB -> IT. A ZuschlTMenge without
+  OZ, or naming no item (Position) of the file, is counted with the
+  other references to no item (GAEB-D2000-MAP-010) and left out; one
+  whose TMenge is no number is reported and left out.
+  DE: Zuschlagsposition (ZuschlPosition): die Schluessel, die sie mit
+  Position teilt, wie dort; ZuschlArt Z/A/P -> MarkupType, jede
+  ZuschlTMenge (OZ|TMenge) -> MarkupSubQty (RefItem auf die Position mit
+  dieser OZ, nach der Abbildung aufgeloest; SubQty = TMenge, fehlt fuer
+  die ganze Menge), GBZuschl -> ITMarkup, Zuschlag -> Markup,
+  NachlassProz -> DiscountPcnt, GB -> IT. Eine ZuschlTMenge ohne OZ oder
+  mit einer OZ, die keine Position der Datei hat, wird mit den anderen
+  Bezuegen auf keine Position gezaehlt und weggelassen; eine, deren
+  TMenge keine Zahl ist, wird gemeldet und weggelassen. }
+procedure TMapper.MapMarkupItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlMarkupItem);
+var
+  OZ, Index, Ref: TLandrixGaebString;
+  K: TLandrixGaebDA2000Node;
+  Parts: TLandrixGaebStringArray;
+  Sub: TLandrixGaebXmlMarkupSubQty;
+  Q: TLandrixGaebDecimal;
+begin
+  Parts := nil;
+  AItem.Present := True;
+  AItem.ID := NewId('LGI');
+  { not registered: BezugOZ and ZuschlTMenge name items (Position) }
+  OZ := Text(ANode, 'OZ');
   AItem.RNoPart := Part(OZ, -1, Index);
   AItem.RNoIndex := Index;
   AItem.ALNGroupNo := Str(ANode, 'ZZGruppeNr');
   AItem.ALNSerNo := Str(ANode, 'ZZLfdNr');
   AItem.Accepted := Enum(ANode, 'Beauftragt', 'B|Z', 'AltAccept|BasReject');
   AItem.Provis := Enum(ANode, 'Bedarf', 'E|M', 'WithoutTotal|WithTotal');
+  AItem.ProvisAccpt := Yes(ANode, 'BedarfAuftr');
+  AItem.NotAppl := Yes(ANode, 'Entf');
+  AItem.HourIt := Yes(ANode, 'StPos');
+  AItem.KeyIt := Yes(ANode, 'SPos');
+  AItem.CONo := Str(ANode, 'NachtrNr');
+  AItem.COStatus := Enum(ANode, 'NachtrStatus', '1|2|3|4|5|6|7|8', 'Recog|Filed|Offered|Withdrawn|Rejected|ObjToRecj|FormAckn|Approved');
+  MapRefs(ANode, AItem.RefRNo, AItem.RefPerfNo);
+  AItem.MarkupType := Enum(ANode, 'ZuschlArt', 'Z|A|P', 'IdentAsMark|AllInCat|ListInSubQty');
+  repeat
+    K := Child(ANode, 'ZuschlTMenge');
+    if K = nil then
+      Break;
+    if K.IsObject then
+      Continue;
+    Parts := LandrixGaebDA2000SplitStructure(XmlSafe(K.Value, FControlChars));
+    if not AnyComponent(Parts) then
+      Continue;
+    Ref := Component(Parts, 0);
+    if Ref = '' then
+    begin
+      Inc(FUnresolved);
+      Continue;
+    end;
+    { a TMenge that is no number would read as the whole quantity: the
+      entry is left out }
+    Q.Clear;
+    if (Component(Parts, 1) <> '') and not ParseNum(Component(Parts, 1), Q) then
+    begin
+      Report(K, RuleNumber, gsError, 'ZuschlTMenge: TMenge no decimal number, not mapped');
+      Continue;
+    end;
+    Sub := AItem.MarkupSubQty.Add;
+    Sub.Present := True;
+    AddRef(Sub.RefItem, Ref, False);
+    Sub.SubQty := Q;
+  until False;
+  if FMarkupCount >= Length(FMarkups) then
+    SetLength(FMarkups, 2 * FMarkupCount + 16);
+  FMarkups[FMarkupCount] := AItem;
+  Inc(FMarkupCount);
+  Num(ANode, 'GBZuschl', AItem.ITMarkup);
+  Num(ANode, 'Zuschlag', AItem.Markup);
+  Num(ANode, 'NachlassProz', AItem.DiscountPcnt);
+  Num(ANode, 'GB', AItem.IT);
+  MapDescription(ANode, AItem.Description);
+  MapCatalogs(ANode, AItem.CtlgAssign);
+end;
+
+{ After ResolveRefs: a MarkupSubQty whose item was not found is removed
+  (RefItem is required); it is counted there (RuleReference). }
+procedure TMapper.DropUnresolvedSubQty;
+var
+  I, J: Integer;
+  L: TLandrixGaebXmlMarkupSubQtyList;
+begin
+  for I := 0 to FMarkupCount - 1 do
+    if FMarkups[I].HasMarkupSubQty then
+    begin
+      L := FMarkups[I].MarkupSubQty;
+      for J := Integer(L.Count) - 1 downto 0 do
+        if not L[J].RefItem.Present then
+          L.Delete(J);
+    end;
+end;
+
+procedure TMapper.MapItem(ANode: TLandrixGaebDA2000Node; AItem: TLandrixGaebXmlItem);
+var
+  OZ, Index, QU: TLandrixGaebString;
+  N: TLandrixGaebDA2000Node;
+begin
+  AItem.Present := True;
+  AItem.ID := NewId('LGI');
+  OZ := Text(ANode, 'OZ');
+  RegisterItem(OZ, AItem.ID);
+  AItem.RNoPart := Part(OZ, -1, Index);
+  AItem.RNoIndex := Index;
+  AItem.ALNGroupNo := Str(ANode, 'ZZGruppeNr');
+  AItem.ALNSerNo := Str(ANode, 'ZZLfdNr');
+  AItem.Accepted := Enum(ANode, 'Beauftragt', 'B|Z', 'AltAccept|BasReject');
+  AItem.Provis := Enum(ANode, 'Bedarf', 'E|M', 'WithoutTotal|WithTotal');
+  AItem.ProvisAccpt := Yes(ANode, 'BedarfAuftr');
   AItem.NotAppl := Yes(ANode, 'Entf');
   AItem.HourIt := Yes(ANode, 'StPos');
   AItem.KeyIt := Yes(ANode, 'SPos');
@@ -1474,6 +1679,7 @@ begin
   AItem.COStatus := Enum(ANode, 'NachtrStatus', '1|2|3|4|5|6|7|8', 'Recog|Filed|Offered|Withdrawn|Rejected|ObjToRecj|FormAckn|Approved');
   AItem.QtyTBD := Yes(ANode, 'FrMenge');
   Num(ANode, 'Menge', AItem.Qty);
+  MapQtySplits(ANode, AItem);
   Num(ANode, 'VaMenge', AItem.PredQty);
   Num(ANode, 'ReMenge', AItem.BillQty);
   QU := Str(ANode, 'ME');
@@ -1498,19 +1704,8 @@ begin
   Num(ANode, 'GB', AItem.IT);
   AItem.PriceInfo := Enum(ANode, 'PreisInfo', '1|2|3|4', 'scope|to|approx|lump');
   Num(ANode, 'Zeit', AItem.TimeQu);
-  { references (BezugOZ only with W, it excludes BezugAusfNr: not checked,
-    both are kept as the file has them) }
   AItem.RefDescr := Enum(ANode, 'BezugBeschr', 'B|W', 'Ref|Rep');
-  Ref := TrimW(Text(ANode, 'BezugOZ'));
-  if Ref <> '' then
-    AddRef(AItem.RefRNo, Ref, False);
-  No.Clear;
-  N := ANode.Find('BezugAusfNr');
-  Num(ANode, 'BezugAusfNr', No);
-  if No.HasValue and (No.Scale = 0) and (No.Coefficient >= 0) and (No.Coefficient <= 9999) then
-    AddRef(AItem.RefPerfNo, W(IntToStr(Integer(No.Coefficient))), True)
-  else if No.HasValue then
-    Report(N, RuleValue, gsWarning, 'BezugAusfNr: no whole number from 0 to 9999, not mapped');
+  MapRefs(ANode, AItem.RefRNo, AItem.RefPerfNo);
   MapDescription(ANode, AItem.Description);
   MapCatalogs(ANode, AItem.CtlgAssign);
   { lead description and its sub descriptions (UnterBeschr only with
@@ -1769,7 +1964,7 @@ begin
     begin
       if CompareText(ANode[I].Key, 'LVBereich') = 0 then
         HasCtgy := True
-      else if CompareText(ANode[I].Key, 'Position') = 0 then
+      else if IsItemKey(ANode[I].Key) then
         HasItem := True;
     end;
   if HasCtgy and HasItem then
@@ -1810,6 +2005,11 @@ begin
     begin
       N.Used := True;
       MapItem(N, ABody.Itemlist.AddItem);
+    end
+    else if CompareText(N.Key, 'ZuschlPosition') = 0 then
+    begin
+      N.Used := True;
+      MapMarkupItem(N, ABody.Itemlist.AddMarkupItem);
     end
     else if CompareText(N.Key, 'Hinweis') = 0 then
     begin
@@ -2059,6 +2259,7 @@ begin
     else
       FCtlgWithoutLV := FCtlgCount;
     ResolveRefs;
+    DropUnresolvedSubQty;
 
     if FFormatTexts > 0 then
     begin
@@ -2111,12 +2312,15 @@ begin
     if FIncompleteStlb > 0 then
       Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompleteStlb) +
         ' STLB-Bau key(s) (STLBBau) without catalogue name or group; left out');
+    if FIncompleteSplit > 0 then
+      Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompleteSplit) +
+        ' quantity split(s) (Mengensplit) without Menge or MengeProz; left out');
     if FIncompleteSub > 0 then
       Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompleteSub) +
         ' sub description(s) (UnterBeschr) without UbNr; left missing');
     if FUnresolved > 0 then
       Report(nil, RuleReference, gsWarning, IntToStr(FUnresolved) +
-        ' reference(s) (BezugOZ, BezugAusfNr) to a number not in the file; left out');
+        ' reference(s) (BezugOZ, BezugAusfNr, ZuschlTMenge) to a number not in the file; left out');
     if FPlainMarks > 0 then
       Report(nil, RuleOther, gsInformation, IntToStr(FPlainMarks) +
         ' text complement(s) marked in plain text (not defined in GAEB DA 2000) read');

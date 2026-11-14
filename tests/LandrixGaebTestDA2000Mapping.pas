@@ -749,6 +749,94 @@ begin
   end;
 end;
 
+{ ZuschlPosition and Mengensplit. }
+procedure TestMarkup;
+var
+  Diags, CheckDiags: TLandrixGaebDiagnostics;
+  G: TLandrixGaebXmlGAEB;
+  T: TLandrixGaebTarget;
+  I1, I2: TLandrixGaebXmlItem;
+  M1, M2: TLandrixGaebXmlMarkupItem;
+begin
+  Diags := TLandrixGaebDiagnostics.Create;
+  CheckDiags := TLandrixGaebDiagnostics.Create;
+  G := MapText(WithBody(Lines(['#begin[Position]', '[OZ]010010[end]', '[Bezuschl]J[end]',
+    '[Menge]10[end]', '#begin[Mengensplit]', '[Menge]4[end]', '#begin[KatZuord]', '[KatNam]BA[end]',
+    '[KatBez]Bauabschnitt[end]', '[KatSchl]1[end]', '#end[KatZuord]', '#end[Mengensplit]',
+    '#begin[Mengensplit]', '[MengeProz]60[end]', '#end[Mengensplit]',
+    '#begin[Mengensplit]', '[Menge]1[end]', '[MengeProz]5[end]', '#end[Mengensplit]',
+    '#begin[Mengensplit]', '[KatZuord]V10|Alt|A[end]', '#end[Mengensplit]',
+    '[ME]m[end]', '#begin[Beschreibung]', '[Kurztext]Eins[end]',
+    '#end[Beschreibung]', '#end[Position]',
+    '#begin[Position]', '[OZ]010020[end]', '[Menge]5[end]', '[ME]m[end]',
+    '#begin[Beschreibung]', '[Kurztext]Zwei[end]', '#end[Beschreibung]', '#end[Position]',
+    '#begin[ZuschlPosition]', '[OZ]010030[end]', '[ZuschlArt]P[end]',
+    '[ZuschlTMenge]010010|2,5[end]', '[ZuschlTMenge] 010020 |[end]', '[ZuschlTMenge]019999|1[end]',
+    '[ZuschlTMenge]|3[end]',
+    '#begin[Beschreibung]', '[Kurztext]Zuschlag[end]', '#end[Beschreibung]', '#end[ZuschlPosition]',
+    '#begin[ZuschlPosition]', '[OZ]010040[end]', '[ZuschlArt]Z[end]',
+    '#begin[Beschreibung]', '[Kurztext]Zuschlag auf bezuschlagte[end]', '#end[Beschreibung]',
+    '#end[ZuschlPosition]'])), Diags, T);
+  try
+    CheckEquals(4, Integer(G.Award.BoQ.BoQBody.Itemlist.Children.Count), 'items and markup items');
+    I1 := TLandrixGaebXmlItem(G.Award.BoQ.BoQBody.Itemlist.Children[0]);
+    I2 := TLandrixGaebXmlItem(G.Award.BoQ.BoQBody.Itemlist.Children[1]);
+    Check(G.Award.BoQ.BoQBody.Itemlist.Children[2] is TLandrixGaebXmlMarkupItem, 'ZuschlPosition');
+    M1 := TLandrixGaebXmlMarkupItem(G.Award.BoQ.BoQBody.Itemlist.Children[2]);
+    M2 := TLandrixGaebXmlMarkupItem(G.Award.BoQ.BoQBody.Itemlist.Children[3]);
+    CheckEquals(3, Integer(I1.QtySplit.Count), 'three splits, the one without quantity left out');
+    CheckEqualsUtf8('4', I1.QtySplit[0].Qty.Text, 'Menge');
+    CheckEquals(1, Integer(I1.QtySplit[0].CtlgAssign.Count), 'its KatZuord');
+    CheckEqualsUtf8('60', I1.QtySplit[1].QtyPcnt.Text, 'MengeProz');
+    CheckEqualsUtf8('1', I1.QtySplit[2].Qty.Text, 'Menge before MengeProz');
+    Check(not I1.QtySplit[2].QtyPcnt.HasValue, 'MengeProz next to Menge not mapped');
+    CheckEqualsGaebStr('0030', M1.RNoPart, 'number of the markup item');
+    CheckEqualsGaebStr('ListInSubQty', M1.MarkupType, 'ZuschlArt P');
+    CheckEquals(2, Integer(M1.MarkupSubQty.Count), 'unknown and missing OZ left out');
+    CheckEqualsGaebStr(I1.ID, M1.MarkupSubQty[0].RefItem.IDRef, 'first item');
+    CheckEqualsUtf8('2.5', M1.MarkupSubQty[0].SubQty.Text, 'TMenge');
+    CheckEqualsGaebStr(I2.ID, M1.MarkupSubQty[1].RefItem.IDRef, 'second item, spaces ignored');
+    Check(not M1.MarkupSubQty[1].SubQty.HasValue, 'without TMenge the whole quantity');
+    CheckEqualsGaebStr('IdentAsMark', M2.MarkupType, 'ZuschlArt Z');
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-010'), 'references to no item: ' + Diags.ToText);
+    Check(Pos('2 reference(s)', Diags.ToText) > 0, 'unknown and missing OZ counted');
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-009'), 'split without quantity');
+    Check(Pos('1 quantity split(s)', Diags.ToText) > 0, 'counted');
+    Check(Pos('Mengensplit/MengeProz not mapped', Diags.ToText) > 0, 'MengeProz next to Menge reported');
+    Check(Pos('Mengensplit/KatZuord not mapped', Diags.ToText) > 0, 'KatZuord of the left out split');
+    Check(Pos('019999', Diags.ToText) = 0, 'no values in messages');
+    Check(LandrixGaebXmlCheckModel(G, T, CheckDiags), 'content model: ' + CheckDiags.ToText);
+  finally
+    G.Free;
+  end;
+  { the amounts of a markup item and keys X83 does not allow }
+  Diags.Clear;
+  G := MapText(WithBody(Lines(['#begin[Position]', '[OZ]010010[end]', '[Menge]1[end]', '[ME]m[end]',
+    '[BedarfAuftr]J[end]', '#begin[Beschreibung]', '[Kurztext]Eins[end]', '#end[Beschreibung]', '#end[Position]',
+    '#begin[ZuschlPosition]', '[OZ]010020[end]', '[ZuschlArt]A[end]', '[Entf]J[end]', '[GBZuschl]100[end]',
+    '[Zuschlag]5[end]', '[NachlassProz]1[end]', '[GB]4,95[end]', '[ZuschlTMenge]010010|zwei[end]',
+    '[ZuschlTMenge]010020|1[end]',
+    '#end[ZuschlPosition]'])), Diags, T);
+  try
+    M1 := TLandrixGaebXmlMarkupItem(G.Award.BoQ.BoQBody.Itemlist.Children[1]);
+    CheckEqualsGaebStr('Yes', TLandrixGaebXmlItem(G.Award.BoQ.BoQBody.Itemlist.Children[0]).ProvisAccpt, 'BedarfAuftr');
+    CheckEqualsGaebStr('AllInCat', M1.MarkupType, 'ZuschlArt A');
+    CheckEqualsGaebStr('Yes', M1.NotAppl, 'Entf');
+    CheckEqualsUtf8('5', M1.Markup.Text, 'Zuschlag');
+    CheckEqualsUtf8('100', M1.ITMarkup.Text, 'GBZuschl');
+    CheckEqualsUtf8('1', M1.DiscountPcnt.Text, 'NachlassProz');
+    CheckEqualsUtf8('4.95', M1.IT.Text, 'GB');
+    CheckEquals(0, Integer(M1.MarkupSubQty.Count), 'TMenge no number and the own OZ left out');
+    CheckEquals(1, Diags.CountOf('GAEB-BR-D2000-008'), 'TMenge no number: ' + Diags.ToText);
+    CheckEquals(1, Diags.CountOf('GAEB-D2000-MAP-010'), 'a markup item is no item to refer to');
+    Check(Pos('zwei', Diags.ToText) = 0, 'no values in messages');
+  finally
+    G.Free;
+    CheckDiags.Free;
+    Diags.Free;
+  end;
+end;
+
 procedure ExpectRejected(const S: AnsiString; const AMsg: string);
 var
   G: TLandrixGaebXmlGAEB;
@@ -999,6 +1087,7 @@ begin
   RegisterTest('DA2000Mapping.ToolboxForms', TestToolboxForms);
   RegisterTest('DA2000Mapping.References', TestReferences);
   RegisterTest('DA2000Mapping.Standard', TestStandard);
+  RegisterTest('DA2000Mapping.Markup', TestMarkup);
   RegisterTest('Local.DA2000Map', TestLocalMap);
 end;
 
