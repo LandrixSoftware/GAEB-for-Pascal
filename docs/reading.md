@@ -74,6 +74,41 @@ catalogue, as for the defined form with `ExtDat`). The model read from the `.P83
 written by the GAEB Toolbox, apart from IDs, text formatting and two differences: the total of
 the bill, which X83 does not carry, and `LumpSumItem`, which the reader sets for the unit `psch`.
 
+### Tolerances
+
+Real GAEB DA 2000 files often deviate from the rules. The reader takes what is unambiguous,
+reports it and goes on; a file is rejected only for the reasons named above. Line ends CR LF,
+LF, CR and CR CR LF (also mixed) and keywords in any case are read without a message. Messages
+name keys, lines and counts, never values.
+
+| Rule | Severity | What happens |
+|---|---|---|
+| `GAEB-BR-D2000-001` | error / information | `#begin[GAEB]` not in line 1: read from there on; text after `#end[GAEB]` is ignored (information) |
+| `GAEB-BR-D2000-002` | error | stray lines, objects outside `GAEB`, a `#begin` without closing bracket and an `#end` without its object are ignored; objects not closed before the `#end` of an enclosing object are closed there and keep their content |
+| `GAEB-BR-D2000-004` | information | `&#...;` that is no valid escape stays text |
+| `GAEB-BR-D2000-006` | information / warning / error | `Zeichensatz` missing or unknown: ANSI (Windows-1252); a UTF-8 byte order mark wins over the header; `UNICODE` is read as UTF-8; without a byte order mark, bytes that are not UTF-8 are read as ANSI (error) |
+| `GAEB-BR-D2000-007` | warning | the counters `m\|n` after `#end[GAEB]` (objects including `GAEB`, elements including empty ones) differ from the file or have another form; missing counters are not reported |
+| `GAEB-BR-D2000-014` | information | empty elements count as missing |
+| `GAEB-BR-D2000-029` | information | continuation lines indented to the column of the key's bracket are read as continuation |
+| `GAEB-BR-D2000-008` | error | a number that cannot be read is left out |
+| `GAEB-BR-D2000-009` | warning | a date without points is read as `TTMMJJJJ`, a time with seconds is taken; other forms are left out |
+| `GAEB-BR-D2000-010` | warning | `BezText` (not defined) is read as `Bez` |
+| `GAEB-BR-D2000-015` | error | parts of an ordinal number that do not fit `LVGlied` are left out |
+| `GAEB-BR-D2000-016` | error | categories and items on one level |
+| `GAEB-D2000-MAP-003` | warning | text complement marks that do not pair stay text |
+| `GAEB-D2000-MAP-004` | warning | values outside the values of GAEB DA 2000 (codes, lengths, ranges) are left out; texts that are only too long (catalogue names, `TLKNr`, text parts of `STLBBau`) are kept |
+| `GAEB-D2000-MAP-005` | information | without `LVGlied` the breakdown is derived from the ordinal numbers |
+| `GAEB-D2000-MAP-006` | warning | control characters XML does not allow are removed |
+| `GAEB-D2000-MAP-007` | information | breakdown levels without any value: `Num` is `No` for an index, `Yes` otherwise |
+| `GAEB-D2000-MAP-009` | warning | structures without their mandatory parts: `KatZuord`, `STLBBau`, `Mengensplit` and `Produkt` are left out; `AusfBeschr`, `LosGr` and `UnterBeschr` are kept without the missing parts; catalogue assignments in a file without `LV` stay, but no `BoQInfo/Ctlg` defines their catalogues |
+| `GAEB-D2000-MAP-010` | warning | references to a number not in the file (`BezugOZ`, `BezugAusfNr`, `ZuschlTMenge`, `LosNr`) are left out |
+
+An `STLBBau` key, a `ZuschlTMenge` or an `AuftrWertSchl` whose components are all blank is
+dropped without a message. `GAEB-D2000-MAP-001`
+folds the program-specific keys starting with `_` into `_*` per path. `Zertifikat` `N` means
+"not available" and gives no `GAEBInfo/Certific`. `ZusText/TextRTF` next to `Text` is reported, not
+merged, and `Position/Aufmass` is not mapped yet.
+
 `LandrixGaebDA2000ReadFile` (and `...Stream`, `...Buffer`) return only the syntax model, as it
 is mapped (no totals computed), with the detection of the file and the target of the model.
 

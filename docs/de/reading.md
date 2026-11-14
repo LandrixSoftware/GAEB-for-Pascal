@@ -79,6 +79,42 @@ dem Modell aus seiner von der GAEB-Toolbox geschriebenen `.X83` bis auf IDs, Tex
 und zwei Unterschiede: die Summe des LV, die X83 nicht trägt, und `LumpSumItem`, das der Leser
 für die Einheit `psch` setzt.
 
+### Toleranzen
+
+Echte GAEB-DA-2000-Dateien weichen oft von den Regeln ab. Der Leser übernimmt, was eindeutig ist,
+meldet es und liest weiter; abgewiesen wird eine Datei nur aus den oben genannten Gründen.
+Zeilenenden CR LF, LF, CR und CR CR LF (auch gemischt) und Schlüsselwörter in beliebiger
+Schreibung werden ohne Meldung gelesen. Die Meldungen nennen Schlüssel, Zeilen und Anzahlen, nie
+Werte.
+
+| Regel | Schwere | Was geschieht |
+|---|---|---|
+| `GAEB-BR-D2000-001` | Fehler / Hinweis | `#begin[GAEB]` nicht in Zeile 1: ab dort gelesen; Text nach `#end[GAEB]` wird übergangen (Hinweis) |
+| `GAEB-BR-D2000-002` | Fehler | verirrte Zeilen, Objekte außerhalb von `GAEB`, ein `#begin` ohne schließende Klammer und ein `#end` ohne sein Objekt werden übergangen; Objekte, die vor dem `#end` eines umgebenden Objekts nicht geschlossen sind, werden dort geschlossen und behalten ihren Inhalt |
+| `GAEB-BR-D2000-004` | Hinweis | `&#...;`, das keine gültige Ersetzung ist, bleibt Text |
+| `GAEB-BR-D2000-006` | Hinweis / Warnung / Fehler | `Zeichensatz` fehlt oder unbekannt: ANSI (Windows-1252); eine UTF-8-Bytereihenfolgemarke geht dem Kopf vor; `UNICODE` wird als UTF-8 gelesen; ohne Bytereihenfolgemarke werden Bytes, die kein UTF-8 sind, als ANSI gelesen (Fehler) |
+| `GAEB-BR-D2000-007` | Warnung | die Zähler `m\|n` nach `#end[GAEB]` (Objekte samt `GAEB`, Elemente samt leeren) weichen von der Datei ab oder haben eine andere Form; fehlende Zähler werden nicht gemeldet |
+| `GAEB-BR-D2000-014` | Hinweis | leere Elemente gelten als fehlend |
+| `GAEB-BR-D2000-029` | Hinweis | Folgezeilen, die bis zur Spalte der Schlüsselklammer eingerückt sind, werden als Fortsetzung gelesen |
+| `GAEB-BR-D2000-008` | Fehler | eine Zahl, die sich nicht lesen lässt, fällt weg |
+| `GAEB-BR-D2000-009` | Warnung | ein Datum ohne Punkte wird als `TTMMJJJJ` gelesen, eine Uhrzeit mit Sekunden übernommen; andere Formen fallen weg |
+| `GAEB-BR-D2000-010` | Warnung | `BezText` (nicht festgelegt) wird als `Bez` gelesen |
+| `GAEB-BR-D2000-015` | Fehler | Teile einer Ordnungszahl, die nicht zu `LVGlied` passen, fallen weg |
+| `GAEB-BR-D2000-016` | Fehler | Bereiche und Positionen auf einer Stufe |
+| `GAEB-D2000-MAP-003` | Warnung | Marken von Textergänzungen ohne Gegenstück bleiben Text |
+| `GAEB-D2000-MAP-004` | Warnung | Werte außerhalb der Werte von GAEB DA 2000 (Kennungen, Längen, Bereiche) fallen weg; Texte, die nur zu lang sind (Katalognamen, `TLKNr`, Textteile von `STLBBau`), bleiben |
+| `GAEB-D2000-MAP-005` | Hinweis | ohne `LVGlied` wird die Gliederung aus den Ordnungszahlen abgeleitet |
+| `GAEB-D2000-MAP-006` | Warnung | Steuerzeichen, die XML nicht erlaubt, werden entfernt |
+| `GAEB-D2000-MAP-007` | Hinweis | Gliederungsstufen ganz ohne Wert: `Num` ist `No` für einen Index, sonst `Yes` |
+| `GAEB-D2000-MAP-009` | Warnung | Strukturen ohne ihre Pflichtteile: `KatZuord`, `STLBBau`, `Mengensplit` und `Produkt` fallen weg; `AusfBeschr`, `LosGr` und `UnterBeschr` bleiben ohne die fehlenden Teile; Katalogzuordnungen in einer Datei ohne `LV` bleiben, aber kein `BoQInfo/Ctlg` legt ihre Kataloge fest |
+| `GAEB-D2000-MAP-010` | Warnung | Bezüge auf eine Nummer, die die Datei nicht enthält (`BezugOZ`, `BezugAusfNr`, `ZuschlTMenge`, `LosNr`), fallen weg |
+
+Ein `STLBBau`-Schlüssel, eine `ZuschlTMenge` oder ein `AuftrWertSchl`, deren Teile alle leer
+sind, fallen ohne Meldung weg. `GAEB-D2000-MAP-001` fasst die
+programmeigenen Schlüssel, die mit `_` beginnen, je Pfad zu `_*` zusammen. `Zertifikat` `N`
+heißt „nicht vorhanden“ und ergibt kein `GAEBInfo/Certific`. `ZusText/TextRTF` neben `Text` wird
+gemeldet, nicht zusammengeführt, und `Position/Aufmass` wird noch nicht abgebildet.
+
 `LandrixGaebDA2000ReadFile` (und `...Stream`, `...Buffer`) liefern nur das Syntaxmodell, wie
 es abgebildet ist (keine Summen berechnet), mit der Erkennung der Datei und dem Ziel des Modells.
 

@@ -85,7 +85,7 @@
                                    or description too long for GAEB DA
                                    XML, kept; components of STLBBau, StLNr
                                    and TLKNr outside GAEB DA 2000 (numbers
-                                   and versions left out, names kept; once
+                                   and versions left out, texts kept; once
                                    per file with a count)
     GAEB-D2000-MAP-005 information  BoQBkdn derived from the ordinal
                                    numbers
@@ -2695,7 +2695,7 @@ begin
     if FStandardValues > 0 then
       Report(nil, RuleValue, gsWarning, IntToStr(FStandardValues) +
         ' component(s) of STLBBau, StLNr or TLKNr outside GAEB DA 2000; numbers and versions left out, ' +
-        'names kept');
+        'texts kept');
     if FIncompleteStlb > 0 then
       Report(nil, RuleIncomplete, gsWarning, IntToStr(FIncompleteStlb) +
         ' STLB-Bau key(s) (STLBBau) without catalogue name or group; left out');
