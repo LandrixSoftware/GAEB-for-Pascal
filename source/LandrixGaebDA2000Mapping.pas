@@ -220,6 +220,49 @@ type
     Length: Integer;
   end;
 
+  { Names with an integer each in a balanced search tree (AVL): input is
+    untrusted, so no lookup may take more than logarithmic time, whatever
+    the names are; the first value added for a name wins. Names compare
+    as written (ordinal). }
+  TNameTable = class(TObject)
+  private
+    FNames: array of TLandrixGaebString;
+    FValues: array of Integer;
+    FLeft, FRight, FHeight: array of Integer;
+    FRoot: Integer;
+    FCount: Integer;
+    FAdded: Boolean;
+    function Height(ANode: Integer): Integer;
+    procedure Update(ANode: Integer);
+    function RotateLeft(ANode: Integer): Integer;
+    function RotateRight(ANode: Integer): Integer;
+    function Balance(ANode: Integer): Integer;
+    function Insert(ANode: Integer; const AName: TLandrixGaebString; AValue: Integer): Integer;
+  public
+    constructor Create;
+    { Value of AName, -1 if absent. }
+    function Find(const AName: TLandrixGaebString): Integer;
+    { Adds AName with AValue unless present; False if it was present (its
+      value stays). }
+    function Add(const AName: TLandrixGaebString; AValue: Integer): Boolean;
+    property Count: Integer read FCount;
+  end;
+
+  { The children of a node grouped by key (ASCII case-insensitive), in
+    document order, with a cursor per group for Child and one for
+    NextObject. A child before a cursor never becomes eligible again: Used
+    is only ever set, and a child that is no object stays one. }
+  TChildIndex = class(TObject)
+  private
+    FGroups: TNameTable;
+    FStart, FLen, FChildPos, FObjectPos: array of Integer;
+    FOrder: array of Integer;
+  public
+    constructor Create(ANode: TLandrixGaebDA2000Node);
+    destructor Destroy; override;
+    function Group(const AKey: string): Integer;
+  end;
+
   TMapper = class(TObject)
   private
     FDiags: TLandrixGaebDiagnostics;
@@ -258,6 +301,9 @@ type
       references to resolve after the mapping }
     FItemNos, FItemIds, FPerfNos, FPerfIds: array of TLandrixGaebString;
     FItemCount, FPerfCount: Integer;
+    { number -> index into the arrays above (first wins); lots by
+      LotKey, catalogues by name }
+    FItemTable, FPerfTable, FLotTable, FCtlgTable: TNameTable;
     FRefs: array of TLandrixGaebXmlRefItem;
     FRefKeys: array of TLandrixGaebString;
     FRefIsPerf: array of Boolean;
@@ -327,6 +373,8 @@ type
     procedure MapBody(ANode: TLandrixGaebDA2000Node; ADepth: Integer; ABody: TLandrixGaebXmlBoQBody);
     procedure ReportUnused(ARoot: TLandrixGaebDA2000Node);
   public
+    constructor Create;
+    destructor Destroy; override;
     function Map(ADocument: TLandrixGaebDA2000Document; ADiagnostics: TLandrixGaebDiagnostics;
       AInvalidTotals: TObjectList; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
   end;
@@ -379,19 +427,306 @@ begin
   FDiags.AddAt(ARuleId, ASeverity, '', Line, 0, -1, AMessage);
 end;
 
+{ ---- TNameTable ---- }
+
+{ Ordinal comparison of two names: < 0, 0 or > 0. }
+function CompareNames(const A, B: TLandrixGaebString): Integer;
+var
+  I, N: Integer;
+begin
+  N := Length(A);
+  if Length(B) < N then
+    N := Length(B);
+  for I := 1 to N do
+    if A[I] <> B[I] then
+    begin
+      Result := Ord(A[I]) - Ord(B[I]);
+      Exit;
+    end;
+  Result := Length(A) - Length(B);
+end;
+
+constructor TNameTable.Create;
+begin
+  inherited Create;
+  FRoot := -1;
+end;
+
+function TNameTable.Height(ANode: Integer): Integer;
+begin
+  if ANode < 0 then
+    Result := 0
+  else
+    Result := FHeight[ANode];
+end;
+
+procedure TNameTable.Update(ANode: Integer);
+var
+  L, R: Integer;
+begin
+  L := Height(FLeft[ANode]);
+  R := Height(FRight[ANode]);
+  if L > R then
+    FHeight[ANode] := L + 1
+  else
+    FHeight[ANode] := R + 1;
+end;
+
+function TNameTable.RotateLeft(ANode: Integer): Integer;
+begin
+  Result := FRight[ANode];
+  FRight[ANode] := FLeft[Result];
+  FLeft[Result] := ANode;
+  Update(ANode);
+  Update(Result);
+end;
+
+function TNameTable.RotateRight(ANode: Integer): Integer;
+begin
+  Result := FLeft[ANode];
+  FLeft[ANode] := FRight[Result];
+  FRight[Result] := ANode;
+  Update(ANode);
+  Update(Result);
+end;
+
+function TNameTable.Balance(ANode: Integer): Integer;
+var
+  Diff, T: Integer;
+begin
+  Update(ANode);
+  Diff := Height(FLeft[ANode]) - Height(FRight[ANode]);
+  if Diff > 1 then
+  begin
+    if Height(FLeft[FLeft[ANode]]) < Height(FRight[FLeft[ANode]]) then
+    begin
+      T := RotateLeft(FLeft[ANode]);
+      FLeft[ANode] := T;
+    end;
+    Result := RotateRight(ANode);
+  end
+  else if Diff < -1 then
+  begin
+    if Height(FRight[FRight[ANode]]) < Height(FLeft[FRight[ANode]]) then
+    begin
+      T := RotateRight(FRight[ANode]);
+      FRight[ANode] := T;
+    end;
+    Result := RotateLeft(ANode);
+  end
+  else
+    Result := ANode;
+end;
+
+{ The subtree ANode with AName added (the arrays have room for one more
+  name; recursion depth is the height of the tree, logarithmic). }
+function TNameTable.Insert(ANode: Integer; const AName: TLandrixGaebString; AValue: Integer): Integer;
+var
+  C, T: Integer;
+begin
+  if ANode < 0 then
+  begin
+    Result := FCount;
+    FNames[Result] := AName;
+    FValues[Result] := AValue;
+    FLeft[Result] := -1;
+    FRight[Result] := -1;
+    FHeight[Result] := 1;
+    Inc(FCount);
+    FAdded := True;
+    Exit;
+  end;
+  C := CompareNames(AName, FNames[ANode]);
+  if C = 0 then
+  begin
+    Result := ANode;
+    Exit;
+  end;
+  if C < 0 then
+  begin
+    T := Insert(FLeft[ANode], AName, AValue);
+    FLeft[ANode] := T;
+  end
+  else
+  begin
+    T := Insert(FRight[ANode], AName, AValue);
+    FRight[ANode] := T;
+  end;
+  Result := Balance(ANode);
+end;
+
+function TNameTable.Find(const AName: TLandrixGaebString): Integer;
+var
+  N, C: Integer;
+begin
+  N := FRoot;
+  while N >= 0 do
+  begin
+    C := CompareNames(AName, FNames[N]);
+    if C = 0 then
+    begin
+      Result := FValues[N];
+      Exit;
+    end;
+    if C < 0 then
+      N := FLeft[N]
+    else
+      N := FRight[N];
+  end;
+  Result := -1;
+end;
+
+function TNameTable.Add(const AName: TLandrixGaebString; AValue: Integer): Boolean;
+var
+  T: Integer;
+begin
+  if FCount >= Length(FNames) then
+  begin
+    SetLength(FNames, 2 * FCount + 16);
+    SetLength(FValues, 2 * FCount + 16);
+    SetLength(FLeft, 2 * FCount + 16);
+    SetLength(FRight, 2 * FCount + 16);
+    SetLength(FHeight, 2 * FCount + 16);
+  end;
+  FAdded := False;
+  T := Insert(FRoot, AName, AValue);
+  FRoot := T;
+  Result := FAdded;
+end;
+
+{ ---- TChildIndex ---- }
+
+{ Group name of a key: ASCII upper case, as CompareText compares. }
+function GroupName(const AKey: string): TLandrixGaebString;
+begin
+  Result := W(UpperCase(AKey));
+end;
+
+constructor TChildIndex.Create(ANode: TLandrixGaebDA2000Node);
+var
+  I, G, N: Integer;
+  Groups: array of Integer;
+  Fill: array of Integer;
+begin
+  inherited Create;
+  Groups := nil;
+  Fill := nil;
+  FGroups := TNameTable.Create;
+  N := ANode.Count;
+  SetLength(Groups, N);
+  for I := 0 to N - 1 do
+  begin
+    G := FGroups.Find(GroupName(ANode[I].Key));
+    if G < 0 then
+    begin
+      G := FGroups.Count;
+      FGroups.Add(GroupName(ANode[I].Key), G);
+      if G >= Length(FLen) then
+        SetLength(FLen, 2 * G + 16);
+      FLen[G] := 0;
+    end;
+    Groups[I] := G;
+    Inc(FLen[G]);
+  end;
+  G := FGroups.Count;
+  SetLength(FLen, G);
+  SetLength(FStart, G);
+  SetLength(FChildPos, G);
+  SetLength(FObjectPos, G);
+  SetLength(Fill, G);
+  N := 0;
+  for I := 0 to G - 1 do
+  begin
+    FStart[I] := N;
+    Inc(N, FLen[I]);
+    FChildPos[I] := 0;
+    FObjectPos[I] := 0;
+    Fill[I] := 0;
+  end;
+  SetLength(FOrder, ANode.Count);
+  for I := 0 to ANode.Count - 1 do
+  begin
+    G := Groups[I];
+    FOrder[FStart[G] + Fill[G]] := I;
+    Inc(Fill[G]);
+  end;
+end;
+
+destructor TChildIndex.Destroy;
+begin
+  FGroups.Free;
+  inherited Destroy;
+end;
+
+function TChildIndex.Group(const AKey: string): Integer;
+begin
+  Result := FGroups.Find(GroupName(AKey));
+end;
+
+{ ---- TMapper ---- }
+
+constructor TMapper.Create;
+begin
+  inherited Create;
+  FItemTable := TNameTable.Create;
+  FPerfTable := TNameTable.Create;
+  FLotTable := TNameTable.Create;
+  FCtlgTable := TNameTable.Create;
+end;
+
+destructor TMapper.Destroy;
+begin
+  FCtlgTable.Free;
+  FLotTable.Free;
+  FPerfTable.Free;
+  FItemTable.Free;
+  inherited Destroy;
+end;
+
 function TMapper.NewId(const APrefix: string): TLandrixGaebString;
 begin
   Inc(FNextId);
   Result := W(APrefix + IntToStr(FNextId));
 end;
 
+{ Children up to this number are searched directly, more through a
+  TChildIndex. }
+const
+  IndexFrom = 16;
+
+function ChildIndex(ANode: TLandrixGaebDA2000Node): TChildIndex;
+begin
+  if ANode.Lookup = nil then
+    ANode.Lookup := TChildIndex.Create(ANode);
+  Result := TChildIndex(ANode.Lookup);
+end;
+
 function TMapper.Child(ANode: TLandrixGaebDA2000Node; const AKey: string): TLandrixGaebDA2000Node;
 var
-  I: Integer;
+  I, G, P: Integer;
+  X: TChildIndex;
 begin
   Result := nil;
   if ANode = nil then
     Exit;
+  if ANode.Count > IndexFrom then
+  begin
+    X := ChildIndex(ANode);
+    G := X.Group(AKey);
+    if G < 0 then
+      Exit;
+    P := X.FChildPos[G];
+    while (P < X.FLen[G]) and ANode[X.FOrder[X.FStart[G] + P]].Used do
+      Inc(P);
+    X.FChildPos[G] := P;
+    if P < X.FLen[G] then
+    begin
+      Result := ANode[X.FOrder[X.FStart[G] + P]];
+      Result.Used := True;
+      X.FChildPos[G] := P + 1;
+    end;
+    Exit;
+  end;
   for I := 0 to ANode.Count - 1 do
     if (not ANode[I].Used) and (CompareText(ANode[I].Key, AKey) = 0) then
     begin
@@ -406,11 +741,34 @@ end;
   stays unused and is reported. }
 function TMapper.NextObject(ANode: TLandrixGaebDA2000Node; const AKey: string): TLandrixGaebDA2000Node;
 var
-  I: Integer;
+  I, G, P: Integer;
+  X: TChildIndex;
+  N: TLandrixGaebDA2000Node;
 begin
   Result := nil;
   if ANode = nil then
     Exit;
+  if ANode.Count > IndexFrom then
+  begin
+    X := ChildIndex(ANode);
+    G := X.Group(AKey);
+    if G < 0 then
+      Exit;
+    P := X.FObjectPos[G];
+    while P < X.FLen[G] do
+    begin
+      N := ANode[X.FOrder[X.FStart[G] + P]];
+      Inc(P);
+      if (not N.Used) and N.IsObject then
+      begin
+        Result := N;
+        Result.Used := True;
+        Break;
+      end;
+    end;
+    X.FObjectPos[G] := P;
+    Exit;
+  end;
   for I := 0 to ANode.Count - 1 do
     if (not ANode[I].Used) and ANode[I].IsObject and (CompareText(ANode[I].Key, AKey) = 0) then
     begin
@@ -1012,6 +1370,24 @@ begin
       Result := False;
       Exit;
     end;
+end;
+
+{ Key of a lot number: equal for two numbers exactly when they are equal
+  as written or, both of digits only, as numbers (leading zeros do not
+  count). }
+function LotKey(const S: TLandrixGaebString): TLandrixGaebString;
+var
+  I: Integer;
+begin
+  if IsWhole(S) and (S[1] <> '-') then
+  begin
+    I := 1;
+    while (I < Length(S)) and (S[I] = '0') do
+      Inc(I);
+    Result := '#' + Copy(S, I, MaxInt);
+  end
+  else
+    Result := '$' + S;
 end;
 
 { Component I (0-based) of a structure, trimmed; '' if there is none. }
@@ -1633,6 +2009,7 @@ begin
   end;
   FItemNos[FItemCount] := TrimW(AOZ);
   FItemIds[FItemCount] := AId;
+  FItemTable.Add(FItemNos[FItemCount], FItemCount);
   Inc(FItemCount);
 end;
 
@@ -1946,6 +2323,7 @@ begin
     end;
     FPerfNos[FPerfCount] := APerf.PerfNo;
     FPerfIds[FPerfCount] := APerf.ID;
+    FPerfTable.Add(FPerfNos[FPerfCount], FPerfCount);
     Inc(FPerfCount);
   end
   else if No.HasValue then
@@ -2038,13 +2416,16 @@ begin
     Inc(FIncompleteKat);
     Exit;
   end;
-  I := 0;
-  while (I < FCtlgCount) and (FCtlgNames[I] <> Name) do
-    Inc(I);
-  if I = FCtlgCount then
+  I := FCtlgTable.Find(Name);
+  if I < 0 then
   begin
-    SetLength(FCtlgNames, FCtlgCount + 1);
-    SetLength(FCtlgLabels, FCtlgCount + 1);
+    I := FCtlgCount;
+    if FCtlgCount >= Length(FCtlgNames) then
+    begin
+      SetLength(FCtlgNames, 2 * FCtlgCount + 16);
+      SetLength(FCtlgLabels, 2 * FCtlgCount + 16);
+    end;
+    FCtlgTable.Add(Name, I);
     FCtlgNames[I] := Name;
     FCtlgLabels[I] := Lbl;
     Inc(FCtlgCount);
@@ -2114,20 +2495,16 @@ begin
     Id := '';
     if FRefIsPerf[I] then
     begin
-      for J := 0 to FPerfCount - 1 do
-        if FPerfNos[J] = FRefKeys[I] then
-        begin
-          Id := FPerfIds[J];
-          Break;
-        end;
+      J := FPerfTable.Find(FRefKeys[I]);
+      if J >= 0 then
+        Id := FPerfIds[J];
     end
     else
-      for J := 0 to FItemCount - 1 do
-        if FItemNos[J] = FRefKeys[I] then
-        begin
-          Id := FItemIds[J];
-          Break;
-        end;
+    begin
+      J := FItemTable.Find(FRefKeys[I]);
+      if J >= 0 then
+        Id := FItemIds[J];
+    end;
     if Id <> '' then
     begin
       FRefs[I].IDRef := Id;
@@ -2182,6 +2559,7 @@ begin
         end;
         FLotNos[FLotCount] := TrimW(OZ);
         FLotIds[FLotCount] := Ctgy.ID;
+        FLotTable.Add(LotKey(FLotNos[FLotCount]), FLotCount);
         Inc(FLotCount);
       end;
       { Bez (V1.0/V1.1) or BezTx (V1.2); BezText is not defined but occurs }
@@ -2248,29 +2626,6 @@ end;
   Nullen nicht), und die Summen. Eine LosNr ohne Bereich wird mit den
   anderen Bezuegen gezaehlt und weggelassen; eine LosGr ohne LosGrNr, die
   GAEB DA XML verlangt, wird gezaehlt und behalten. }
-{ True if the lot numbers A and B are equal as written or, both of digits
-  only, as numbers (leading zeros do not count). }
-function SameLot(const A, B: TLandrixGaebString): Boolean;
-
-  function Digits(const S: TLandrixGaebString): Boolean;
-  begin
-    Result := IsWhole(S) and (S[1] <> '-');
-  end;
-
-  function Stripped(const S: TLandrixGaebString): TLandrixGaebString;
-  var
-    I: Integer;
-  begin
-    I := 1;
-    while (I < Length(S)) and (S[I] = '0') do
-      Inc(I);
-    Result := Copy(S, I, MaxInt);
-  end;
-
-begin
-  Result := (A = B) or (Digits(A) and Digits(B) and (Stripped(A) = Stripped(B)));
-end;
-
 procedure TMapper.MapLotGroups(ALV: TLandrixGaebDA2000Node; ABoQ: TLandrixGaebXmlBoQ);
 var
   N, K: TLandrixGaebDA2000Node;
@@ -2297,12 +2652,9 @@ begin
       if K.IsObject or (Ref = '') then
         Continue;
       Id := '';
-      for I := 0 to FLotCount - 1 do
-        if SameLot(FLotNos[I], Ref) then
-        begin
-          Id := FLotIds[I];
-          Break;
-        end;
+      I := FLotTable.Find(LotKey(Ref));
+      if I >= 0 then
+        Id := FLotIds[I];
       if Id = '' then
         Inc(FUnresolved)
       else
@@ -2416,7 +2768,8 @@ end;
 
 procedure TMapper.ReportUnused(ARoot: TLandrixGaebDA2000Node);
 var
-  Keys: TStringList;
+  Keys: TNameTable;
+  Paths: array of string;
   Counts: array of Integer;
   Lines: array of Integer;
   I: Integer;
@@ -2434,12 +2787,19 @@ var
       Path := APath + '/' + Key;
       if not ANode[J].Used then
       begin
-        K := Keys.IndexOf(Path);
+        { paths compare ASCII case-insensitive, the first spelling is shown }
+        K := Keys.Find(GroupName(Path));
         if K < 0 then
         begin
-          K := Keys.Add(Path);
-          SetLength(Counts, K + 1);
-          SetLength(Lines, K + 1);
+          K := Keys.Count;
+          Keys.Add(GroupName(Path), K);
+          if K >= Length(Counts) then
+          begin
+            SetLength(Paths, 2 * K + 16);
+            SetLength(Counts, 2 * K + 16);
+            SetLength(Lines, 2 * K + 16);
+          end;
+          Paths[K] := Path;
           Counts[K] := 0;
           Lines[K] := ANode[J].Line;
         end;
@@ -2451,13 +2811,16 @@ var
   end;
 
 begin
-  Keys := TStringList.Create;
+  { nothing to report to: nothing to collect }
+  if FDiags = nil then
+    Exit;
+  Keys := TNameTable.Create;
   try
     Walk(ARoot, ARoot.Key);
     for I := 0 to Keys.Count - 1 do
-      if FDiags <> nil then
-        FDiags.AddAt(RuleNotMapped, gsInformation, '', Lines[I], 0, -1,
-          Keys[I] + ' not mapped (' + IntToStr(Counts[I]) + ' time(s))');
+      FDiags.AddAt(RuleNotMapped, gsInformation, '', Lines[I], 0, -1,
+        Paths[I] + ' not mapped (' +
+        IntToStr(Counts[I]) + ' time(s))');
   finally
     Keys.Free;
   end;
@@ -2470,6 +2833,7 @@ function TMapper.Map(ADocument: TLandrixGaebDA2000Document; ADiagnostics: TLandr
 var
   Root, Info, Prj, V, VI, AG, AN, LV, LI, Adr: TLandrixGaebDA2000Node;
   DP: string;
+  DPLine: Integer;
   Phase: TLandrixGaebPhase;
   G: TLandrixGaebXmlGAEB;
   BoQ: TLandrixGaebXmlBoQ;
@@ -2483,15 +2847,22 @@ begin
   V := Child(Root, 'Vergabe');
   if V = nil then
     raise ELandrixGaebError.Create('GAEB DA 2000: no object Vergabe; only the exchange phases 81 to 86 are read');
+  { the line of DP or, without it, of Vergabe }
+  DPLine := V.Line;
+  if V.Find('DP') <> nil then
+    DPLine := V.Find('DP').Line;
   DP := AsciiOf(Str(V, 'DP'));
   Phase := LandrixGaebPhaseFromDP(LandrixXmlStringToUtf8(DP));
   if not (Phase in [gp81, gp82, gp83, gp84, gp85, gp86]) then
   begin
-    { only a phase number is named, never another value }
+    { only a phase number is named (the detection reports it as well),
+      never another value }
     if (Length(DP) = 2) and (DP[1] >= '0') and (DP[1] <= '9') and (DP[2] >= '0') and (DP[2] <= '9') then
-      raise ELandrixGaebError.Create('GAEB DA 2000: exchange phase ' + DP + ' is not read (81 to 86)')
+      raise ELandrixGaebError.Create('GAEB DA 2000, line ' + IntToStr(DPLine) + ': exchange phase ' + DP +
+        ' is not read (81 to 86)')
     else
-      raise ELandrixGaebError.Create('GAEB DA 2000: DP is no exchange phase; only 81 to 86 are read');
+      raise ELandrixGaebError.Create('GAEB DA 2000, line ' + IntToStr(DPLine) +
+        ': DP is no exchange phase; only 81 to 86 are read');
   end;
   ATarget := LandrixGaebTarget(gv33, ge2021_05, Phase);
   G := TLandrixGaebXmlGAEB.Create;

@@ -1,8 +1,9 @@
 # GAEB-for-Pascal
 
 Pascal-Bibliothek zum Lesen, Schreiben, Prüfen und Konvertieren von GAEB-Dateien (GAEB DA XML
-3.2 und 3.3; 3.0 und 3.1 lesen). / Pascal library to read, write, check and convert GAEB files
-(GAEB DA XML 3.2 and 3.3; reading 3.0 and 3.1).
+3.2 und 3.3; 3.0 und 3.1 lesen; GAEB DA 2000 der Phasen 81 bis 86 lesen). / Pascal library to
+read, write, check and convert GAEB files (GAEB DA XML 3.2 and 3.3; reading 3.0 and 3.1; reading
+GAEB DA 2000 of the phases 81 to 86).
 
 **Status:** Version 1.2.0; die stabilen Units folgen der semantischen Versionierung. / Version
 1.2.0; the stable units follow semantic versioning.

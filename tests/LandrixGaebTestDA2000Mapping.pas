@@ -39,6 +39,7 @@ uses
   LandrixGaebXmlWriter,
   LandrixGaebXmlCheck,
   LandrixGaebDA2000Parser,
+  LandrixGaebDA2000Text,
   LandrixGaebDA2000Mapping,
   LandrixGaebTestFramework;
 
@@ -401,6 +402,7 @@ begin
       begin
         Raised := True;
         Check(Pos('VERTRAULICH', E.Message) = 0, 'no value in the message: ' + E.Message);
+        Check(Pos('line 15', E.Message) > 0, 'the line of DP: ' + E.Message);
       end;
     end;
     Check(Raised, 'DP without a phase rejected');
@@ -1328,6 +1330,179 @@ begin
   end;
 end;
 
+{ A growing text without copying it per line. }
+type
+  TBuild = record
+    Data: AnsiString;
+    Len: Integer;
+  end;
+
+procedure Put(var B: TBuild; const S: AnsiString);
+begin
+  if B.Len + Length(S) + 2 > Length(B.Data) then
+    SetLength(B.Data, 2 * (B.Len + Length(S) + 2) + 1024);
+  Move(Pointer(S)^, B.Data[B.Len + 1], Length(S));
+  Inc(B.Len, Length(S));
+  B.Data[B.Len + 1] := #13;
+  B.Data[B.Len + 2] := #10;
+  Inc(B.Len, 2);
+end;
+
+{ Decimal digits of a non-negative I. }
+function Digits(I: Integer): AnsiString;
+begin
+  Result := '';
+  repeat
+    Result := AnsiChar(Ord('0') + I mod 10) + Result;
+    I := I div 10;
+  until I = 0;
+end;
+
+function Built(const B: TBuild): AnsiString;
+begin
+  Result := Copy(B.Data, 1, B.Len);
+end;
+
+{ Untrusted input: many siblings of one key, many references, many
+  catalogues, many unknown keys and deeply nested RTF groups are mapped
+  in time linear in the input (the counts here would take minutes with
+  a search over all siblings per lookup) and without unbounded memory. }
+procedure TestLargeInput;
+const
+  Texts = 30000;
+  Items = 9000;
+  Keys = 20000;
+  { keys of 15 blocks AX or B9, which share a value under a simple
+    polynomial hash: lookups must not depend on such properties }
+  Blocks = 15;
+  Groups = 100000;
+var
+  Diags: TLandrixGaebDiagnostics;
+  G: TLandrixGaebXmlGAEB;
+  T: TLandrixGaebTarget;
+  B: TBuild;
+  S, No: AnsiString;
+  Deep: TLandrixGaebString;
+  I, J: Integer;
+  Ctgy: TLandrixGaebXmlBoQCtgy;
+  First, Last: TLandrixGaebXmlItem;
+  X: TLandrixGaebDA2000Text;
+begin
+  B.Data := '';
+  B.Len := 0;
+  Put(B, Head('83') + Lines(['#begin[LV]', '#begin[LVInfo]', '[Name]LV1[end]', '[Bez]Rohbau[end]',
+    '[KurzLang]1[end]']) + Glied + Lines(['#end[LVInfo]', '#begin[LVBereich]', '[OZ]01[end]',
+    '[Bez]Bereich[end]']));
+  { items 0100010 ...; each after the first refers to the first; a
+    catalogue of its own each }
+  for I := 1 to Items do
+  begin
+    No := Digits(I);
+    while Length(No) < 4 do
+      No := '0' + No;
+    Put(B, '#begin[Position]');
+    Put(B, '[OZ]01' + No + '0[end]');
+    Put(B, '[Menge]1[end]');
+    Put(B, '[ME]m[end]');
+    if I > 1 then
+    begin
+      Put(B, '[BezugBeschr]W[end]');
+      Put(B, '[BezugOZ]0100010[end]');
+    end;
+    Put(B, '#begin[Beschreibung]');
+    Put(B, '[Kurztext]P[end]');
+    Put(B, '#end[Beschreibung]');
+    Put(B, '#begin[KatZuord]');
+    Put(B, '[KatNam]K' + Digits(I) + '[end]');
+    Put(B, '[KatSchl]1[end]');
+    Put(B, '#end[KatZuord]');
+    Put(B, '#end[Position]');
+  end;
+  Put(B, '#end[LVBereich]');
+  Put(B, '#end[LV]');
+  for I := 1 to Texts do
+  begin
+    Put(B, '#begin[ZusText]');
+    Put(B, '[Text]Z[end]');
+    Put(B, '#end[ZusText]');
+  end;
+  Put(B, '#end[Vergabe]');
+  for I := 1 to Keys do
+    Put(B, '[Unbekannt' + Digits(I) + ']x[end]');
+  { the same key in another case: one report for both }
+  Put(B, '[UNBEKANNT1]y[end]');
+  for I := 0 to (1 shl Blocks) - 1 do
+  begin
+    No := '';
+    for J := 0 to Blocks - 1 do
+      if Odd(I shr J) then
+        No := No + 'B9'
+      else
+        No := No + 'AX';
+    Put(B, '[' + No + ']x[end]');
+  end;
+  Put(B, '#end[GAEB]');
+  S := Built(B);
+  Diags := TLandrixGaebDiagnostics.Create;
+  try
+    G := MapText(S, Diags, T);
+    try
+      CheckEquals(Texts, Integer(G.Award.AddText.Count), 'every ZusText');
+      Ctgy := TLandrixGaebXmlBoQCtgy(G.Award.BoQ.BoQBody.Children[0]);
+      CheckEquals(Items, Integer(Ctgy.BoQBody.Itemlist.Children.Count), 'every item');
+      First := TLandrixGaebXmlItem(Ctgy.BoQBody.Itemlist.Children[0]);
+      Last := TLandrixGaebXmlItem(Ctgy.BoQBody.Itemlist.Children[Items - 1]);
+      CheckEqualsGaebStr(First.ID, Last.RefRNo.IDRef, 'reference resolved');
+      CheckEquals(0, Diags.CountOf('GAEB-D2000-MAP-010'), 'every reference resolved');
+      CheckEquals(Items, Integer(G.Award.BoQ.BoQInfo.Ctlg.Count), 'one catalogue per name');
+      CheckEquals(Keys + (1 shl Blocks), Diags.CountOf('GAEB-D2000-MAP-001'), 'every unknown key reported once');
+    finally
+      G.Free;
+    end;
+  finally
+    Diags.Free;
+  end;
+  { without diagnostics nothing is collected for the unknown keys }
+  MapText(S, nil, T).Free;
+  Deep := '';
+  SetLength(Deep, 2 * Groups + 4);
+  for I := 1 to Groups do
+  begin
+    Deep[I] := '{';
+    Deep[Groups + 4 + I] := '}';
+  end;
+  Deep[Groups + 1] := 't';
+  Deep[Groups + 2] := 'i';
+  Deep[Groups + 3] := 'e';
+  Deep[Groups + 4] := 'f';
+  X := LandrixGaebDA2000ReadText('{' + #92 + 'rtf1 ' + Deep + '}');
+  try
+    Check(Pos('tief', X.PlainText) > 0, 'the text of deep groups kept');
+    Check(not (tlCharFormat in X.Losses), 'equal states in a row are counted, nothing lost');
+  finally
+    X.Free;
+  end;
+  { states that differ from level to level: one entry each, restored
+    exactly (a hidden group deep down does not hide the text after it) }
+  Deep := '';
+  for I := 1 to 3000 do
+    if Odd(I) then
+      Deep := Deep + '{' + #92 + 'uc1 '
+    else
+      Deep := Deep + '{' + #92 + 'uc2 ';
+  Deep := Deep + '{' + #92 + 'fonttbl hidden}tief';
+  for I := 1 to 3000 do
+    Deep := Deep + '}';
+  X := LandrixGaebDA2000ReadText('{' + #92 + 'rtf1 ' + Deep + '}');
+  try
+    Check(Pos('tief', X.PlainText) > 0, 'the text of deep distinct groups kept');
+    Check(Pos('hidden', X.PlainText) = 0, 'the hidden group stays hidden');
+    Check(not (tlCharFormat in X.Losses), 'nothing lost');
+  finally
+    X.Free;
+  end;
+end;
+
 procedure Register;
 begin
   RegisterTest('DA2000Mapping.Sample', TestMapSample);
@@ -1343,6 +1518,7 @@ begin
   RegisterTest('DA2000Mapping.Header', TestHeader);
   RegisterTest('DA2000Mapping.Lots', TestLots);
   RegisterTest('DA2000Mapping.Maintenance', TestMaintenance);
+  RegisterTest('DA2000Mapping.LargeInput', TestLargeInput);
   RegisterTest('Local.DA2000Map', TestLocalMap);
 end;
 

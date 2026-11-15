@@ -89,7 +89,7 @@ Werte.
 
 | Regel | Schwere | Was geschieht |
 |---|---|---|
-| `GAEB-BR-D2000-001` | Fehler / Hinweis | `#begin[GAEB]` nicht in Zeile 1: ab dort gelesen; Text nach `#end[GAEB]` wird übergangen (Hinweis) |
+| `GAEB-BR-D2000-001` | Fehler / Hinweis | `#begin[GAEB]` nach Leerzeilen: ab dort gelesen (anderer Text davor ist keine GAEB-DA-2000-Datei); Text nach `#end[GAEB]` wird übergangen (Hinweis) |
 | `GAEB-BR-D2000-002` | Fehler | verirrte Zeilen, Objekte außerhalb von `GAEB`, ein `#begin` ohne schließende Klammer und ein `#end` ohne sein Objekt werden übergangen; Objekte, die vor dem `#end` eines umgebenden Objekts nicht geschlossen sind, werden dort geschlossen und behalten ihren Inhalt |
 | `GAEB-BR-D2000-004` | Hinweis | `&#...;`, das keine gültige Ersetzung ist, bleibt Text |
 | `GAEB-BR-D2000-006` | Hinweis / Warnung / Fehler | `Zeichensatz` fehlt oder unbekannt: ANSI (Windows-1252); eine UTF-8-Bytereihenfolgemarke geht dem Kopf vor; `UNICODE` wird als UTF-8 gelesen; ohne Bytereihenfolgemarke werden Bytes, die kein UTF-8 sind, als ANSI gelesen (Fehler) |

@@ -83,7 +83,7 @@ name keys, lines and counts, never values.
 
 | Rule | Severity | What happens |
 |---|---|---|
-| `GAEB-BR-D2000-001` | error / information | `#begin[GAEB]` not in line 1: read from there on; text after `#end[GAEB]` is ignored (information) |
+| `GAEB-BR-D2000-001` | error / information | `#begin[GAEB]` after empty lines: read from there on (other text before it is no GAEB DA 2000 file); text after `#end[GAEB]` is ignored (information) |
 | `GAEB-BR-D2000-002` | error | stray lines, objects outside `GAEB`, a `#begin` without closing bracket and an `#end` without its object are ignored; objects not closed before the `#end` of an enclosing object are closed there and keep their content |
 | `GAEB-BR-D2000-004` | information | `&#...;` that is no valid escape stays text |
 | `GAEB-BR-D2000-006` | information / warning / error | `Zeichensatz` missing or unknown: ANSI (Windows-1252); a UTF-8 byte order mark wins over the header; `UNICODE` is read as UTF-8; without a byte order mark, bytes that are not UTF-8 are read as ANSI (error) |

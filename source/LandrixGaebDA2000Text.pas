@@ -158,6 +158,16 @@ implementation
 uses
   LandrixGaebDA2000Parser;
 
+const
+  { an entry of the RTF group stack is a packed state (below StateCodes)
+    plus StateCodes times the number of equal states in a row; input is
+    untrusted, so the stack takes one Integer per change of state, never
+    one record per group }
+  StateCodes = 512;
+  MaxRepeat = MaxInt div StateCodes;
+  { control word uc: a larger count skips this many fallback characters }
+  MaxUc = 15;
+
 { ---- text buffer (no WideString concatenation per character) ---- }
 
 type
@@ -388,7 +398,8 @@ type
     FBroken: Boolean;
     FCaption, FBody, FTail: TTextBuffer;
     FName: TTextBuffer;
-    FStack: array of TGroupState;
+    { group stack, entries see StateCodes }
+    FStack: array of Integer;
     FDepth: Integer;
     FState: TGroupState;
     FUcSkip: Integer;
@@ -425,6 +436,21 @@ begin
   FTail.Free;
   FName.Free;
   inherited Destroy;
+end;
+
+{ The state as a number below StateCodes (Dest 0 to 2, Uc 0 to MaxUc). }
+function PackState(const A: TGroupState): Integer;
+begin
+  Result := Ord(A.Skip) + 2 * Ord(A.Ignorable) + 4 * Ord(A.FirstWord) + 8 * A.Dest + 32 * A.Uc;
+end;
+
+function UnpackState(ACode: Integer): TGroupState;
+begin
+  Result.Skip := Odd(ACode);
+  Result.Ignorable := Odd(ACode div 2);
+  Result.FirstWord := Odd(ACode div 4);
+  Result.Dest := (ACode div 8) mod 4;
+  Result.Uc := ACode div 32;
 end;
 
 procedure TRtfReader.FlushRun;
@@ -665,7 +691,14 @@ begin
     FUcSkip := FState.Uc;
   end
   else if AWord = 'uc' then
-    FState.Uc := AParam
+  begin
+    if AParam < 0 then
+      FState.Uc := 0
+    else if AParam > MaxUc then
+      FState.Uc := MaxUc
+    else
+      FState.Uc := AParam;
+  end
   else if AWord = 'ansicpg' then
     FOem := (AParam = 850) or (AParam = 437)
   else if (AWord = 'pc') or (AWord = 'pca') then
@@ -723,10 +756,18 @@ begin
     begin
       { a pending \uN fallback ends at a group boundary }
       FUcSkip := 0;
-      if FDepth >= Length(FStack) then
-        SetLength(FStack, 2 * FDepth + 16);
-      FStack[FDepth] := FState;
-      Inc(FDepth);
+      { a state equal to the one on top is counted, not stacked again }
+      Code := PackState(FState);
+      if (FDepth > 0) and (FStack[FDepth - 1] mod StateCodes = Code) and
+        (FStack[FDepth - 1] div StateCodes < MaxRepeat) then
+        Inc(FStack[FDepth - 1], StateCodes)
+      else
+      begin
+        if FDepth >= Length(FStack) then
+          SetLength(FStack, 2 * FDepth + 16);
+        FStack[FDepth] := Code + StateCodes;
+        Inc(FDepth);
+      end;
       FState.Ignorable := False;
       FState.Dest := 0;
       FState.FirstWord := True;
@@ -740,8 +781,10 @@ begin
         Bookmark(FState.Dest = 1, AsciiName(FName.Text));
       if FDepth > 0 then
       begin
-        Dec(FDepth);
-        FState := FStack[FDepth];
+        FState := UnpackState(FStack[FDepth - 1] mod StateCodes);
+        Dec(FStack[FDepth - 1], StateCodes);
+        if FStack[FDepth - 1] < StateCodes then
+          Dec(FDepth);
       end;
       Inc(I);
       Continue;

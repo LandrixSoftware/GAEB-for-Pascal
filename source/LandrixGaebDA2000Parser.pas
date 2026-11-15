@@ -108,6 +108,11 @@ type
       False is reported as not mapped. DE: Vom Verbraucher (Abbildung)
       fuer Uebernommenes gesetzt; was False bleibt, wird gemeldet. }
     Used: Boolean;
+    { Lookup structure of a consumer over the children (the mapping keeps
+      an index there for nodes with many children); owned and freed by
+      the node. DE: Suchstruktur eines Verbrauchers ueber die Kinder;
+      gehoert dem Knoten und wird mit ihm freigegeben. }
+    Lookup: TObject;
     constructor Create(AParent: TLandrixGaebDA2000Node; const AKey: string;
       AIsObject: Boolean; ALine: Integer);
     destructor Destroy; override;
@@ -236,6 +241,7 @@ end;
 
 destructor TLandrixGaebDA2000Node.Destroy;
 begin
+  Lookup.Free;
   FChildren.Free;
   inherited Destroy;
 end;
