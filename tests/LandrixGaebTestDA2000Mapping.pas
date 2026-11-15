@@ -1338,10 +1338,13 @@ type
   end;
 
 procedure Put(var B: TBuild; const S: AnsiString);
+var
+  I: Integer;
 begin
   if B.Len + Length(S) + 2 > Length(B.Data) then
     SetLength(B.Data, 2 * (B.Len + Length(S) + 2) + 1024);
-  Move(Pointer(S)^, B.Data[B.Len + 1], Length(S));
+  for I := 1 to Length(S) do
+    B.Data[B.Len + I] := S[I];
   Inc(B.Len, Length(S));
   B.Data[B.Len + 1] := #13;
   B.Data[B.Len + 2] := #10;
