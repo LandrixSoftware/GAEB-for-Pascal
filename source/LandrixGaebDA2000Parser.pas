@@ -174,7 +174,8 @@ function LandrixGaebDA2000CharOfByte(AByte: Byte; AOem: Boolean): Cardinal;
 implementation
 
 uses
-  LandrixXmlBase;
+  LandrixXmlBase,
+  LandrixGaebCharsets;
 
 const
   MaxDepth = 64;
@@ -188,43 +189,12 @@ const
   RuleEmpty = 'GAEB-BR-D2000-014';
   RuleIndent = 'GAEB-BR-D2000-029';
 
-  { Windows-1252, bytes $80-$9F; $A0-$FF are U+00A0-U+00FF. Undefined
-    bytes keep their value (as LandrixXml does). }
-  Cp1252High: array[$80..$9F] of Word = (
-    $20AC, $0081, $201A, $0192, $201E, $2026, $2020, $2021,
-    $02C6, $2030, $0160, $2039, $0152, $008D, $017D, $008F,
-    $0090, $2018, $2019, $201C, $201D, $2022, $2013, $2014,
-    $02DC, $2122, $0161, $203A, $0153, $009D, $017E, $0178);
-
-  { Code page 850 (DOS Latin-1, "OEM" of German systems), bytes $80-$FF. }
-  Cp850High: array[$80..$FF] of Word = (
-    $00C7, $00FC, $00E9, $00E2, $00E4, $00E0, $00E5, $00E7,
-    $00EA, $00EB, $00E8, $00EF, $00EE, $00EC, $00C4, $00C5,
-    $00C9, $00E6, $00C6, $00F4, $00F6, $00F2, $00FB, $00F9,
-    $00FF, $00D6, $00DC, $00F8, $00A3, $00D8, $00D7, $0192,
-    $00E1, $00ED, $00F3, $00FA, $00F1, $00D1, $00AA, $00BA,
-    $00BF, $00AE, $00AC, $00BD, $00BC, $00A1, $00AB, $00BB,
-    $2591, $2592, $2593, $2502, $2524, $00C1, $00C2, $00C0,
-    $00A9, $2563, $2551, $2557, $255D, $00A2, $00A5, $2510,
-    $2514, $2534, $252C, $251C, $2500, $253C, $00E3, $00C3,
-    $255A, $2554, $2569, $2566, $2560, $2550, $256C, $00A4,
-    $00F0, $00D0, $00CA, $00CB, $00C8, $0131, $00CD, $00CE,
-    $00CF, $2518, $250C, $2588, $2584, $00A6, $00CC, $2580,
-    $00D3, $00DF, $00D4, $00D2, $00F5, $00D5, $00B5, $00FE,
-    $00DE, $00DA, $00DB, $00D9, $00FD, $00DD, $00AF, $00B4,
-    $00AD, $00B1, $2017, $00BE, $00B6, $00A7, $00F7, $00B8,
-    $00B0, $00A8, $00B7, $00B9, $00B3, $00B2, $25A0, $00A0);
-
 function LandrixGaebDA2000CharOfByte(AByte: Byte; AOem: Boolean): Cardinal;
 begin
-  if AByte < $80 then
-    Result := AByte
-  else if AOem then
-    Result := Cp850High[AByte]
-  else if AByte <= $9F then
-    Result := Cp1252High[AByte]
+  if AOem then
+    Result := LandrixGaebCodePointOfByte(AByte, gcpCp850)
   else
-    Result := AByte;
+    Result := LandrixGaebCodePointOfByte(AByte, gcpWindows1252);
 end;
 
 { ---- node ---- }
