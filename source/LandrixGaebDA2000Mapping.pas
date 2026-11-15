@@ -28,9 +28,9 @@
     Requester, AusfOrt -> CnstSite and BenachOrt -> NotifSite (one
     CnstSiteGroup per pair);
   - ZusText (of GAEB, PrjInfo, Vergabe, AG, AN, Bedarfstraeger, AusfOrt,
-    BenachOrt) -> AddText with Text or, without it, TextRTF as
-    DetailAddText (a TextRTF next to Text and ExtDat stay unmapped and are
-    reported);
+    BenachOrt) -> AddText: TextRTF -> DetailAddText and Text ->
+    OutlineAddText, a Text alone -> DetailAddText (ExtDat stays unmapped
+    and is reported);
   - LV: LVInfo -> BoQInfo (name, label, date, text kind, unit price
     components, time label, totals), LVGlied -> BoQBkdn (derived from the
     ordinal numbers when LVGlied is missing), LVBereich -> BoQCtgy,
@@ -670,37 +670,46 @@ begin
   MapCatalogs(ANode, AAddress.CtlgAssign);
 end;
 
-{ Additional texts (ZusText) of ANode: each one AddText whose
-  DetailAddText is Text or, without it, TextRTF (V1.2), read as plain
-  paragraphs. A TextRTF next to Text stays unmapped and is reported (both
-  may differ), as does ExtDat (AddText has no external file); a ZusText
-  without text adds nothing.
-  DE: Zusatztexte (ZusText) von ANode: je ein AddText, dessen
-  DetailAddText Text oder, ohne ihn, TextRTF (V1.2) ist, als schlichte
-  Absaetze gelesen. Ein TextRTF neben Text bleibt unabgebildet und wird
-  gemeldet (beide koennen abweichen), ebenso ExtDat (AddText hat keine
-  externe Datei); ein ZusText ohne Text fuegt nichts hinzu. }
+{ Additional texts (ZusText) of ANode: each one AddText. TextRTF (V1.2,
+  the text in full) becomes DetailAddText and Text (the short text next
+  to it, often a heading) OutlineAddText; a Text alone becomes
+  DetailAddText, which GAEB DA XML requires. Both are read as plain
+  paragraphs. ExtDat stays unmapped and is reported (AddText has no
+  external file); a ZusText without text adds nothing.
+  DE: Zusatztexte (ZusText) von ANode: je ein AddText. TextRTF (V1.2, der
+  vollstaendige Text) wird DetailAddText und Text (der kurze Text daneben,
+  oft eine Ueberschrift) OutlineAddText; ein Text allein wird
+  DetailAddText, das GAEB DA XML verlangt. Beide werden als schlichte
+  Absaetze gelesen. ExtDat bleibt unabgebildet und wird gemeldet (AddText
+  hat keine externe Datei); ein ZusText ohne Text fuegt nichts hinzu. }
 procedure TMapper.MapAddTexts(ANode: TLandrixGaebDA2000Node; AList: TLandrixGaebXmlAddTextList);
 var
   Z: TLandrixGaebDA2000Node;
-  T: TLandrixGaebString;
+  Short, Full: TLandrixGaebString;
   A: TLandrixGaebXmlAddText;
 begin
   repeat
     Z := NextObject(ANode, 'ZusText');
     if Z = nil then
       Break;
-    T := '';
-    if Z.Find('Text') <> nil then
-      T := Text(Z, 'Text')
-    else if Z.Find('TextRTF') <> nil then
-      T := Text(Z, 'TextRTF');
-    if HasText(T) then
+    Short := Text(Z, 'Text');
+    Full := Text(Z, 'TextRTF');
+    if not HasText(Short) then
+      Short := '';
+    if not HasText(Full) then
+      Full := '';
+    if (Short = '') and (Full = '') then
+      Continue;
+    A := AList.Add;
+    A.Present := True;
+    if Full <> '' then
     begin
-      A := AList.Add;
-      A.Present := True;
-      MapPlain(T, A.DetailAddText);
-    end;
+      MapPlain(Full, A.DetailAddText);
+      if Short <> '' then
+        MapMLText(Short, A.OutlineAddText);
+    end
+    else
+      MapPlain(Short, A.DetailAddText);
   until False;
 end;
 

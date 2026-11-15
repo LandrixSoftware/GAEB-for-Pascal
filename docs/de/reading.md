@@ -112,8 +112,9 @@ Werte.
 Ein `STLBBau`-Schlüssel, eine `ZuschlTMenge` oder ein `AuftrWertSchl`, deren Teile alle leer
 sind, fallen ohne Meldung weg. `GAEB-D2000-MAP-001` fasst die
 programmeigenen Schlüssel, die mit `_` beginnen, je Pfad zu `_*` zusammen. `Zertifikat` `N`
-heißt „nicht vorhanden“ und ergibt kein `GAEBInfo/Certific`. `ZusText/TextRTF` neben `Text` wird
-gemeldet, nicht zusammengeführt, und `Position/Aufmass` wird noch nicht abgebildet.
+heißt „nicht vorhanden“ und ergibt kein `GAEBInfo/Certific`. In einem `ZusText` ist `TextRTF`
+der vollständige Text (`DetailAddText`) und ein `Text` daneben der kurze (`OutlineAddText`).
+`Position/Aufmass` wird noch nicht abgebildet.
 
 `LandrixGaebDA2000ReadFile` (und `...Stream`, `...Buffer`) liefern nur das Syntaxmodell, wie
 es abgebildet ist (keine Summen berechnet), mit der Erkennung der Datei und dem Ziel des Modells.

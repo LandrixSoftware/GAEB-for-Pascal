@@ -863,9 +863,10 @@ begin
     '#end[Adresse]', '#end[AusfOrt]',
     '#begin[BenachOrt]', '[BenachOrtNam]Nachbar eins[end]', '#end[BenachOrt]',
     '#begin[BenachOrt]', '[BenachOrtNam]Nachbar zwei[end]', '#end[BenachOrt]',
-    '#begin[ZusText]', '[Text]Vertragstext[end]', BS('[TextRTF]{`rtf1 Vertragstext}[end]'),
+    '#begin[ZusText]', '[Text]Deckblatt[end]', BS('[TextRTF]{`rtf1 Vertragstext}[end]'),
     '[ExtDat]PLAN.PDF|Plan[end]', '#end[ZusText]',
     '#begin[ZusText]', BS('[TextRTF]{`rtf1 Nur RTF}[end]'), '#end[ZusText]',
+    '#begin[ZusText]', '[Text]Kurz[end]', BS('[TextRTF]{`rtf1 }[end]'), '#end[ZusText]',
     '#begin[ZusText]', '[ExtDat]BILD.BMP|[end]', '#end[ZusText]',
     '#end[Vergabe]', '#begin[ZusText]', '[Text]Schluss[end]', '#end[ZusText]', '#end[GAEB]']),
     Diags, T);
@@ -890,13 +891,25 @@ begin
       CheckEqualsGaebStr('', CnstSite.CnstSiteName, 'empty');
       CheckEqualsGaebStr('Nachbar zwei', NotifSite.NotifSiteName, 'second BenachOrt');
     end;
-    CheckEquals(2, Integer(G.Award.AddText.Count), 'Text and TextRTF alone; ExtDat alone adds nothing');
+    CheckEquals(3, Integer(G.Award.AddText.Count), 'Text with TextRTF, TextRTF alone, Text with an empty TextRTF; ' +
+      'ExtDat alone adds nothing');
+    Check(not G.Award.AddText[2].HasOutlineAddText, 'an empty TextRTF counts as missing');
+    CheckEqualsGaebStr('Kurz', TLandrixGaebXmlSpan(TLandrixGaebXmlP(
+      G.Award.AddText[2].DetailAddText.Children[0]).Children[0]).Value, 'Text next to an empty TextRTF is the full text');
+    CheckEqualsGaebStr('Vertragstext', TLandrixGaebXmlSpan(TLandrixGaebXmlP(
+      G.Award.AddText[0].DetailAddText.Children[0]).Children[0]).Value, 'TextRTF next to Text is the full text');
+    CheckEqualsGaebStr('Deckblatt', TLandrixGaebXmlSpan(TLandrixGaebXmlPMLText(
+      G.Award.AddText[0].OutlineAddText.Children[0]).Children[0]).Value, 'Text next to TextRTF is the short text');
     Check(G.Award.AddText[1].DetailAddText.IsPresent, 'TextRTF read');
+    Check(not G.Award.AddText[1].HasOutlineAddText, 'no short text without Text');
+    Check(not G.PrjInfo.AddText[0].HasOutlineAddText, 'a Text alone is the full text');
+    CheckEqualsGaebStr('Projekttext', TLandrixGaebXmlSpan(TLandrixGaebXmlP(
+      G.PrjInfo.AddText[0].DetailAddText.Children[0]).Children[0]).Value, 'Text alone');
     CheckEquals(1, Integer(G.AddText.Count), 'ZusText of GAEB');
-    CheckEquals(4, Diags.CountOf('GAEB-D2000-MAP-001'), 'Kommunikation, ZusText as an element, TextRTF next ' +
-      'to Text, ExtDat: ' + Diags.ToText);
+    CheckEquals(3, Diags.CountOf('GAEB-D2000-MAP-001'), 'Kommunikation, ZusText as an element, ExtDat: ' +
+      Diags.ToText);
     Check(Pos('PrjInfo/ZusText not mapped', Diags.ToText) > 0, 'ZusText as an element reported');
-    Check(Pos('ZusText/TextRTF not mapped (1 time(s))', Diags.ToText) > 0, 'TextRTF next to Text');
+    Check(Pos('TextRTF', Diags.ToText) = 0, 'TextRTF next to Text mapped');
     Check(Pos('ZusText/ExtDat not mapped (2 time(s))', Diags.ToText) > 0, 'ExtDat');
     Check(Pos('Kommunikation', Diags.ToText) > 0, 'Kommunikation has no counterpart');
     Check(Pos('VersMon', Diags.ToText) = 0, 'VersMon taken');

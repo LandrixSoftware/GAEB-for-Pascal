@@ -106,8 +106,9 @@ name keys, lines and counts, never values.
 An `STLBBau` key, a `ZuschlTMenge` or an `AuftrWertSchl` whose components are all blank is
 dropped without a message. `GAEB-D2000-MAP-001`
 folds the program-specific keys starting with `_` into `_*` per path. `Zertifikat` `N` means
-"not available" and gives no `GAEBInfo/Certific`. `ZusText/TextRTF` next to `Text` is reported, not
-merged, and `Position/Aufmass` is not mapped yet.
+"not available" and gives no `GAEBInfo/Certific`. In a `ZusText`, `TextRTF` is the
+full text (`DetailAddText`) and a `Text` next to it the short text (`OutlineAddText`).
+`Position/Aufmass` is not mapped yet.
 
 `LandrixGaebDA2000ReadFile` (and `...Stream`, `...Buffer`) return only the syntax model, as it
 is mapped (no totals computed), with the detection of the file and the target of the model.
