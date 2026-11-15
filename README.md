@@ -67,7 +67,7 @@ are covered by semantic versioning from release 1.0 on.
   `LandrixGaebBoQTree`, `LandrixGaebXmlReadBase`, `LandrixGaebXmlWriteBase`,
   `LandrixGaebXmlProfiles`, `LandrixGaebXmlGrammar`, `LandrixGaebXmlCodes`, `LandrixGaebXmlXsdSums`,
   `LandrixGaebDA2000Parser`, `LandrixGaebDA2000Text`, `LandrixGaebDA2000Mapping`,
-  `LandrixGaebCharsets`, `LandrixGaebDA90Parser`.
+  `LandrixGaebCharsets`, `LandrixGaebNameTable`, `LandrixGaebDA90Parser`, `LandrixGaebDA90Mapping`.
 
 Innerhalb von 1.x bleibt der Quelltext kompatibel, nicht das Binärformat: Aufzählungen können
 Werte erhalten (unbekannte Werte in einem `else`-Zweig behandeln, keine Ordinalwerte speichern),

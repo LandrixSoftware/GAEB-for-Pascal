@@ -1,0 +1,2335 @@
+{
+  GAEB-for-Pascal
+
+  Copyright (C) 2026 Landrix Software GmbH & Co. KG
+
+  This file is dual-licensed under:
+  - GNU GPL version 3 or later; or
+  - the Landrix Software Commercial License.
+
+  See LICENSE and commercial.license.md.
+
+  SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Landrix-Commercial
+}
+
+{ Mapping of the records of a GAEB 90 file (LandrixGaebDA90Parser) into
+  the syntax model of GAEB DA XML 3.3 (2021-05), record by record; what has
+  no counterpart, or is not mapped yet, is reported once per record type
+  or field with a count.
+
+  Mapped (exchange phases 81 to 86):
+  - 00: DP -> Award/DP, KURZLANG L/K -> BoQInfo/OutlCompl AllTxt/OutTxt,
+    VERGAG -> OWN/AwardNo, DVNRAG -> OWN/DPNo, BIETERAG -> CTR/BidderNo,
+    VERGAN -> CTR/AwardNo, DVNRAN -> CTR/DPNo, OZMASKE -> BoQBkdn;
+  - 01: LVBEZ -> BoQInfo/LblBoQ, LVDATUM -> BoQInfo/Date, DATANG and
+    DATUHR -> AwardInfo/OpenDate and OpenTime, DATZUS -> AwardInfo/EvalEnd;
+  - 02: the first line -> PrjInfo/LblPrj, all lines -> PrjInfo/Descrip;
+    03 -> OWN, 04 -> CTR (Address/Name1, beyond 40 characters Name2);
+    06: ANZEP -> NoUPComps, BEZEITAN -> LblTime, BEZEPAN1 to 4 ->
+    LblUPComp1 to 4 (type Unknown); 08: WAEKU and WAEBEZ -> Cur and CurLbl
+    of PrjInfo and AwardInfo;
+  - the hierarchy from the ordinal numbers and the mask: each level of the
+    mask is a BoQBkdn level (KENNWORT of 11 -> LblBoQBkdn, Alignment right,
+    Num Yes when every part of the level is written with digits only, zeros
+    in front included, No otherwise and for a level without values); an
+    item belongs to the category of the deepest level its number fills
+    (lower levels may stay empty); categories without record 11 are
+    derived from the numbers. 11 -> BoQCtgy (RNoPart, LVGRART G/A with ZZV
+    -> ALNBGroupNo and ALNBSerNo), 12 -> LblTx (a paragraph per line), 31
+    closes nothing (the numbers decide), 32 -> Totals (SUMME -> Total,
+    PAUSCH -> TotalLSUM);
+  - 20 with 26 -> Remark; 21 (or, in phase 84, a 23 without 21) -> Item:
+    RNoPart and RNoIndex from the mask, POSART1 G/A with ZZ -> ALNGroupNo
+    and ALNSerNo, S -> HourIt, POSART2 E/M -> Provis WithoutTotal/
+    WithTotal, POSTYP L -> SumDescr, EPAUFGL -> UPBkdn, ZUSCHLAG E ->
+    MarkupIt, WIEVOR B/W -> RefDescr Ref/Rep, KZFRMENG -> QtyTBD, MENGE ->
+    Qty, EINHEIT -> QU (psch -> LumpSumItem; ---- for no unit as written),
+    POSSTAT R -> NotAppl (NACHTRKZ is not mapped: CONo needs a COStatus
+    GAEB 90 does not have); ZUSCHLAG Z -> MarkupItem (IdentAsMark);
+    POSART1/2/POSTYP NNH (edition 1985, a note text) -> Remark;
+  - 22 (phase 82) and 23: VEP/EP with VEPZPF/EPZPF (third decimal) -> UP,
+    VGB/GB -> IT, the free quantity -> Qty of an item with QtyTBD or
+    without MENGE, VZUSCHP/ZUSCHPR -> Markup and VZUSCHSU/ZUSCHSU ->
+    ITMarkup of a markup item; 30: ZEITANS -> TimeQu, EPANTEL1 to 4 ->
+    UPComp1 to 4;
+  - texts: 25 -> OutlTxt and 26 -> DetailTxt, a paragraph per line
+    (spaces on the right removed); consecutive lines with the same KNR and
+    TEKZ A/B (25: KNR only, owner) are a TextComplement when they hold
+    exactly two apostrophes: text before -> ComplCaption, between ->
+    ComplBody (dots, underscores or nothing -> Empty), after -> ComplTail;
+    TA/TB -> ComplTSA/ComplTSB;
+  - 99: LVSUMME -> BoQInfo/Totals/Total, UST -> VAT, ANGEBOTS ->
+    TotalGross, PAUSCH -> TotalLSUM.
+  Numbers carry an implied decimal point; spaces instead of leading zeros
+  are read, spaces behind are not. Dates TT.MM.JJ become YYYY-MM-DD (JJ
+  below 70: 20JJ, else 19JJ; days checked against the calendar), times HH:MM become HH:MM:SS. IDs are generated (LGB, LGC, LGI, LGR
+  plus a number).
+
+  Diagnostics (rule identifiers):
+    GAEB-BR-D90-001 error        OZMASKE missing or not readable (items
+                                 without hierarchy)
+    GAEB-BR-D90-003 warning      ANZTEIL of 99 other than the positions
+    GAEB-BR-D90-005 warning      OZMASKE with spaces as fill
+    GAEB-BR-D90-006 error        ZUSCHLAG other than space, E or Z (item
+                                 kept)
+    GAEB-BR-D90-007 error/warning  POSART1/POSART2/POSTYP not one of the
+                                 16 combinations (NNH: warning, read as a
+                                 note text)
+    GAEB-BR-D90-008 warning      POSSTAT other than R or space
+    GAEB-BR-D90-011 warning      text complement lines with TEKZ other
+                                 than A or B, or KNR without TEKZ (text
+                                 kept)
+    GAEB-BR-D90-014 information  record types GAEB 90 does not define
+                                 (free range 70 to 89, vendor records,
+                                 others) skipped
+    GAEB-BR-D90-016 warning      more than 9 lines of 02, 12 or 25, or more
+                                 than 999 of 26
+    GAEB-D90-MAP-001 information record types not mapped (yet)
+    GAEB-D90-MAP-002 information fields with a value not mapped
+    GAEB-D90-MAP-003 warning     text complements without exactly two
+                                 apostrophes (text kept)
+    GAEB-D90-MAP-004 warning     codes outside the values of GAEB 90
+    GAEB-D90-MAP-005 information categories derived from the ordinal
+                                 numbers (without record 11)
+    GAEB-D90-MAP-006 warning     control characters removed
+    GAEB-D90-MAP-007 information breakdown levels without any value
+    GAEB-D90-MAP-008 warning     numbers that are no digits (left out);
+                                 information: numbers with spaces instead
+                                 of leading zeros (read)
+    GAEB-D90-MAP-009 warning     records without the record they belong to
+                                 (left out)
+    GAEB-D90-MAP-010 warning     dates and times in another form (left
+                                 out)
+    GAEB-D90-MAP-011 error       categories and items on one level
+    GAEB-D90-MAP-012 warning     a further bill (00) in the file, not read
+    GAEB-D90-MAP-013 warning     ordinal numbers with an empty level above
+                                 a filled one, or without an item number
+    GAEB-D90-MAP-014 information required parts of GAEB DA XML GAEB 90 has
+                                 no source for, filled: BoQInfo/Name from
+                                 VERGAG or the first 20 characters of LVBEZ
+                                 (owner decision 15.11.2026), an empty LblTx
+                                 for categories without record 12
+                                 (GAEBInfo/Date stays missing)
+  Messages name record types and fields, never values.
+
+  DE: Abbildung der Saetze einer GAEB-90-Datei in das Syntaxmodell von
+  GAEB DA XML 3.3 (2021-05), Satz fuer Satz; was kein Gegenstueck hat oder
+  noch nicht abgebildet ist, wird je Satzart oder Feld einmal mit Anzahl
+  gemeldet. Meldungen nennen Satzarten und Felder, nie Werte. }
+
+{ API: internal. May change in any release, also after 1.0; use the
+  stable units instead (see README).
+  DE: API: intern. Kann sich in jeder Version aendern, auch nach 1.0;
+  stattdessen die stabilen Units verwenden (siehe README). }
+
+unit LandrixGaebDA90Mapping;
+
+{$I LandrixGaeb.inc}
+
+interface
+
+uses
+  SysUtils,
+  Classes,
+  Contnrs,
+  LandrixGaebTypes,
+  LandrixGaebDiagnostics,
+  LandrixGaebXmlModel,
+  LandrixGaebDA90Parser;
+
+{ Maps ADocument into a new GAEB DA XML 3.3 document. ATarget is
+  3.3/2021-05 with the phase of the file. Raises ELandrixGaebError when
+  the file holds no record 00 or a phase other than 81 to 86. ADiagnostics
+  and AInvalidTotals may be nil; AInvalidTotals (not owning) receives the
+  TLandrixGaebXmlTotals whose total the source holds in an unusable form.
+  DE: Bildet ADocument in ein neues Dokument GAEB DA XML 3.3 ab. ATarget
+  ist 3.3/2021-05 mit der Phase der Datei. Loest ELandrixGaebError aus,
+  wenn die Datei keinen Satz 00 oder eine andere Phase als 81 bis 86
+  enthaelt. ADiagnostics und AInvalidTotals duerfen nil sein;
+  AInvalidTotals erhaelt die TLandrixGaebXmlTotals, deren Summe die Quelle
+  in unbrauchbarer Form enthaelt. }
+function LandrixGaebDA90Map(ADocument: TLandrixGaebDA90Document;
+  ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+
+implementation
+
+uses
+  LandrixXmlBase,
+  LandrixGaebNameTable;
+
+const
+  RuleMask = 'GAEB-BR-D90-001';
+  RuleCount = 'GAEB-BR-D90-003';
+  RuleMaskSpaces = 'GAEB-BR-D90-005';
+  RuleMarkup = 'GAEB-BR-D90-006';
+  RuleKind = 'GAEB-BR-D90-007';
+  RuleStatus = 'GAEB-BR-D90-008';
+  RuleTekz = 'GAEB-BR-D90-011';
+  RuleSkipped = 'GAEB-BR-D90-014';
+  RuleLimits = 'GAEB-BR-D90-016';
+  RuleNotMapped = 'GAEB-D90-MAP-001';
+  RuleFields = 'GAEB-D90-MAP-002';
+  RuleMarks = 'GAEB-D90-MAP-003';
+  RuleValue = 'GAEB-D90-MAP-004';
+  RuleDerived = 'GAEB-D90-MAP-005';
+  RuleControl = 'GAEB-D90-MAP-006';
+  RuleUnusedLevel = 'GAEB-D90-MAP-007';
+  RuleNumber = 'GAEB-D90-MAP-008';
+  RuleOrphan = 'GAEB-D90-MAP-009';
+  RuleDate = 'GAEB-D90-MAP-010';
+  RuleLevels = 'GAEB-D90-MAP-011';
+  RuleSecondBill = 'GAEB-D90-MAP-012';
+  RuleNumbers = 'GAEB-D90-MAP-013';
+  RuleFilled = 'GAEB-D90-MAP-014';
+
+  { the 16 combinations of POSART1, POSART2 and POSTYP }
+  PositionKinds = '|NNN|NNL|NEN|NEL|NMN|NML|ANN|ANL|GNN|GNL|AEN|AEL|GMN|GML|SNN|SNL|';
+  { record types of GAEB 90 that are not mapped yet }
+  NotMappedKinds = '|T0|T1|T9|07|10|24|27|28|33|34|35|41|42|45|46|47|79|';
+
+type
+  { counts per name, reported in the order the names first occurred }
+  TCounts = class(TObject)
+  private
+    FTable: TLandrixGaebNameTable;
+    FNames: array of string;
+    FCounts: array of Integer;
+    FCount: Integer;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Add(const AName: string);
+    property Count: Integer read FCount;
+  end;
+
+  { lines of a text: the line, KNR and TEKZ (26) as written }
+  TLines = class(TObject)
+  public
+    Text: array of TLandrixGaebString;
+    Knr: array of string;
+    Tekz: array of Char;
+    Count: Integer;
+    procedure Add(const AText: TLandrixGaebString; const AKnr: string; ATekz: Char);
+    procedure Clear;
+  end;
+
+  TPartArray = array of TLandrixGaebString;
+
+  { a level of the mask }
+  TLevel = record
+    Kind: string;
+    Start: Integer;
+    Length: Integer;
+  end;
+
+  TMapper = class(TObject)
+  private
+    FDoc: TLandrixGaebDA90Document;
+    FDiags: TLandrixGaebDiagnostics;
+    FInvalidTotals: TObjectList;
+    FNextId: Integer;
+    FG: TLandrixGaebXmlGAEB;
+    FPhase: string;
+    FUsed: array of Boolean;
+    { mask }
+    FLevels: array of TLevel;
+    FCategoryLevels: Integer;
+    FItemLevel, FIndexLevel: Integer;
+    FLevelLabels: array of TLandrixGaebString;
+    FLevelSeen, FLevelOther: array of Boolean;
+    { open categories by level }
+    FRootBody: TLandrixGaebXmlBoQBody;
+    FOpenPart: array of TLandrixGaebString;
+    FOpenCtgy: array of TLandrixGaebXmlBoQCtgy;
+    FOpenImplicit, FOpenHasCtgy, FOpenHasItem: array of Boolean;
+    FOpenDepth: Integer;
+    FRootHasCtgy, FRootHasItem: Boolean;
+    { every category by its path (the parts joined), first one wins }
+    FCtgyTable: TLandrixGaebNameTable;
+    FCtgys: array of TLandrixGaebXmlBoQCtgy;
+    FCtgyCount: Integer;
+    { counters }
+    FNotMapped, FSkipped, FFields, FValues, FBadNumbers, FOrphans, FDates, FLimits: TCounts;
+    FPadded, FControl, FDerived, FMixed, FMarkProblems, FTekz, FNumberProblems: Integer;
+    FMarkupValues, FBadKinds, FOldNotes, FStatus, FItems: Integer;
+    FMaskSpaces: Boolean;
+    FVergag: TLandrixGaebString;
+    { set while ItemlistFor looks ahead: nothing is counted twice }
+    FQuiet: Boolean;
+    { the look-ahead of ItemlistFor: from FLookFrom on, the next record
+      that places a remark is FLookAt (Count: none) }
+    FLookFrom, FLookAt: Integer;
+    FDescrShort, FDescrLong: TLines;
+    procedure Report(AIndex: Integer; const ARuleId: string; ASeverity: TLandrixGaebSeverity;
+      const AMessage: string);
+    procedure ReportCounts(ACounts: TCounts; const ARuleId: string; ASeverity: TLandrixGaebSeverity;
+      const AText: string);
+    function NewId(const APrefix: string): TLandrixGaebString;
+    { fields }
+    function Raw(AIndex, AFrom, ATo: Integer): TLandrixGaebString;
+    function Str(AIndex, AFrom, ATo: Integer): TLandrixGaebString;
+    function Code(AIndex, ACol: Integer; const AName, AAllowed: string): Char;
+    function NumField(AIndex, AFrom, ATo, AFraction, ASign: Integer; const AName: string;
+      var ADecimal: TLandrixGaebDecimal): Boolean;
+    procedure Price(AIndex, AFrom, ATo, ASign, AThird: Integer; const AName: string;
+      var ADecimal: TLandrixGaebDecimal);
+    function DateField(AIndex, AFrom: Integer; const AName: string): TLandrixGaebString;
+    function TimeField(AIndex, AFrom: Integer; const AName: string): TLandrixGaebString;
+    procedure Unmapped(AIndex, AFrom, ATo: Integer; const AName: string);
+    { structure }
+    procedure ReadMask(AIndex: Integer);
+    procedure PartsOf(const AOZ: TLandrixGaebString; out AParts: TPartArray;
+      out ADepth: Integer; out AItem, AIndex: TLandrixGaebString; out ABad: Boolean);
+    function PathKey(const AParts: TPartArray; ADepth: Integer): TLandrixGaebString;
+    procedure OpenPath(const AParts: TPartArray; ADepth, AExplicitLevel: Integer);
+    function BodyAt(ADepth: Integer): TLandrixGaebXmlBoQBody;
+    procedure NoteItem(ADepth: Integer);
+    function ItemlistFor(AIndex: Integer): TLandrixGaebXmlItemlist;
+    { texts }
+    procedure CollectText(var AIndex: Integer; ALines: TLines; const AKind: string);
+    procedure AddLinesTo(const AText: TLandrixGaebString; P: TLandrixGaebXmlPMLText);
+    function IsPlaceholder(const S: TLandrixGaebString): Boolean;
+    function SplitComplement(ALines: TLines; AFirst, ALast: Integer;
+      out ACaption, ABody, ATail: TLandrixGaebString): Boolean;
+    procedure FillComplement(AComplement: TLandrixGaebXmlTextComplement; ABidder: Boolean;
+      const AKnr, ACaption, ABody, ATail: TLandrixGaebString);
+    procedure MapLong(ALines: TLines; ADetail: TLandrixGaebXmlBoQText);
+    procedure MapShort(ALines: TLines; AOutline: TLandrixGaebXmlOutlTxt);
+    procedure MapTexts(AShort, ALong: TLines; ATA, ATB: Boolean; ADescription: TLandrixGaebXmlDescription);
+    { records }
+    procedure MapHeader00(AIndex: Integer);
+    procedure MapHeader01(AIndex: Integer);
+    procedure MapProject(var AIndex: Integer);
+    procedure MapParty(AIndex: Integer; AAddress: TLandrixGaebXmlAddress);
+    procedure MapComponents(AIndex: Integer);
+    procedure MapCurrency(AIndex: Integer);
+    procedure MapGroup(var AIndex: Integer);
+    procedure MapGroupTotals(AIndex: Integer);
+    procedure MapRemark(var AIndex: Integer);
+    procedure MapItem(var AIndex: Integer);
+    procedure MapClosing(AIndex: Integer);
+    procedure SkipBlock(var AIndex: Integer; const AFollowers: string);
+    procedure AddBreakdown;
+    procedure FillRequired;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function Map(ADocument: TLandrixGaebDA90Document; ADiagnostics: TLandrixGaebDiagnostics;
+      AInvalidTotals: TObjectList; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+  end;
+
+function W(const S: string): TLandrixGaebString;
+begin
+  Result := LandrixXmlUtf8ToWide(LandrixXmlStringToUtf8(S));
+end;
+
+function TrimW(const S: TLandrixGaebString): TLandrixGaebString;
+var
+  A, B: Integer;
+begin
+  A := 1;
+  B := Length(S);
+  while (A <= B) and (S[A] = ' ') do
+    Inc(A);
+  while (B >= A) and (S[B] = ' ') do
+    Dec(B);
+  Result := Copy(S, A, B - A + 1);
+end;
+
+function TrimRightW(const S: TLandrixGaebString): TLandrixGaebString;
+var
+  B: Integer;
+begin
+  B := Length(S);
+  while (B >= 1) and (S[B] = ' ') do
+    Dec(B);
+  Result := Copy(S, 1, B);
+end;
+
+{ An ASCII value as string; characters outside ASCII as '?'. }
+function AsciiOf(const S: TLandrixGaebString): string;
+var
+  I: Integer;
+begin
+  Result := '';
+  SetLength(Result, Length(S));
+  for I := 1 to Length(S) do
+    if Ord(S[I]) < 128 then
+      Result[I] := Char(Ord(S[I]))
+    else
+      Result[I] := '?';
+end;
+
+function IsDigits(const S: TLandrixGaebString): Boolean;
+var
+  I: Integer;
+begin
+  Result := S <> '';
+  for I := 1 to Length(S) do
+    if (S[I] < '0') or (S[I] > '9') then
+    begin
+      Result := False;
+      Exit;
+    end;
+end;
+
+function BadXmlChar(const S: TLandrixGaebString; I: Integer): Boolean;
+var
+  C: Word;
+begin
+  C := Ord(S[I]);
+  if (C >= $D800) and (C <= $DBFF) then
+    Result := (I >= Length(S)) or (Ord(S[I + 1]) < $DC00) or (Ord(S[I + 1]) > $DFFF)
+  else if (C >= $DC00) and (C <= $DFFF) then
+    Result := (I <= 1) or (Ord(S[I - 1]) < $D800) or (Ord(S[I - 1]) > $DBFF)
+  else
+    Result := ((C < 32) and (C <> 9) and (C <> 10) and (C <> 13)) or (C = $FFFE) or (C = $FFFF);
+end;
+
+{ S without the characters XML 1.0 cannot carry; ACount is increased by
+  their number. }
+function XmlSafe(const S: TLandrixGaebString; var ACount: Integer): TLandrixGaebString;
+var
+  I, N: Integer;
+begin
+  N := 0;
+  for I := 1 to Length(S) do
+    if BadXmlChar(S, I) then
+      Inc(N);
+  if N = 0 then
+  begin
+    Result := S;
+    Exit;
+  end;
+  Inc(ACount, N);
+  Result := '';
+  SetLength(Result, Length(S) - N);
+  N := 0;
+  for I := 1 to Length(S) do
+    if not BadXmlChar(S, I) then
+    begin
+      Inc(N);
+      Result[N] := S[I];
+    end;
+end;
+
+{ True if AKey is one of the |-separated names of AList. }
+function InList(const AKey, AList: string): Boolean;
+begin
+  Result := Pos('|' + AKey + '|', AList) > 0;
+end;
+
+{ ---- TCounts ---- }
+
+constructor TCounts.Create;
+begin
+  inherited Create;
+  FTable := TLandrixGaebNameTable.Create;
+end;
+
+destructor TCounts.Destroy;
+begin
+  FTable.Free;
+  inherited Destroy;
+end;
+
+procedure TCounts.Add(const AName: string);
+var
+  K: Integer;
+begin
+  K := FTable.Find(W(AName));
+  if K < 0 then
+  begin
+    K := FCount;
+    FTable.Add(W(AName), K);
+    if K >= Length(FNames) then
+    begin
+      SetLength(FNames, 2 * K + 16);
+      SetLength(FCounts, 2 * K + 16);
+    end;
+    FNames[K] := AName;
+    FCounts[K] := 0;
+    Inc(FCount);
+  end;
+  Inc(FCounts[K]);
+end;
+
+{ ---- TLines ---- }
+
+procedure TLines.Add(const AText: TLandrixGaebString; const AKnr: string; ATekz: Char);
+begin
+  if Count >= Length(Text) then
+  begin
+    SetLength(Text, 2 * Count + 16);
+    SetLength(Knr, 2 * Count + 16);
+    SetLength(Tekz, 2 * Count + 16);
+  end;
+  Text[Count] := AText;
+  Knr[Count] := AKnr;
+  Tekz[Count] := ATekz;
+  Inc(Count);
+end;
+
+procedure TLines.Clear;
+begin
+  Count := 0;
+end;
+
+{ ---- TMapper: basics ---- }
+
+constructor TMapper.Create;
+begin
+  inherited Create;
+  FNotMapped := TCounts.Create;
+  FSkipped := TCounts.Create;
+  FFields := TCounts.Create;
+  FValues := TCounts.Create;
+  FBadNumbers := TCounts.Create;
+  FOrphans := TCounts.Create;
+  FDates := TCounts.Create;
+  FLimits := TCounts.Create;
+  FDescrShort := TLines.Create;
+  FDescrLong := TLines.Create;
+  FItemLevel := -1;
+  FIndexLevel := -1;
+  FCtgyTable := TLandrixGaebNameTable.Create;
+end;
+
+destructor TMapper.Destroy;
+begin
+  FCtgyTable.Free;
+  FDescrLong.Free;
+  FDescrShort.Free;
+  FLimits.Free;
+  FDates.Free;
+  FOrphans.Free;
+  FBadNumbers.Free;
+  FValues.Free;
+  FFields.Free;
+  FSkipped.Free;
+  FNotMapped.Free;
+  inherited Destroy;
+end;
+
+procedure TMapper.Report(AIndex: Integer; const ARuleId: string; ASeverity: TLandrixGaebSeverity;
+  const AMessage: string);
+var
+  Line: Integer;
+begin
+  if FDiags = nil then
+    Exit;
+  Line := 0;
+  if AIndex >= 0 then
+    Line := FDoc.Line(AIndex);
+  FDiags.AddAt(ARuleId, ASeverity, '', Line, 0, -1, AMessage);
+end;
+
+procedure TMapper.ReportCounts(ACounts: TCounts; const ARuleId: string; ASeverity: TLandrixGaebSeverity;
+  const AText: string);
+var
+  I: Integer;
+begin
+  for I := 0 to ACounts.Count - 1 do
+    Report(-1, ARuleId, ASeverity, ACounts.FNames[I] + ': ' + IntToStr(ACounts.FCounts[I]) + ' ' + AText);
+end;
+
+function TMapper.NewId(const APrefix: string): TLandrixGaebString;
+begin
+  Inc(FNextId);
+  Result := W(APrefix + IntToStr(FNextId));
+end;
+
+{ ---- TMapper: fields ---- }
+
+function TMapper.Raw(AIndex, AFrom, ATo: Integer): TLandrixGaebString;
+begin
+  Result := XmlSafe(FDoc.Field(AIndex, AFrom, ATo), FControl);
+end;
+
+function TMapper.Str(AIndex, AFrom, ATo: Integer): TLandrixGaebString;
+begin
+  Result := TrimW(Raw(AIndex, AFrom, ATo));
+end;
+
+{ The code in column ACol: one of AAllowed or a space; another value is
+  counted (GAEB-D90-MAP-004) and read as a space. }
+function TMapper.Code(AIndex, ACol: Integer; const AName, AAllowed: string): Char;
+var
+  F: TLandrixGaebString;
+begin
+  Result := ' ';
+  F := FDoc.Field(AIndex, ACol, ACol);
+  if (Length(F) <> 1) or (F[1] = ' ') then
+    Exit;
+  if (Ord(F[1]) < 128) and (Pos(Char(Ord(F[1])), AAllowed) > 0) then
+    Result := Char(Ord(F[1]))
+  else
+    FValues.Add(FDoc.Kind(AIndex) + '/' + AName);
+end;
+
+{ A number with an implied decimal point (AFraction digits) in columns
+  AFrom to ATo, its sign in column ASign (0: none). Spaces instead of
+  leading zeros are read (counted); anything else that is no digit is
+  counted and the value left unset. False when unset. }
+function TMapper.NumField(AIndex, AFrom, ATo, AFraction, ASign: Integer; const AName: string;
+  var ADecimal: TLandrixGaebDecimal): Boolean;
+var
+  F, T: TLandrixGaebString;
+  V: Int64;
+  I: Integer;
+  S: TLandrixGaebString;
+begin
+  Result := False;
+  F := FDoc.Field(AIndex, AFrom, ATo);
+  if TrimW(F) = '' then
+    Exit;
+  { spaces in front stand for zeros (right-aligned); spaces behind or
+    inside are no number }
+  I := 1;
+  while (I <= Length(F)) and (F[I] = ' ') do
+    Inc(I);
+  T := Copy(F, I, MaxInt);
+  if not IsDigits(T) then
+  begin
+    FBadNumbers.Add(FDoc.Kind(AIndex) + '/' + AName);
+    Exit;
+  end;
+  if Length(T) <> Length(F) then
+    Inc(FPadded);
+  V := 0;
+  for I := 1 to Length(T) do
+    V := V * 10 + (Ord(T[I]) - Ord('0'));
+  if ASign > 0 then
+  begin
+    S := FDoc.Field(AIndex, ASign, ASign);
+    if S = '-' then
+      V := -V
+    else if S <> ' ' then
+      FValues.Add(FDoc.Kind(AIndex) + '/sign of ' + AName);
+  end;
+  ADecimal.SetValue(V, AFraction);
+  Result := True;
+end;
+
+{ A price of two decimals with a third one in column AThird (EPZPF,
+  VEPZPF), which only counts when the price is set. }
+procedure TMapper.Price(AIndex, AFrom, ATo, ASign, AThird: Integer; const AName: string;
+  var ADecimal: TLandrixGaebDecimal);
+var
+  D: TLandrixGaebString;
+  V: Int64;
+begin
+  D := FDoc.Field(AIndex, AThird, AThird);
+  { the amount first, the sign once all three decimals are known }
+  if not NumField(AIndex, AFrom, ATo, 2, 0, AName, ADecimal) then
+  begin
+    if D <> ' ' then
+      FFields.Add(FDoc.Kind(AIndex) + '/third decimal without ' + AName);
+    Exit;
+  end;
+  V := ADecimal.Coefficient;
+  if D <> ' ' then
+  begin
+    if IsDigits(D) then
+    begin
+      V := V * 10 + (Ord(D[1]) - Ord('0'));
+      ADecimal.SetValue(V, 3);
+    end
+    else
+      FBadNumbers.Add(FDoc.Kind(AIndex) + '/third decimal of ' + AName);
+  end;
+  D := FDoc.Field(AIndex, ASign, ASign);
+  if D = '-' then
+    ADecimal.SetValue(-ADecimal.Coefficient, ADecimal.Scale)
+  else if D <> ' ' then
+    FValues.Add(FDoc.Kind(AIndex) + '/sign of ' + AName);
+end;
+
+{ Days of AMonth (1 to 12) in AYear. }
+function DaysOf(AMonth, AYear: Integer): Integer;
+begin
+  case AMonth of
+    2:
+      if ((AYear mod 4 = 0) and (AYear mod 100 <> 0)) or (AYear mod 400 = 0) then
+        Result := 29
+      else
+        Result := 28;
+    4, 6, 9, 11:
+      Result := 30;
+  else
+    Result := 31;
+  end;
+end;
+
+function TMapper.DateField(AIndex, AFrom: Integer; const AName: string): TLandrixGaebString;
+var
+  F: TLandrixGaebString;
+  Day, Month, Year: Integer;
+  Century: string;
+begin
+  Result := '';
+  F := FDoc.Field(AIndex, AFrom, AFrom + 7);
+  if TrimW(F) = '' then
+    Exit;
+  if not (IsDigits(Copy(F, 1, 2)) and (F[3] = '.') and IsDigits(Copy(F, 4, 2)) and (F[6] = '.') and
+    IsDigits(Copy(F, 7, 2))) then
+  begin
+    FDates.Add(FDoc.Kind(AIndex) + '/' + AName);
+    Exit;
+  end;
+  Day := StrToInt(AsciiOf(Copy(F, 1, 2)));
+  Month := StrToInt(AsciiOf(Copy(F, 4, 2)));
+  { two-digit years: 00 to 69 are 20JJ, 70 to 99 19JJ (GAEB 90 dates from
+    1985 on) }
+  if F[7] < '7' then
+    Century := '20'
+  else
+    Century := '19';
+  Year := StrToInt(Century + AsciiOf(Copy(F, 7, 2)));
+  if (Month < 1) or (Month > 12) or (Day < 1) or (Day > DaysOf(Month, Year)) then
+  begin
+    FDates.Add(FDoc.Kind(AIndex) + '/' + AName);
+    Exit;
+  end;
+  Result := W(Century) + Copy(F, 7, 2) + '-' + Copy(F, 4, 2) + '-' + Copy(F, 1, 2);
+end;
+
+function TMapper.TimeField(AIndex, AFrom: Integer; const AName: string): TLandrixGaebString;
+var
+  F: TLandrixGaebString;
+begin
+  Result := '';
+  F := FDoc.Field(AIndex, AFrom, AFrom + 4);
+  if TrimW(F) = '' then
+    Exit;
+  if not (IsDigits(Copy(F, 1, 2)) and (F[3] = ':') and IsDigits(Copy(F, 4, 2))) or
+    (StrToInt(AsciiOf(Copy(F, 1, 2))) > 23) or (StrToInt(AsciiOf(Copy(F, 4, 2))) > 59) then
+  begin
+    FDates.Add(FDoc.Kind(AIndex) + '/' + AName);
+    Exit;
+  end;
+  Result := F + ':00';
+end;
+
+{ A field the mapping does not take: counted when it holds a value. }
+procedure TMapper.Unmapped(AIndex, AFrom, ATo: Integer; const AName: string);
+begin
+  if TrimW(FDoc.Field(AIndex, AFrom, ATo)) <> '' then
+    FFields.Add(FDoc.Kind(AIndex) + '/' + AName);
+end;
+
+{ ---- TMapper: mask and hierarchy ---- }
+
+{ OZMASKE: runs of 1 to 4 (one level each, ascending from 1), a run of P
+  (item), a run of I (index), then fill 0 (spaces are read as fill and
+  reported). Without a readable mask the whole number is the item. }
+procedure TMapper.ReadMask(AIndex: Integer);
+var
+  M: TLandrixGaebString;
+  I, State, N: Integer;
+  C, Last: Char;
+  Ok: Boolean;
+
+  procedure NewLevel(const AKind: string; AStart: Integer);
+  begin
+    SetLength(FLevels, N + 1);
+    FLevels[N].Kind := AKind;
+    FLevels[N].Start := AStart;
+    FLevels[N].Length := 1;
+    Inc(N);
+  end;
+
+begin
+  FLevels := nil;
+  N := 0;
+  Ok := True;
+  State := 0;
+  Last := '0';
+  M := FDoc.Field(AIndex, 63, 71);
+  for I := 1 to 9 do
+  begin
+    if Ord(M[I]) < 128 then
+      C := Char(Ord(M[I]))
+    else
+      C := '?';
+    if C = ' ' then
+    begin
+      FMaskSpaces := True;
+      C := '0';
+    end;
+    case State of
+      0:
+        if (C >= '1') and (C <= '4') then
+        begin
+          if C = Last then
+            Inc(FLevels[N - 1].Length)
+          else if Ord(C) = Ord(Last) + 1 then
+            NewLevel('BoQLevel', I)
+          else
+            Ok := False;
+          Last := C;
+        end
+        else if C = 'P' then
+        begin
+          NewLevel('Item', I);
+          State := 1;
+        end
+        else
+          Ok := False;
+      1:
+        if C = 'P' then
+          Inc(FLevels[N - 1].Length)
+        else if C = 'I' then
+        begin
+          NewLevel('Index', I);
+          State := 2;
+        end
+        else if C = '0' then
+          State := 3
+        else
+          Ok := False;
+      2:
+        if C = 'I' then
+          Inc(FLevels[N - 1].Length)
+        else if C = '0' then
+          State := 3
+        else
+          Ok := False;
+    else
+      if C <> '0' then
+        Ok := False;
+    end;
+    if not Ok then
+      Break;
+  end;
+  if Ok and (State = 0) then
+    Ok := False;
+  if not Ok then
+  begin
+    Report(AIndex, RuleMask, gsError, 'OZMASKE missing or not readable: the ordinal numbers are read as item ' +
+      'numbers without hierarchy');
+    FLevels := nil;
+    N := 0;
+    NewLevel('Item', 1);
+    FLevels[0].Length := 9;
+    FMaskSpaces := False;
+  end
+  else if FMaskSpaces then
+    Report(AIndex, RuleMaskSpaces, gsWarning, 'OZMASKE with spaces as fill; read as 0');
+  FCategoryLevels := 0;
+  FItemLevel := -1;
+  FIndexLevel := -1;
+  for I := 0 to N - 1 do
+    if FLevels[I].Kind = 'BoQLevel' then
+      Inc(FCategoryLevels)
+    else if FLevels[I].Kind = 'Item' then
+      FItemLevel := I
+    else
+      FIndexLevel := I;
+  SetLength(FLevelLabels, N);
+  SetLength(FLevelSeen, N);
+  SetLength(FLevelOther, N);
+  for I := 0 to N - 1 do
+  begin
+    FLevelLabels[I] := '';
+    FLevelSeen[I] := False;
+    FLevelOther[I] := False;
+  end;
+  SetLength(FOpenPart, FCategoryLevels);
+  SetLength(FOpenCtgy, FCategoryLevels);
+  SetLength(FOpenImplicit, FCategoryLevels);
+  SetLength(FOpenHasCtgy, FCategoryLevels);
+  SetLength(FOpenHasItem, FCategoryLevels);
+  FOpenDepth := 0;
+end;
+
+{ The category parts of AOZ (trimmed, without characters XML cannot
+  carry), the number of leading filled levels, and the item and index
+  parts. ABad is set for a filled level below an empty one (not taken);
+  the caller counts it once per number (GAEB-D90-MAP-013). }
+procedure TMapper.PartsOf(const AOZ: TLandrixGaebString; out AParts: TPartArray;
+  out ADepth: Integer; out AItem, AIndex: TLandrixGaebString; out ABad: Boolean);
+var
+  I, Dummy: Integer;
+  Raw: TLandrixGaebString;
+  Gap: Boolean;
+
+  function Clean(const S: TLandrixGaebString): TLandrixGaebString;
+  begin
+    if FQuiet then
+      Result := TrimW(XmlSafe(S, Dummy))
+    else
+      Result := TrimW(XmlSafe(S, FControl));
+  end;
+
+  procedure Note(ALevel: Integer; const ARaw: TLandrixGaebString);
+  begin
+    if FQuiet or (TrimW(ARaw) = '') then
+      Exit;
+    FLevelSeen[ALevel] := True;
+    { Num Yes only for digits written in full (zeros in front) }
+    if not IsDigits(ARaw) then
+      FLevelOther[ALevel] := True;
+  end;
+
+begin
+  AParts := nil;
+  SetLength(AParts, FCategoryLevels);
+  ADepth := 0;
+  AItem := '';
+  AIndex := '';
+  ABad := False;
+  Gap := False;
+  Dummy := 0;
+  for I := 0 to Integer(Length(FLevels)) - 1 do
+  begin
+    Raw := Copy(AOZ, FLevels[I].Start, FLevels[I].Length);
+    Note(I, Raw);
+    if FLevels[I].Kind = 'BoQLevel' then
+    begin
+      AParts[I] := Clean(Raw);
+      if AParts[I] = '' then
+        Gap := True
+      else if Gap then
+        ABad := True
+      else
+        Inc(ADepth);
+    end
+    else if FLevels[I].Kind = 'Item' then
+      AItem := Clean(Raw)
+    else
+      AIndex := Clean(Raw);
+  end;
+end;
+
+function TMapper.BodyAt(ADepth: Integer): TLandrixGaebXmlBoQBody;
+begin
+  if ADepth = 0 then
+    Result := FRootBody
+  else
+    Result := FOpenCtgy[ADepth - 1].BoQBody;
+end;
+
+{ The parts of the first ADepth levels as one key. }
+function TMapper.PathKey(const AParts: TPartArray; ADepth: Integer): TLandrixGaebString;
+var
+  L: Integer;
+begin
+  Result := '';
+  for L := 0 to ADepth - 1 do
+    Result := Result + AParts[L] + #10;
+end;
+
+{ Makes the open categories equal AParts[0 .. ADepth - 1]: the matching
+  ones stay, the others are closed and new ones opened (derived from the
+  numbers, except the one of level AExplicitLevel). }
+procedure TMapper.OpenPath(const AParts: TPartArray; ADepth, AExplicitLevel: Integer);
+var
+  L, Keep: Integer;
+  Ctgy: TLandrixGaebXmlBoQCtgy;
+  Body: TLandrixGaebXmlBoQBody;
+begin
+  Keep := 0;
+  while (Keep < ADepth) and (Keep < FOpenDepth) and (FOpenPart[Keep] = AParts[Keep]) do
+    Inc(Keep);
+  { a category kept as derived becomes the one of its record 11 }
+  if (AExplicitLevel >= 0) and (AExplicitLevel < Keep) and FOpenImplicit[AExplicitLevel] then
+  begin
+    FOpenImplicit[AExplicitLevel] := False;
+    Dec(FDerived);
+  end;
+  FOpenDepth := Keep;
+  for L := Keep to ADepth - 1 do
+  begin
+    Body := BodyAt(L);
+    if L = 0 then
+    begin
+      FRootHasCtgy := True;
+      if FRootHasItem then
+        Inc(FMixed);
+    end
+    else
+    begin
+      FOpenHasCtgy[L - 1] := True;
+      if FOpenHasItem[L - 1] then
+        Inc(FMixed);
+    end;
+    Ctgy := Body.AddBoQCtgy;
+    Ctgy.Present := True;
+    Ctgy.ID := NewId('LGC');
+    Ctgy.RNoPart := AParts[L];
+    Ctgy.BoQBody.Present := True;
+    FOpenPart[L] := AParts[L];
+    FOpenCtgy[L] := Ctgy;
+    FOpenImplicit[L] := L <> AExplicitLevel;
+    if FOpenImplicit[L] then
+      Inc(FDerived);
+    FOpenHasCtgy[L] := False;
+    FOpenHasItem[L] := False;
+    FOpenDepth := L + 1;
+    if FCtgyTable.Add(PathKey(AParts, L + 1), FCtgyCount) then
+    begin
+      if FCtgyCount >= Length(FCtgys) then
+        SetLength(FCtgys, 2 * FCtgyCount + 16);
+      FCtgys[FCtgyCount] := Ctgy;
+      Inc(FCtgyCount);
+    end;
+  end;
+end;
+
+procedure TMapper.NoteItem(ADepth: Integer);
+begin
+  if ADepth = 0 then
+  begin
+    FRootHasItem := True;
+    if FRootHasCtgy then
+      Inc(FMixed);
+  end
+  else
+  begin
+    FOpenHasItem[ADepth - 1] := True;
+    if FOpenHasCtgy[ADepth - 1] then
+      Inc(FMixed);
+  end;
+end;
+
+{ The item list a record without ordinal number (20) belongs to: that of
+  the next item; before a record 11, the body of its parent (as remarks of
+  the body, see MapRemark). }
+function TMapper.ItemlistFor(AIndex: Integer): TLandrixGaebXmlItemlist;
+var
+  J, Depth: Integer;
+  K: string;
+  Parts: TPartArray;
+  ItemPart, IndexPart: TLandrixGaebString;
+  Bad: Boolean;
+begin
+  Result := nil;
+  Parts := nil;
+  { remarks in a row share one look-ahead (linear time) }
+  if not ((FLookFrom <= AIndex) and (AIndex < FLookAt)) then
+  begin
+    FLookFrom := AIndex;
+    FLookAt := FDoc.Count;
+    for J := AIndex + 1 to FDoc.Count - 1 do
+    begin
+      K := FDoc.Kind(J);
+      if (K = '21') or (K = '23') or (K = '11') or (K = '00') or (K = '99') then
+      begin
+        FLookAt := J;
+        Break;
+      end;
+    end;
+  end;
+  for J := FLookAt to FLookAt do
+  begin
+    if J >= FDoc.Count then
+      Break;
+    K := FDoc.Kind(J);
+    if (K = '21') or (K = '23') or (K = '11') then
+    begin
+      FQuiet := True;
+      try
+        PartsOf(FDoc.Field(J, 3, 11), Parts, Depth, ItemPart, IndexPart, Bad);
+      finally
+        FQuiet := False;
+      end;
+      if K = '11' then
+      begin
+        if Depth > 0 then
+          Dec(Depth);
+        OpenPath(Parts, Depth, -1);
+        Exit;
+      end;
+      OpenPath(Parts, Depth, -1);
+      NoteItem(Depth);
+      Result := BodyAt(Depth).Itemlist;
+      Exit;
+    end;
+    if (K = '00') or (K = '99') then
+      Break;
+  end;
+  if FOpenDepth = 0 then
+  begin
+    if not FRootHasCtgy then
+    begin
+      NoteItem(0);
+      Result := FRootBody.Itemlist;
+    end;
+  end
+  else if not FOpenHasCtgy[FOpenDepth - 1] then
+  begin
+    NoteItem(FOpenDepth);
+    Result := BodyAt(FOpenDepth).Itemlist;
+  end;
+end;
+
+{ ---- TMapper: texts ---- }
+
+{ The lines of 25 or 26 records from AIndex on (AKind), AIndex ends after
+  the last one. }
+procedure TMapper.CollectText(var AIndex: Integer; ALines: TLines; const AKind: string);
+var
+  T: TLandrixGaebString;
+  Knr: string;
+  Tekz: Char;
+  F: TLandrixGaebString;
+begin
+  while (AIndex < FDoc.Count) and (FDoc.Kind(AIndex) = AKind) do
+  begin
+    FUsed[AIndex] := True;
+    if AKind = '25' then
+    begin
+      T := TrimRightW(Raw(AIndex, 3, 72));
+      Knr := AsciiOf(Str(AIndex, 73, 74));
+      Tekz := ' ';
+      if (Knr <> '') and not IsDigits(W(Knr)) then
+        Inc(FTekz);
+    end
+    else
+    begin
+      T := TrimRightW(Raw(AIndex, 6, 60));
+      Knr := AsciiOf(Str(AIndex, 3, 4));
+      F := FDoc.Field(AIndex, 5, 5);
+      if Ord(F[1]) < 128 then
+        Tekz := Char(Ord(F[1]))
+      else
+        Tekz := '?';
+      { KNR and TEKZ A/B belong together, KNR of two digits }
+      if (Tekz = ' ') <> (Knr = '') then
+        Inc(FTekz)
+      else if (Tekz <> ' ') and not (((Tekz = 'A') or (Tekz = 'B')) and IsDigits(W(Knr))) then
+        Inc(FTekz);
+      Unmapped(AIndex, 61, 74, 'FILLER');
+    end;
+    ALines.Add(T, Knr, Tekz);
+    Inc(AIndex);
+  end;
+end;
+
+procedure TMapper.AddLinesTo(const AText: TLandrixGaebString; P: TLandrixGaebXmlPMLText);
+var
+  I, Start: Integer;
+begin
+  P.Present := True;
+  Start := 1;
+  for I := 1 to Length(AText) + 1 do
+    if (I > Length(AText)) or (AText[I] = #10) then
+    begin
+      if I > Start then
+        P.AddSpan.Value := Copy(AText, Start, I - Start);
+      if I <= Length(AText) then
+        P.AddBr('');
+      Start := I + 1;
+    end;
+end;
+
+{ Dots, underscores, ellipses, spaces and line breaks only: a placeholder
+  for a complement still to be filled in. }
+function TMapper.IsPlaceholder(const S: TLandrixGaebString): Boolean;
+var
+  I: Integer;
+begin
+  Result := True;
+  for I := 1 to Length(S) do
+    if not ((S[I] = '.') or (S[I] = '_') or (S[I] = ' ') or (S[I] = #10) or (S[I] = TLandrixGaebChar($2026))) then
+    begin
+      Result := False;
+      Exit;
+    end;
+end;
+
+{ The lines AFirst to ALast as caption, body and tail: False unless they
+  hold exactly two apostrophes. }
+function TMapper.SplitComplement(ALines: TLines; AFirst, ALast: Integer;
+  out ACaption, ABody, ATail: TLandrixGaebString): Boolean;
+var
+  S: TLandrixGaebString;
+  I, Q1, Q2, N: Integer;
+begin
+  ACaption := '';
+  ABody := '';
+  ATail := '';
+  { the lines joined by line feeds, sized once (linear time) }
+  N := 0;
+  for I := AFirst to ALast do
+    Inc(N, Length(ALines.Text[I]) + 1);
+  S := '';
+  SetLength(S, N - 1);
+  N := 0;
+  for I := AFirst to ALast do
+  begin
+    if I > AFirst then
+    begin
+      Inc(N);
+      S[N] := #10;
+    end;
+    for Q1 := 1 to Length(ALines.Text[I]) do
+    begin
+      Inc(N);
+      S[N] := ALines.Text[I][Q1];
+    end;
+  end;
+  N := 0;
+  Q1 := 0;
+  Q2 := 0;
+  for I := 1 to Length(S) do
+    if S[I] = '''' then
+    begin
+      Inc(N);
+      if N = 1 then
+        Q1 := I
+      else
+        Q2 := I;
+    end;
+  Result := N = 2;
+  if not Result then
+    Exit;
+  ACaption := TrimRightW(Copy(S, 1, Q1 - 1));
+  ABody := Copy(S, Q1 + 1, Q2 - Q1 - 1);
+  ATail := TrimRightW(Copy(S, Q2 + 1, MaxInt));
+  if TrimW(ATail) = '' then
+    ATail := '';
+end;
+
+procedure TMapper.FillComplement(AComplement: TLandrixGaebXmlTextComplement; ABidder: Boolean;
+  const AKnr, ACaption, ABody, ATail: TLandrixGaebString);
+begin
+  AComplement.Present := True;
+  if ABidder then
+    AComplement.Kind := 'Bidder'
+  else
+    AComplement.Kind := 'Owner';
+  AComplement.MarkLbl := AKnr;
+  if ACaption <> '' then
+    AddLinesTo(ACaption, AComplement.ComplCaption.AddP);
+  if IsPlaceholder(ABody) then
+  begin
+    AComplement.Empty := 'Yes';
+    AComplement.ComplBody.Present := True;
+  end
+  else
+    AddLinesTo(ABody, AComplement.ComplBody.AddP);
+  if ATail <> '' then
+    AddLinesTo(ATail, AComplement.ComplTail.AddP);
+end;
+
+{ Long text: a paragraph per line, a complement (lines with the same KNR
+  and TEKZ A/B and two apostrophes) as a paragraph of its own. }
+procedure TMapper.MapLong(ALines: TLines; ADetail: TLandrixGaebXmlBoQText);
+var
+  F: TLandrixGaebXmlFTextTC;
+  P: TLandrixGaebXmlPTC;
+  I, J, K: Integer;
+  Caption, Body, Tail: TLandrixGaebString;
+  Knr: string;
+
+  procedure Plain(ALine: Integer);
+  begin
+    P := F.AddP;
+    P.Present := True;
+    if ALines.Text[ALine] <> '' then
+      P.AddSpan.Value := ALines.Text[ALine];
+  end;
+
+begin
+  F := ADetail.AddText;
+  F.Present := True;
+  I := 0;
+  while I < ALines.Count do
+  begin
+    Knr := ALines.Knr[I];
+    if (ALines.Tekz[I] = 'A') or (ALines.Tekz[I] = 'B') then
+    begin
+      J := I;
+      while (J + 1 < ALines.Count) and (ALines.Knr[J + 1] = Knr) and (ALines.Tekz[J + 1] = ALines.Tekz[I]) do
+        Inc(J);
+      if IsDigits(W(Knr)) and SplitComplement(ALines, I, J, Caption, Body, Tail) then
+      begin
+        P := F.AddP;
+        P.Present := True;
+        FillComplement(P.AddTextComplement, ALines.Tekz[I] = 'B', W(Knr), Caption, Body, Tail);
+      end
+      else
+      begin
+        { a wrong KNR is counted per line when collected }
+        if IsDigits(W(Knr)) then
+          Inc(FMarkProblems);
+        for K := I to J do
+          Plain(K);
+      end;
+      I := J + 1;
+      Continue;
+    end;
+    Plain(I);
+    Inc(I);
+  end;
+end;
+
+{ Short text: plain lines as paragraphs of TextOutlTxt, lines with a KNR
+  (owner complements) as TextComplement between them. }
+procedure TMapper.MapShort(ALines: TLines; AOutline: TLandrixGaebXmlOutlTxt);
+var
+  M: TLandrixGaebXmlMLText;
+  I, J, K: Integer;
+  Caption, Body, Tail: TLandrixGaebString;
+  Knr: string;
+  P: TLandrixGaebXmlPMLText;
+
+  procedure Plain(ALine: Integer);
+  begin
+    if M = nil then
+    begin
+      M := AOutline.AddTextOutlTxt;
+      M.Present := True;
+    end;
+    P := M.AddP;
+    P.Present := True;
+    if ALines.Text[ALine] <> '' then
+      P.AddSpan.Value := ALines.Text[ALine];
+  end;
+
+begin
+  AOutline.Present := True;
+  M := nil;
+  I := 0;
+  while I < ALines.Count do
+  begin
+    Knr := ALines.Knr[I];
+    if Knr <> '' then
+    begin
+      J := I;
+      while (J + 1 < ALines.Count) and (ALines.Knr[J + 1] = Knr) do
+        Inc(J);
+      if IsDigits(W(Knr)) and SplitComplement(ALines, I, J, Caption, Body, Tail) then
+      begin
+        FillComplement(AOutline.AddTextComplement, False, W(Knr), Caption, Body, Tail);
+        M := nil;
+      end
+      else
+      begin
+        if IsDigits(W(Knr)) then
+          Inc(FMarkProblems);
+        for K := I to J do
+          Plain(K);
+      end;
+      I := J + 1;
+      Continue;
+    end;
+    Plain(I);
+    Inc(I);
+  end;
+end;
+
+{ True if the lines hold any text or a complement mark. }
+function HasContent(ALines: TLines): Boolean;
+var
+  I: Integer;
+begin
+  Result := True;
+  for I := 0 to ALines.Count - 1 do
+    if (ALines.Text[I] <> '') or (ALines.Knr[I] <> '') then
+      Exit;
+  Result := False;
+end;
+
+procedure TMapper.MapTexts(AShort, ALong: TLines; ATA, ATB: Boolean; ADescription: TLandrixGaebXmlDescription);
+var
+  HasShort, HasLong: Boolean;
+begin
+  HasShort := HasContent(AShort);
+  HasLong := HasContent(ALong);
+  if AShort.Count > 9 then
+    FLimits.Add('25');
+  if ALong.Count > 999 then
+    FLimits.Add('26');
+  if HasLong then
+  begin
+    ADescription.Present := True;
+    MapLong(ALong, ADescription.CompleteText.DetailTxt);
+    if ATA then
+      ADescription.CompleteText.ComplTSA := 'Yes';
+    if ATB then
+      ADescription.CompleteText.ComplTSB := 'Yes';
+    if HasShort then
+    begin
+      MapShort(AShort, ADescription.CompleteText.OutlineText.OutlTxt);
+      if ATA then
+        ADescription.CompleteText.OutlineText.OutlTSA := 'Yes';
+    end;
+  end
+  else if HasShort then
+  begin
+    ADescription.Present := True;
+    MapShort(AShort, ADescription.OutlineText.OutlTxt);
+    if ATA then
+      ADescription.OutlineText.OutlTSA := 'Yes';
+  end;
+end;
+
+{ ---- TMapper: records ---- }
+
+procedure TMapper.MapHeader00(AIndex: Integer);
+var
+  S: TLandrixGaebString;
+  K: Char;
+begin
+  K := Code(AIndex, 13, 'KURZLANG', 'KL');
+  if K = 'L' then
+    FG.Award.BoQ.BoQInfo.OutlCompl := 'AllTxt'
+  else if K = 'K' then
+    FG.Award.BoQ.BoQInfo.OutlCompl := 'OutTxt';
+  S := Str(AIndex, 14, 28);
+  FVergag := S;
+  if S <> '' then
+  begin
+    FG.Award.OWN.Present := True;
+    FG.Award.OWN.AwardNo := S;
+  end;
+  S := Str(AIndex, 29, 36);
+  if S <> '' then
+  begin
+    FG.Award.OWN.Present := True;
+    FG.Award.OWN.DPNo := S;
+  end;
+  S := Str(AIndex, 37, 39);
+  if S <> '' then
+  begin
+    FG.Award.CTR.Present := True;
+    FG.Award.CTR.BidderNo := S;
+  end;
+  S := Str(AIndex, 40, 54);
+  if S <> '' then
+  begin
+    FG.Award.CTR.Present := True;
+    FG.Award.CTR.AwardNo := S;
+  end;
+  S := Str(AIndex, 55, 62);
+  if S <> '' then
+  begin
+    FG.Award.CTR.Present := True;
+    FG.Award.CTR.DPNo := S;
+  end;
+  ReadMask(AIndex);
+  { the edition of GAEB 90 has no counterpart }
+  S := FDoc.Field(AIndex, 72, 73);
+  if (S <> '90') and (S <> '  ') then
+    FValues.Add('00/VERSDTA');
+  Unmapped(AIndex, 74, 74, 'LOSKZ');
+  Unmapped(AIndex, 3, 10, 'FILLER');
+end;
+
+procedure TMapper.MapHeader01(AIndex: Integer);
+var
+  Info: TLandrixGaebXmlAwardInfo;
+  S: TLandrixGaebString;
+begin
+  FG.Award.BoQ.BoQInfo.LblBoQ := Str(AIndex, 3, 42);
+  FG.Award.BoQ.BoQInfo.Date := DateField(AIndex, 43, 'LVDATUM');
+  Info := FG.Award.AwardInfo;
+  S := DateField(AIndex, 51, 'DATANG');
+  if S <> '' then
+  begin
+    Info.Present := True;
+    Info.OpenDate := S;
+  end;
+  S := TimeField(AIndex, 59, 'DATUHR');
+  if (S <> '') and (Info.OpenDate <> '') then
+  begin
+    Info.Present := True;
+    Info.OpenTime := S;
+  end
+  else if S <> '' then
+    FFields.Add('01/DATUHR without DATANG');
+  S := DateField(AIndex, 64, 'DATZUS');
+  if S <> '' then
+  begin
+    Info.Present := True;
+    Info.EvalEnd := S;
+  end;
+  { KZPREIS describes the file (prices or not) and has no counterpart }
+  Code(AIndex, 72, 'KZPREIS', 'X');
+  Unmapped(AIndex, 73, 73, 'KZLOHN');
+  Unmapped(AIndex, 74, 74, 'FILLER');
+end;
+
+procedure TMapper.MapProject(var AIndex: Integer);
+var
+  N: Integer;
+  S: TLandrixGaebString;
+  P: TLandrixGaebXmlP;
+begin
+  N := 0;
+  while (AIndex < FDoc.Count) and (FDoc.Kind(AIndex) = '02') do
+  begin
+    FUsed[AIndex] := True;
+    S := Str(AIndex, 3, 62);
+    if N = 0 then
+      FG.PrjInfo.LblPrj := S;
+    P := FG.PrjInfo.Descrip.AddP;
+    P.Present := True;
+    if S <> '' then
+      P.AddSpan.Value := S;
+    Unmapped(AIndex, 63, 74, 'FILLER');
+    Inc(N);
+    Inc(AIndex);
+  end;
+  if N > 9 then
+    FLimits.Add('02');
+end;
+
+{ 03/04: the name, up to 40 characters to Name1, the rest (cut at the
+  last space before) to Name2. }
+procedure TMapper.MapParty(AIndex: Integer; AAddress: TLandrixGaebXmlAddress);
+var
+  S: TLandrixGaebString;
+  Cut: Integer;
+begin
+  S := Str(AIndex, 3, 62);
+  Unmapped(AIndex, 63, 74, 'FILLER');
+  if S = '' then
+    Exit;
+  AAddress.Present := True;
+  if Length(S) <= 40 then
+  begin
+    AAddress.Name1 := S;
+    Exit;
+  end;
+  Cut := 41;
+  while (Cut > 1) and (S[Cut] <> ' ') do
+    Dec(Cut);
+  if Cut <= 1 then
+    Cut := 41;
+  AAddress.Name1 := TrimW(Copy(S, 1, Cut - 1));
+  AAddress.Name2 := TrimW(Copy(S, Cut, MaxInt));
+end;
+
+procedure TMapper.MapComponents(AIndex: Integer);
+var
+  Info: TLandrixGaebXmlBoQInfo;
+  S: TLandrixGaebString;
+
+  procedure Lbl(AFrom: Integer; ALabel: TLandrixGaebXmlLblUpComp);
+  var
+    L: TLandrixGaebString;
+  begin
+    L := Str(AIndex, AFrom, AFrom + 13);
+    if L = '' then
+      Exit;
+    ALabel.Value := L;
+    ALabel.TypeAttr := 'Unknown';
+  end;
+
+begin
+  Info := FG.Award.BoQ.BoQInfo;
+  S := Str(AIndex, 3, 3);
+  if IsDigits(S) and (S <> '0') then
+    Info.NoUPComps := S
+  else if S <> '' then
+    FValues.Add('06/ANZEP');
+  Info.LblTime := Str(AIndex, 4, 17);
+  Lbl(18, Info.LblUPComp1);
+  Lbl(32, Info.LblUPComp2);
+  Lbl(46, Info.LblUPComp3);
+  Lbl(60, Info.LblUPComp4);
+end;
+
+procedure TMapper.MapCurrency(AIndex: Integer);
+var
+  Cur, Lbl: TLandrixGaebString;
+begin
+  Cur := Str(AIndex, 3, 8);
+  Lbl := Str(AIndex, 9, 58);
+  FG.PrjInfo.Cur := Cur;
+  FG.PrjInfo.CurLbl := Lbl;
+  if (Cur <> '') or (Lbl <> '') then
+  begin
+    FG.Award.AwardInfo.Present := True;
+    FG.Award.AwardInfo.Cur := Cur;
+    FG.Award.AwardInfo.CurLbl := Lbl;
+  end;
+  Unmapped(AIndex, 59, 74, 'FILLER');
+end;
+
+{ 11 and its 12: the category of the deepest level the number fills. }
+procedure TMapper.MapGroup(var AIndex: Integer);
+var
+  Parts: TPartArray;
+  Depth, Level, N: Integer;
+  ItemPart, IndexPart, S, Zzv: TLandrixGaebString;
+  Ctgy: TLandrixGaebXmlBoQCtgy;
+  Art: Char;
+  P: TLandrixGaebXmlPMLText;
+  First: Integer;
+  Bad: Boolean;
+begin
+  First := AIndex;
+  FUsed[AIndex] := True;
+  Parts := nil;
+  PartsOf(FDoc.Field(AIndex, 3, 11), Parts, Depth, ItemPart, IndexPart, Bad);
+  if Bad then
+    Inc(FNumberProblems);
+  Inc(AIndex);
+  if Depth = 0 then
+  begin
+    FOrphans.Add('11 without a group number');
+    while (AIndex < FDoc.Count) and (FDoc.Kind(AIndex) = '12') do
+    begin
+      FUsed[AIndex] := True;
+      FOrphans.Add('12');
+      Inc(AIndex);
+    end;
+    Exit;
+  end;
+  Level := Depth - 1;
+  OpenPath(Parts, Depth, Level);
+  Ctgy := FOpenCtgy[Level];
+  Art := Code(First, 12, 'LVGRART', 'NGA');
+  Zzv := FDoc.Field(First, 13, 16);
+  if (Art = 'G') or (Art = 'A') then
+  begin
+    if IsDigits(Copy(Zzv, 1, 3)) then
+    begin
+      Ctgy.ALNBGroupNo := Copy(Zzv, 1, 3);
+      if Art = 'G' then
+        Ctgy.ALNBSerNo := '0'
+      else if IsDigits(Copy(Zzv, 4, 1)) and (Zzv[4] <> '0') then
+        { an alternative is numbered 1 to 9 (0 is the basic one) }
+        Ctgy.ALNBSerNo := Copy(Zzv, 4, 1)
+      else
+        FValues.Add('11/ZZV');
+    end
+    else
+      FValues.Add('11/ZZV');
+  end
+  else if TrimW(Zzv) <> '' then
+    FFields.Add('11/ZZV');
+  S := Str(First, 17, 30);
+  if (S <> '') and (FLevelLabels[Level] = '') then
+    FLevelLabels[Level] := S;
+  N := 0;
+  while (AIndex < FDoc.Count) and (FDoc.Kind(AIndex) = '12') do
+  begin
+    FUsed[AIndex] := True;
+    S := TrimRightW(Raw(AIndex, 3, 42));
+    P := Ctgy.LblTx.AddP;
+    P.Present := True;
+    Ctgy.LblTx.Present := True;
+    if S <> '' then
+      P.AddSpan.Value := S;
+    Unmapped(AIndex, 43, 74, 'FILLER');
+    Inc(N);
+    Inc(AIndex);
+  end;
+  if N > 9 then
+    FLimits.Add('12');
+end;
+
+procedure TMapper.MapGroupTotals(AIndex: Integer);
+var
+  Parts: TPartArray;
+  Depth, K: Integer;
+  ItemPart, IndexPart: TLandrixGaebString;
+  T: TLandrixGaebXmlTotals;
+  Bad: Boolean;
+begin
+  FUsed[AIndex] := True;
+  Parts := nil;
+  PartsOf(FDoc.Field(AIndex, 3, 11), Parts, Depth, ItemPart, IndexPart, Bad);
+  K := -1;
+  { a number with a gap names no group: counted, the totals left out }
+  if Bad then
+    Inc(FNumberProblems)
+  else if Depth > 0 then
+    K := FCtgyTable.Find(PathKey(Parts, Depth));
+  if K < 0 then
+  begin
+    FOrphans.Add('32 without its group');
+    Exit;
+  end;
+  T := FCtgys[K].Totals;
+  if not NumField(AIndex, 13, 24, 2, 12, 'SUMME', T.Total) then
+    if (TrimW(FDoc.Field(AIndex, 13, 24)) <> '') and (FInvalidTotals <> nil) then
+      FInvalidTotals.Add(T);
+  NumField(AIndex, 46, 57, 2, 45, 'PAUSCH', T.TotalLSUM);
+  if T.Total.HasValue or T.TotalLSUM.HasValue then
+    T.Present := True;
+  Unmapped(AIndex, 25, 31, 'AUFABFAK');
+  Unmapped(AIndex, 32, 44, 'AUFABDM');
+end;
+
+{ 20 and its 26: a remark in the item list of the next item, or before a
+  group in the body of its parent. }
+procedure TMapper.MapRemark(var AIndex: Integer);
+var
+  First: Integer;
+  List: TLandrixGaebXmlItemlist;
+  R: TLandrixGaebXmlRemark;
+  Body: TLandrixGaebXmlBoQBody;
+begin
+  First := AIndex;
+  FUsed[AIndex] := True;
+  Inc(AIndex);
+  FDescrShort.Clear;
+  FDescrLong.Clear;
+  CollectText(AIndex, FDescrLong, '26');
+  Unmapped(First, 5, 22, 'TEXTSYST/STLNR');
+  if not HasContent(FDescrLong) then
+  begin
+    { GAEB DA XML needs the description of a remark }
+    FOrphans.Add('20 without text');
+    Exit;
+  end;
+  List := ItemlistFor(AIndex - 1);
+  if List <> nil then
+  begin
+    List.Present := True;
+    R := List.AddRemark;
+  end
+  else
+  begin
+    Body := BodyAt(FOpenDepth);
+    R := Body.AddRemark;
+  end;
+  R.Present := True;
+  R.ID := NewId('LGR');
+  MapTexts(FDescrShort, FDescrLong, Code(First, 3, 'TA', 'X') = 'X', False, R.Description);
+end;
+
+{ 21 (or a 23 without 21) and the records of the item. }
+procedure TMapper.MapItem(var AIndex: Integer);
+var
+  First, Depth, J: Integer;
+  OZ, ItemPart, IndexPart, QU, Zz: TLandrixGaebString;
+  Parts: TPartArray;
+  Kind, K: string;
+  Has21, IsMarkup, IsNote, QtyTBD, TA, TB, Bad: Boolean;
+  Item: TLandrixGaebXmlItem;
+  Markup: TLandrixGaebXmlMarkupItem;
+  Descr: TLandrixGaebXmlDescription;
+  List: TLandrixGaebXmlItemlist;
+  P1, P2, Typ, Z, Wv, St: Char;
+  FreeQty: TLandrixGaebDecimal;
+  R: TLandrixGaebXmlRemark;
+begin
+  First := AIndex;
+  Has21 := FDoc.Kind(AIndex) = '21';
+  OZ := FDoc.Field(AIndex, 3, 11);
+  Parts := nil;
+  PartsOf(OZ, Parts, Depth, ItemPart, IndexPart, Bad);
+  if Bad or (ItemPart = '') then
+    Inc(FNumberProblems);
+  IsNote := False;
+  P1 := ' ';
+  P2 := ' ';
+  Typ := ' ';
+  if Has21 then
+  begin
+    Kind := AsciiOf(FDoc.Field(AIndex, 12, 14));
+    IsNote := Kind = 'NNH';
+    if IsNote then
+      Inc(FOldNotes)
+    else if not InList(Kind, PositionKinds) then
+      Inc(FBadKinds);
+    P1 := Code(AIndex, 12, 'POSART1', 'NGAS');
+    P2 := Code(AIndex, 13, 'POSART2', 'NEM');
+    if not IsNote then
+      Typ := Code(AIndex, 14, 'POSTYP', 'NL');
+    Z := Code(AIndex, 20, 'ZUSCHLAG', 'EZ');
+    if (Z = ' ') and (FDoc.Field(AIndex, 20, 20) <> ' ') then
+      Inc(FMarkupValues);
+    IsMarkup := Z = 'Z';
+  end
+  else
+  begin
+    Z := ' ';
+    { a 23 without 21 (phase 84) with ZUSCHPR or ZUSCHSU is a markup item }
+    IsMarkup := TrimW(FDoc.Field(AIndex, 56, 74)) <> '';
+  end;
+  OpenPath(Parts, Depth, -1);
+  NoteItem(Depth);
+  List := BodyAt(Depth).Itemlist;
+  List.Present := True;
+  Item := nil;
+  Markup := nil;
+  if IsNote then
+  begin
+    R := List.AddRemark;
+    R.Present := True;
+    R.ID := NewId('LGR');
+    Descr := R.Description;
+  end
+  else if IsMarkup then
+  begin
+    Markup := List.AddMarkupItem;
+    Markup.Present := True;
+    Markup.ID := NewId('LGI');
+    Markup.RNoPart := ItemPart;
+    if IndexPart <> '' then
+      Markup.RNoIndex := IndexPart;
+    Markup.MarkupType := 'IdentAsMark';
+    Descr := Markup.Description;
+  end
+  else
+  begin
+    Item := List.AddItem;
+    Item.Present := True;
+    Item.ID := NewId('LGI');
+    Item.RNoPart := ItemPart;
+    if IndexPart <> '' then
+      Item.RNoIndex := IndexPart;
+    Descr := Item.Description;
+  end;
+  if not IsNote then
+    Inc(FItems);
+  QtyTBD := False;
+  TA := False;
+  TB := False;
+  if Has21 then
+  begin
+    FUsed[AIndex] := True;
+    Zz := FDoc.Field(AIndex, 15, 18);
+    if (P1 = 'G') or (P1 = 'A') then
+    begin
+      if IsDigits(Copy(Zz, 1, 3)) then
+      begin
+        if Item <> nil then
+          Item.ALNGroupNo := Copy(Zz, 1, 3)
+        else if Markup <> nil then
+          Markup.ALNGroupNo := Copy(Zz, 1, 3);
+        if P1 = 'G' then
+          Zz := '0'
+        else if IsDigits(Copy(Zz, 4, 1)) and (Zz[4] <> '0') then
+          { an alternative is numbered 1 to 9 (0 is the basic one) }
+          Zz := Copy(Zz, 4, 1)
+        else
+        begin
+          Zz := '';
+          FValues.Add('21/ZZ');
+        end;
+        if (Item <> nil) and (Zz <> '') then
+          Item.ALNSerNo := Zz
+        else if (Markup <> nil) and (Zz <> '') then
+          Markup.ALNSerNo := Zz;
+      end
+      else
+        FValues.Add('21/ZZ');
+    end
+    else if TrimW(Zz) <> '' then
+      FFields.Add('21/ZZ');
+    if Item <> nil then
+    begin
+      if P1 = 'S' then
+        Item.HourIt := 'Yes';
+      if P2 = 'E' then
+        Item.Provis := 'WithoutTotal'
+      else if P2 = 'M' then
+        Item.Provis := 'WithTotal';
+      if Typ = 'L' then
+        Item.SumDescr := 'Yes';
+      if Code(AIndex, 19, 'EPAUFGL', 'X') = 'X' then
+        Item.UPBkdn := 'Yes';
+      if Z = 'E' then
+        Item.MarkupIt := 'Yes';
+      QtyTBD := Code(AIndex, 22, 'KZFRMENG', 'X') = 'X';
+      if QtyTBD then
+        Item.QtyTBD := 'Yes';
+      NumField(AIndex, 24, 34, 3, 23, 'MENGE', Item.Qty);
+      { ---- (no unit) stays as written: GAEB DA XML needs a QU with a
+        quantity }
+      QU := Str(AIndex, 35, 38);
+      Item.QU := QU;
+      if CompareText(AsciiOf(QU), 'psch') = 0 then
+        Item.LumpSumItem := 'Yes';
+      Unmapped(AIndex, 39, 41, 'NACHTRKZ');
+      St := Code(AIndex, 62, 'POSSTAT', 'R');
+      if St = 'R' then
+        Item.NotAppl := 'Yes'
+      else if FDoc.Field(AIndex, 62, 62) <> ' ' then
+        Inc(FStatus);
+    end
+    else
+    begin
+      if Markup <> nil then
+      begin
+        if P1 = 'S' then
+          Markup.HourIt := 'Yes';
+        if P2 = 'E' then
+          Markup.Provis := 'WithoutTotal'
+        else if P2 = 'M' then
+          Markup.Provis := 'WithTotal';
+        Unmapped(AIndex, 39, 41, 'NACHTRKZ');
+        St := Code(AIndex, 62, 'POSSTAT', 'R');
+        if St = 'R' then
+          Markup.NotAppl := 'Yes'
+        else if FDoc.Field(AIndex, 62, 62) <> ' ' then
+          Inc(FStatus);
+      end;
+      Unmapped(AIndex, 19, 19, 'EPAUFGL');
+      Unmapped(AIndex, 22, 38, 'MENGE/EINHEIT');
+    end;
+    Wv := Code(AIndex, 21, 'WIEVOR', 'BWA');
+    if (Wv = 'B') or (Wv = 'W') then
+    begin
+      if Wv = 'B' then
+        K := 'Ref'
+      else
+        K := 'Rep';
+      if Item <> nil then
+        Item.RefDescr := W(K)
+      else if Markup <> nil then
+        Markup.RefDescr := W(K);
+    end
+    else if Wv = 'A' then
+      FFields.Add('21/WIEVOR A');
+    TA := Code(AIndex, 42, 'TA', 'X') = 'X';
+    TB := Code(AIndex, 43, 'TB', 'X') = 'X';
+    Unmapped(AIndex, 44, 61, 'TEXTSYST/STLNR');
+    Unmapped(AIndex, 63, 63, 'KZBELO');
+    Unmapped(AIndex, 64, 74, 'FILLER');
+    Inc(AIndex);
+  end;
+  FDescrShort.Clear;
+  FDescrLong.Clear;
+  { the records of the item; a sub description (24) and what follows it
+    belong to it, not to the item (not mapped yet) }
+  while AIndex < FDoc.Count do
+  begin
+    K := FDoc.Kind(AIndex);
+    if (K = '22') or (K = '23') then
+    begin
+      { another number: the next item }
+      if TrimW(FDoc.Field(AIndex, 3, 11)) <> TrimW(OZ) then
+        Break;
+      if (K = '23') and (AIndex > First) and (FDoc.Kind(First) = '23') and (AIndex <> First) then
+        Break;
+      FUsed[AIndex] := True;
+      FreeQty.Clear;
+      if Item <> nil then
+      begin
+        if K = '22' then
+        begin
+          Price(AIndex, 13, 22, 12, 23, 'VEP', Item.UP);
+          NumField(AIndex, 25, 36, 2, 24, 'VGB', Item.IT);
+          NumField(AIndex, 38, 48, 3, 37, 'VFREIEME', FreeQty);
+          Unmapped(AIndex, 56, 74, 'VZUSCHP/VZUSCHSU');
+        end
+        else
+        begin
+          Price(AIndex, 13, 22, 12, 23, 'EP', Item.UP);
+          NumField(AIndex, 25, 36, 2, 24, 'GB', Item.IT);
+          NumField(AIndex, 38, 48, 3, 37, 'FREIEMEN', FreeQty);
+          Unmapped(AIndex, 49, 55, 'AUFABFAK');
+          Unmapped(AIndex, 56, 74, 'ZUSCHPR/ZUSCHSU');
+        end;
+        if FreeQty.HasValue and (QtyTBD or not Item.Qty.HasValue) then
+          Item.Qty := FreeQty;
+      end
+      else if Markup <> nil then
+      begin
+        if K = '22' then
+        begin
+          NumField(AIndex, 25, 36, 2, 24, 'VGB', Markup.IT);
+          NumField(AIndex, 57, 61, 2, 56, 'VZUSCHP', Markup.Markup);
+          NumField(AIndex, 63, 74, 2, 62, 'VZUSCHSU', Markup.ITMarkup);
+          Unmapped(AIndex, 12, 23, 'VEP');
+        end
+        else
+        begin
+          NumField(AIndex, 25, 36, 2, 24, 'GB', Markup.IT);
+          NumField(AIndex, 57, 61, 2, 56, 'ZUSCHPR', Markup.Markup);
+          NumField(AIndex, 63, 74, 2, 62, 'ZUSCHSU', Markup.ITMarkup);
+          Unmapped(AIndex, 12, 23, 'EP');
+          Unmapped(AIndex, 49, 55, 'AUFABFAK');
+        end;
+      end
+      else
+        Unmapped(AIndex, 12, 74, 'prices of a note text');
+      Inc(AIndex);
+    end
+    else if K = '30' then
+    begin
+      FUsed[AIndex] := True;
+      if Item <> nil then
+      begin
+        NumField(AIndex, 3, 12, 4, 0, 'ZEITANS', Item.TimeQu);
+        NumField(AIndex, 13, 22, 2, 0, 'EPANTEL1', Item.UPComp1);
+        NumField(AIndex, 23, 32, 2, 0, 'EPANTEL2', Item.UPComp2);
+        NumField(AIndex, 33, 42, 2, 0, 'EPANTEL3', Item.UPComp3);
+        NumField(AIndex, 43, 52, 2, 0, 'EPANTEL4', Item.UPComp4);
+      end
+      else
+        Unmapped(AIndex, 3, 52, 'ZEITANS/EPANTEL');
+      Inc(AIndex);
+    end
+    else if K = '25' then
+      CollectText(AIndex, FDescrShort, '25')
+    else if K = '26' then
+      CollectText(AIndex, FDescrLong, '26')
+    else if (K = '27') or (K = '28') or (K = '79') then
+    begin
+      FNotMapped.Add(K);
+      FUsed[AIndex] := True;
+      Inc(AIndex);
+    end
+    else if K = '24' then
+    begin
+      { the sub descriptions with their texts }
+      J := AIndex;
+      while (J < FDoc.Count) and InList(FDoc.Kind(J), '|24|25|26|28|') do
+      begin
+        FNotMapped.Add(FDoc.Kind(J));
+        FUsed[J] := True;
+        Inc(J);
+      end;
+      AIndex := J;
+    end
+    else
+      Break;
+  end;
+  MapTexts(FDescrShort, FDescrLong, TA, TB, Descr);
+end;
+
+procedure TMapper.MapClosing(AIndex: Integer);
+var
+  T: TLandrixGaebXmlTotals;
+  N: TLandrixGaebDecimal;
+begin
+  FUsed[AIndex] := True;
+  T := FG.Award.BoQ.BoQInfo.Totals;
+  if not NumField(AIndex, 3, 14, 2, 0, 'LVSUMME', T.Total) then
+    if (TrimW(FDoc.Field(AIndex, 3, 14)) <> '') and (FInvalidTotals <> nil) then
+      FInvalidTotals.Add(T);
+  NumField(AIndex, 22, 25, 2, 0, 'UST', T.VAT);
+  NumField(AIndex, 26, 37, 2, 0, 'ANGEBOTS', T.TotalGross);
+  NumField(AIndex, 52, 63, 2, 51, 'PAUSCH', T.TotalLSUM);
+  if T.Total.HasValue or T.VAT.HasValue or T.TotalGross.HasValue or T.TotalLSUM.HasValue then
+    T.Present := True;
+  Unmapped(AIndex, 15, 21, 'AUFABFAK');
+  Unmapped(AIndex, 38, 50, 'AUFABDM');
+  Unmapped(AIndex, 64, 69, 'SKONTO/ZAFRIST');
+  N.Clear;
+  if NumField(AIndex, 70, 74, 0, 0, 'ANZTEIL', N) and (N.Coefficient <> FItems) then
+    Report(AIndex, RuleCount, gsWarning, 'ANZTEIL of 99 differs from the number of positions (' +
+      IntToStr(FItems) + ')');
+end;
+
+{ A block that is not mapped yet: the record at AIndex and the following
+  ones of the kinds AFollowers. }
+procedure TMapper.SkipBlock(var AIndex: Integer; const AFollowers: string);
+begin
+  FNotMapped.Add(FDoc.Kind(AIndex));
+  FUsed[AIndex] := True;
+  Inc(AIndex);
+  while (AIndex < FDoc.Count) and InList(FDoc.Kind(AIndex), AFollowers) do
+  begin
+    FNotMapped.Add(FDoc.Kind(AIndex));
+    FUsed[AIndex] := True;
+    Inc(AIndex);
+  end;
+end;
+
+{ Required parts of GAEB DA XML without a source in GAEB 90 (owner
+  decision 15.11.2026): BoQInfo/Name from VERGAG, else from the first 20
+  characters of LVBEZ; an empty LblTx for a category without record 12.
+  GAEBInfo/Date stays missing.
+  DE: Pflichtteile von GAEB DA XML ohne Quelle in GAEB 90 (Entscheidung
+  Nutzer 15.11.2026): BoQInfo/Name aus VERGAG, sonst aus den ersten 20
+  Zeichen von LVBEZ; ein leeres LblTx fuer einen Bereich ohne Satz 12.
+  GAEBInfo/Date bleibt fehlend. }
+procedure TMapper.FillRequired;
+var
+  Info: TLandrixGaebXmlBoQInfo;
+  I, Empty: Integer;
+  From: string;
+  P: TLandrixGaebXmlPMLText;
+begin
+  Info := FG.Award.BoQ.BoQInfo;
+  From := '';
+  if Info.Name = '' then
+  begin
+    if FVergag <> '' then
+    begin
+      Info.Name := TrimW(Copy(FVergag, 1, 20));
+      From := 'VERGAG';
+    end
+    else if Info.LblBoQ <> '' then
+    begin
+      Info.Name := TrimW(Copy(Info.LblBoQ, 1, 20));
+      From := 'LVBEZ';
+    end;
+  end;
+  if From <> '' then
+    Report(-1, RuleFilled, gsInformation, 'BoQInfo/Name (required, GAEB 90 has none) taken from ' + From);
+  Empty := 0;
+  for I := 0 to FCtgyCount - 1 do
+    if FCtgys[I].LblTx.Children.Count = 0 then
+    begin
+      FCtgys[I].LblTx.Present := True;
+      P := FCtgys[I].LblTx.AddP;
+      P.Present := True;
+      Inc(Empty);
+    end;
+  if Empty > 0 then
+    Report(-1, RuleFilled, gsInformation, IntToStr(Empty) +
+      ' categor(y/ies) without label (record 12): LblTx (required) left empty');
+end;
+
+procedure TMapper.AddBreakdown;
+var
+  I, Unused: Integer;
+  B: TLandrixGaebXmlBoQBkdn;
+begin
+  Unused := 0;
+  for I := 0 to Integer(Length(FLevels)) - 1 do
+  begin
+    B := FG.Award.BoQ.BoQInfo.BoQBkdn.Add;
+    B.Present := True;
+    B.TypeElement := W(FLevels[I].Kind);
+    B.LengthElement := W(IntToStr(FLevels[I].Length));
+    B.LblBoQBkdn := FLevelLabels[I];
+    B.Alignment := 'right';
+    if FLevelSeen[I] and not FLevelOther[I] then
+      B.Num := 'Yes'
+    else
+      B.Num := 'No';
+    if not FLevelSeen[I] then
+      Inc(Unused);
+  end;
+  if Unused > 0 then
+    Report(-1, RuleUnusedLevel, gsInformation, IntToStr(Unused) +
+      ' breakdown level(s) without any value: Num set to No');
+end;
+
+function TMapper.Map(ADocument: TLandrixGaebDA90Document; ADiagnostics: TLandrixGaebDiagnostics;
+  AInvalidTotals: TObjectList; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+var
+  I, Header, Bills: Integer;
+  K: string;
+  Phase: TLandrixGaebPhase;
+  BoQ: TLandrixGaebXmlBoQ;
+  Lo: Integer;
+begin
+  FDoc := ADocument;
+  FDiags := ADiagnostics;
+  FInvalidTotals := AInvalidTotals;
+  SetLength(FUsed, FDoc.Count);
+  for I := 0 to FDoc.Count - 1 do
+    FUsed[I] := False;
+  Header := -1;
+  for I := 0 to FDoc.Count - 1 do
+    if FDoc.Kind(I) = '00' then
+    begin
+      Header := I;
+      Break;
+    end;
+  if Header < 0 then
+    raise ELandrixGaebError.Create('GAEB 90: no record 00 (opening record)');
+  FPhase := AsciiOf(FDoc.Field(Header, 11, 12));
+  Phase := LandrixGaebPhaseFromDP(LandrixXmlStringToUtf8(FPhase));
+  if not (Phase in [gp81, gp82, gp83, gp84, gp85, gp86]) then
+  begin
+    if IsDigits(W(FPhase)) then
+      raise ELandrixGaebError.Create('GAEB 90, line ' + IntToStr(FDoc.Line(Header)) + ': exchange phase ' +
+        FPhase + ' is not read (81 to 86)')
+    else
+      raise ELandrixGaebError.Create('GAEB 90, line ' + IntToStr(FDoc.Line(Header)) +
+        ': DP is no exchange phase; only 81 to 86 are read');
+  end;
+  ATarget := LandrixGaebTarget(gv33, ge2021_05, Phase);
+  FG := TLandrixGaebXmlGAEB.Create;
+  try
+    FG.GAEBInfo.Present := True;
+    FG.GAEBInfo.Version := '3.3';
+    FG.GAEBInfo.VersDate := '2021-05';
+    FG.PrjInfo.Present := True;
+    FG.Award.Present := True;
+    FG.Award.DP := W(FPhase);
+    BoQ := FG.Award.BoQ;
+    BoQ.Present := True;
+    BoQ.ID := NewId('LGB');
+    BoQ.BoQInfo.Present := True;
+    BoQ.BoQBody.Present := True;
+    FRootBody := BoQ.BoQBody;
+    FUsed[Header] := True;
+    MapHeader00(Header);
+    Bills := 0;
+    I := Header + 1;
+    while I < FDoc.Count do
+    begin
+      K := FDoc.Kind(I);
+      if K = '00' then
+      begin
+        { further bills: not read }
+        while I < FDoc.Count do
+        begin
+          if FDoc.Kind(I) = '00' then
+            Inc(Bills);
+          FUsed[I] := True;
+          Inc(I);
+        end;
+        Break;
+      end;
+      if K = '01' then
+      begin
+        FUsed[I] := True;
+        MapHeader01(I);
+        Inc(I);
+      end
+      else if K = '02' then
+        MapProject(I)
+      else if (K = '03') or (K = '04') then
+      begin
+        FUsed[I] := True;
+        if K = '03' then
+        begin
+          FG.Award.OWN.Present := True;
+          MapParty(I, FG.Award.OWN.Address);
+        end
+        else
+        begin
+          FG.Award.CTR.Present := True;
+          MapParty(I, FG.Award.CTR.Address);
+        end;
+        Inc(I);
+      end
+      else if K = '06' then
+      begin
+        FUsed[I] := True;
+        MapComponents(I);
+        Inc(I);
+      end
+      else if K = '08' then
+      begin
+        FUsed[I] := True;
+        MapCurrency(I);
+        Inc(I);
+      end
+      else if K = '11' then
+        MapGroup(I)
+      else if K = '31' then
+      begin
+        FUsed[I] := True;
+        Inc(I);
+      end
+      else if K = '32' then
+      begin
+        MapGroupTotals(I);
+        Inc(I);
+      end
+      else if K = '20' then
+        MapRemark(I)
+      else if (K = '21') or (K = '23') then
+        MapItem(I)
+      else if K = '99' then
+      begin
+        MapClosing(I);
+        Inc(I);
+      end
+      else if K = '41' then
+        SkipBlock(I, '|42|25|26|')
+      else if (K = 'T0') or (K = 'T1') or (K = 'T9') then
+        SkipBlock(I, '|T1|T9|')
+      else if InList(K, NotMappedKinds) then
+        SkipBlock(I, '|')
+      else if InList(K, '|12|22|24|25|26|27|28|30|79|') then
+      begin
+        FOrphans.Add(K);
+        FUsed[I] := True;
+        Inc(I);
+      end
+      else
+      begin
+        { vendor (75/76 of WEKA), free (70 to 89) and undefined record types }
+        if IsDigits(W(K)) then
+        begin
+          Lo := StrToInt(K);
+          if (Lo >= 70) and (Lo <= 89) then
+            FSkipped.Add(K + ' (free record type)')
+          else
+            FSkipped.Add(K);
+        end
+        else
+          FSkipped.Add('record type that is no number');
+        FUsed[I] := True;
+        Inc(I);
+      end;
+    end;
+    { records before the opening record: contract terms }
+    for I := 0 to Header - 1 do
+      if not FUsed[I] then
+      begin
+        K := FDoc.Kind(I);
+        if (K = 'T0') or (K = 'T1') or (K = 'T9') then
+          FNotMapped.Add(K)
+        else
+          FOrphans.Add(K + ' before 00');
+        FUsed[I] := True;
+      end;
+    AddBreakdown;
+    FillRequired;
+
+    if Bills > 0 then
+      Report(-1, RuleSecondBill, gsWarning, IntToStr(Bills) + ' further bill(s) (00) in the file; not read');
+    ReportCounts(FNotMapped, RuleNotMapped, gsInformation, 'record(s) not mapped');
+    ReportCounts(FSkipped, RuleSkipped, gsInformation, 'record(s) skipped (not defined by GAEB 90)');
+    ReportCounts(FFields, RuleFields, gsInformation, 'value(s) not mapped');
+    ReportCounts(FValues, RuleValue, gsWarning, 'value(s) outside GAEB 90; not mapped');
+    ReportCounts(FBadNumbers, RuleNumber, gsWarning, 'number(s) that are no digits; left out');
+    ReportCounts(FOrphans, RuleOrphan, gsWarning, 'record(s) without the record they belong to; left out');
+    ReportCounts(FDates, RuleDate, gsWarning, 'date(s) or time(s) in another form; left out');
+    ReportCounts(FLimits, RuleLimits, gsWarning, 'text(s) with more lines than GAEB 90 allows; kept');
+    if FPadded > 0 then
+      Report(-1, RuleNumber, gsInformation, IntToStr(FPadded) +
+        ' number(s) with spaces instead of leading zeros; read');
+    if FDerived > 0 then
+      Report(-1, RuleDerived, gsInformation, IntToStr(FDerived) +
+        ' categor(y/ies) without record 11, derived from the ordinal numbers');
+    if FMixed > 0 then
+      Report(-1, RuleLevels, gsError, IntToStr(FMixed) + ' time(s) categories and items on one level');
+    if FNumberProblems > 0 then
+      Report(-1, RuleNumbers, gsWarning, IntToStr(FNumberProblems) +
+        ' ordinal number(s) with an empty level above a filled one or without an item number');
+    if FMarkProblems > 0 then
+      Report(-1, RuleMarks, gsWarning, IntToStr(FMarkProblems) +
+        ' text complement(s) without exactly two apostrophes; their text is kept as text');
+    if FTekz > 0 then
+      Report(-1, RuleTekz, gsWarning, IntToStr(FTekz) +
+        ' text line(s) with TEKZ other than A or B, or KNR and TEKZ not set together; kept as text');
+    if FMarkupValues > 0 then
+      Report(-1, RuleMarkup, gsError, IntToStr(FMarkupValues) +
+        ' position(s) with ZUSCHLAG other than space, E or Z; read as space');
+    if FBadKinds > 0 then
+      Report(-1, RuleKind, gsError, IntToStr(FBadKinds) +
+        ' position(s) whose POSART1/POSART2/POSTYP is none of the 16 combinations');
+    if FOldNotes > 0 then
+      Report(-1, RuleKind, gsWarning, IntToStr(FOldNotes) +
+        ' position(s) NNH (edition 1985: a note text); read as remark');
+    if FStatus > 0 then
+      Report(-1, RuleStatus, gsWarning, IntToStr(FStatus) +
+        ' position(s) with POSSTAT other than R or space; not mapped');
+    if FControl > 0 then
+      Report(-1, RuleControl, gsWarning, IntToStr(FControl) + ' control character(s) removed (not allowed in XML)');
+  except
+    FG.Free;
+    raise;
+  end;
+  Result := FG;
+end;
+
+function LandrixGaebDA90Map(ADocument: TLandrixGaebDA90Document;
+  ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+var
+  M: TMapper;
+begin
+  M := TMapper.Create;
+  try
+    Result := M.Map(ADocument, ADiagnostics, AInvalidTotals, ATarget);
+  finally
+    M.Free;
+  end;
+end;
+
+end.

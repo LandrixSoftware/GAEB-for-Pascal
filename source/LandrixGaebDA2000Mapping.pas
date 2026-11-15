@@ -194,6 +194,7 @@ implementation
 
 uses
   LandrixXmlBase,
+  LandrixGaebNameTable,
   LandrixGaebDA2000Text;
 
 const
@@ -220,41 +221,13 @@ type
     Length: Integer;
   end;
 
-  { Names with an integer each in a balanced search tree (AVL): input is
-    untrusted, so no lookup may take more than logarithmic time, whatever
-    the names are; the first value added for a name wins. Names compare
-    as written (ordinal). }
-  TNameTable = class(TObject)
-  private
-    FNames: array of TLandrixGaebString;
-    FValues: array of Integer;
-    FLeft, FRight, FHeight: array of Integer;
-    FRoot: Integer;
-    FCount: Integer;
-    FAdded: Boolean;
-    function Height(ANode: Integer): Integer;
-    procedure Update(ANode: Integer);
-    function RotateLeft(ANode: Integer): Integer;
-    function RotateRight(ANode: Integer): Integer;
-    function Balance(ANode: Integer): Integer;
-    function Insert(ANode: Integer; const AName: TLandrixGaebString; AValue: Integer): Integer;
-  public
-    constructor Create;
-    { Value of AName, -1 if absent. }
-    function Find(const AName: TLandrixGaebString): Integer;
-    { Adds AName with AValue unless present; False if it was present (its
-      value stays). }
-    function Add(const AName: TLandrixGaebString; AValue: Integer): Boolean;
-    property Count: Integer read FCount;
-  end;
-
   { The children of a node grouped by key (ASCII case-insensitive), in
     document order, with a cursor per group for Child and one for
     NextObject. A child before a cursor never becomes eligible again: Used
     is only ever set, and a child that is no object stays one. }
   TChildIndex = class(TObject)
   private
-    FGroups: TNameTable;
+    FGroups: TLandrixGaebNameTable;
     FStart, FLen, FChildPos, FObjectPos: array of Integer;
     FOrder: array of Integer;
   public
@@ -303,7 +276,7 @@ type
     FItemCount, FPerfCount: Integer;
     { number -> index into the arrays above (first wins); lots by
       LotKey, catalogues by name }
-    FItemTable, FPerfTable, FLotTable, FCtlgTable: TNameTable;
+    FItemTable, FPerfTable, FLotTable, FCtlgTable: TLandrixGaebNameTable;
     FRefs: array of TLandrixGaebXmlRefItem;
     FRefKeys: array of TLandrixGaebString;
     FRefIsPerf: array of Boolean;
@@ -427,173 +400,6 @@ begin
   FDiags.AddAt(ARuleId, ASeverity, '', Line, 0, -1, AMessage);
 end;
 
-{ ---- TNameTable ---- }
-
-{ Ordinal comparison of two names: < 0, 0 or > 0. }
-function CompareNames(const A, B: TLandrixGaebString): Integer;
-var
-  I, N: Integer;
-begin
-  N := Length(A);
-  if Length(B) < N then
-    N := Length(B);
-  for I := 1 to N do
-    if A[I] <> B[I] then
-    begin
-      Result := Ord(A[I]) - Ord(B[I]);
-      Exit;
-    end;
-  Result := Length(A) - Length(B);
-end;
-
-constructor TNameTable.Create;
-begin
-  inherited Create;
-  FRoot := -1;
-end;
-
-function TNameTable.Height(ANode: Integer): Integer;
-begin
-  if ANode < 0 then
-    Result := 0
-  else
-    Result := FHeight[ANode];
-end;
-
-procedure TNameTable.Update(ANode: Integer);
-var
-  L, R: Integer;
-begin
-  L := Height(FLeft[ANode]);
-  R := Height(FRight[ANode]);
-  if L > R then
-    FHeight[ANode] := L + 1
-  else
-    FHeight[ANode] := R + 1;
-end;
-
-function TNameTable.RotateLeft(ANode: Integer): Integer;
-begin
-  Result := FRight[ANode];
-  FRight[ANode] := FLeft[Result];
-  FLeft[Result] := ANode;
-  Update(ANode);
-  Update(Result);
-end;
-
-function TNameTable.RotateRight(ANode: Integer): Integer;
-begin
-  Result := FLeft[ANode];
-  FLeft[ANode] := FRight[Result];
-  FRight[Result] := ANode;
-  Update(ANode);
-  Update(Result);
-end;
-
-function TNameTable.Balance(ANode: Integer): Integer;
-var
-  Diff, T: Integer;
-begin
-  Update(ANode);
-  Diff := Height(FLeft[ANode]) - Height(FRight[ANode]);
-  if Diff > 1 then
-  begin
-    if Height(FLeft[FLeft[ANode]]) < Height(FRight[FLeft[ANode]]) then
-    begin
-      T := RotateLeft(FLeft[ANode]);
-      FLeft[ANode] := T;
-    end;
-    Result := RotateRight(ANode);
-  end
-  else if Diff < -1 then
-  begin
-    if Height(FRight[FRight[ANode]]) < Height(FLeft[FRight[ANode]]) then
-    begin
-      T := RotateRight(FRight[ANode]);
-      FRight[ANode] := T;
-    end;
-    Result := RotateLeft(ANode);
-  end
-  else
-    Result := ANode;
-end;
-
-{ The subtree ANode with AName added (the arrays have room for one more
-  name; recursion depth is the height of the tree, logarithmic). }
-function TNameTable.Insert(ANode: Integer; const AName: TLandrixGaebString; AValue: Integer): Integer;
-var
-  C, T: Integer;
-begin
-  if ANode < 0 then
-  begin
-    Result := FCount;
-    FNames[Result] := AName;
-    FValues[Result] := AValue;
-    FLeft[Result] := -1;
-    FRight[Result] := -1;
-    FHeight[Result] := 1;
-    Inc(FCount);
-    FAdded := True;
-    Exit;
-  end;
-  C := CompareNames(AName, FNames[ANode]);
-  if C = 0 then
-  begin
-    Result := ANode;
-    Exit;
-  end;
-  if C < 0 then
-  begin
-    T := Insert(FLeft[ANode], AName, AValue);
-    FLeft[ANode] := T;
-  end
-  else
-  begin
-    T := Insert(FRight[ANode], AName, AValue);
-    FRight[ANode] := T;
-  end;
-  Result := Balance(ANode);
-end;
-
-function TNameTable.Find(const AName: TLandrixGaebString): Integer;
-var
-  N, C: Integer;
-begin
-  N := FRoot;
-  while N >= 0 do
-  begin
-    C := CompareNames(AName, FNames[N]);
-    if C = 0 then
-    begin
-      Result := FValues[N];
-      Exit;
-    end;
-    if C < 0 then
-      N := FLeft[N]
-    else
-      N := FRight[N];
-  end;
-  Result := -1;
-end;
-
-function TNameTable.Add(const AName: TLandrixGaebString; AValue: Integer): Boolean;
-var
-  T: Integer;
-begin
-  if FCount >= Length(FNames) then
-  begin
-    SetLength(FNames, 2 * FCount + 16);
-    SetLength(FValues, 2 * FCount + 16);
-    SetLength(FLeft, 2 * FCount + 16);
-    SetLength(FRight, 2 * FCount + 16);
-    SetLength(FHeight, 2 * FCount + 16);
-  end;
-  FAdded := False;
-  T := Insert(FRoot, AName, AValue);
-  FRoot := T;
-  Result := FAdded;
-end;
-
 { ---- TChildIndex ---- }
 
 { Group name of a key: ASCII upper case, as CompareText compares. }
@@ -611,7 +417,7 @@ begin
   inherited Create;
   Groups := nil;
   Fill := nil;
-  FGroups := TNameTable.Create;
+  FGroups := TLandrixGaebNameTable.Create;
   N := ANode.Count;
   SetLength(Groups, N);
   for I := 0 to N - 1 do
@@ -668,10 +474,10 @@ end;
 constructor TMapper.Create;
 begin
   inherited Create;
-  FItemTable := TNameTable.Create;
-  FPerfTable := TNameTable.Create;
-  FLotTable := TNameTable.Create;
-  FCtlgTable := TNameTable.Create;
+  FItemTable := TLandrixGaebNameTable.Create;
+  FPerfTable := TLandrixGaebNameTable.Create;
+  FLotTable := TLandrixGaebNameTable.Create;
+  FCtlgTable := TLandrixGaebNameTable.Create;
 end;
 
 destructor TMapper.Destroy;
@@ -2768,7 +2574,7 @@ end;
 
 procedure TMapper.ReportUnused(ARoot: TLandrixGaebDA2000Node);
 var
-  Keys: TNameTable;
+  Keys: TLandrixGaebNameTable;
   Paths: array of string;
   Counts: array of Integer;
   Lines: array of Integer;
@@ -2814,7 +2620,7 @@ begin
   { nothing to report to: nothing to collect }
   if FDiags = nil then
     Exit;
-  Keys := TNameTable.Create;
+  Keys := TLandrixGaebNameTable.Create;
   try
     Walk(ARoot, ARoot.Key);
     for I := 0 to Keys.Count - 1 do
