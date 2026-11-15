@@ -514,6 +514,101 @@ begin
   end;
 end;
 
+{ Part 2b-1: sub descriptions, quantity splits, references, execution
+  descriptions, StLNo, STLB-Bau, contract terms. }
+procedure TestDescriptionsAndRefs;
+var
+  Diags: TLandrixGaebDiagnostics;
+  G: TLandrixGaebXmlGAEB;
+  T: TLandrixGaebTarget;
+  S: AnsiString;
+  List: TLandrixGaebXmlItemlist;
+  It, It2: TLandrixGaebXmlItem;
+  Perf: TLandrixGaebXmlPerfDescr;
+  Sub: TLandrixGaebXmlSubDescr;
+  Xml: TLandrixXmlUtf8;
+begin
+  NextNo := 0;
+  S := R(F(B('T0'), 3, ' ')) + R(F(B('T1'), 3, 'Vertragsbedingungen')) + R(B('T9')) +
+    R(F(F(B('00'), 11, '83L'), 63, '11PPPP000')) +
+    R(F(B('01'), 3, 'LV')) +
+    R(F(F(B('41'), 3, '0001'), 7, 'Mauerwerk allgemein')) +
+    R(F(F(B('42'), 5, '1'), 6, '01234567890123456')) +
+    R(F(B('25'), 3, 'Block eins')) +
+    R(B('42')) +
+    R(F(B('26'), 6, 'Block zwei lang')) +
+    R(F(F(F(F(F(B('21'), 3, '010010'), 12, 'NNL'), 24, '00000010000'), 35, 'm2'), 44, '1')) +
+    R(F(B('25'), 3, 'Leitbeschreibung')) +
+    R(F(F(F(B('24'), 3, '01'), 6, '00000004000'), 17, 'm2')) +
+    R(F(B('25'), 3, 'Unter eins')) +
+    R(F(F(F(B('24'), 3, '02'), 17, 'm2'), 41, 'X')) +
+    R(F(B('24'), 3, ' 0')) +
+    R(F(B('28'), 3, 'Unter zwei kurz')) +
+    R(F(F(B('27'), 33, '00000006000'), 3, 'K1')) +
+    R(F(B('27'), 3, 'K2')) +
+    R(F(F(F(B('21'), 3, '010020'), 12, 'NNN'), 21, 'W')) +
+    R(F(F(B('28'), 3, 'Leitbeschreibung'), 58, '010010')) +
+    R(F(F(F(B('21'), 3, '010030'), 12, 'NNN'), 21, 'A')) +
+    R(F(F(B('28'), 3, 'nach Ausfuehrung'), 67, '1')) +
+    R(F(F(F(B('21'), 3, '010040'), 12, 'NNN'), 21, 'W')) +
+    R(F(F(B('28'), 3, 'fehlt'), 58, '019999')) +
+    R(F(F(F(B('21'), 3, '010050'), 12, 'NNN'), 21, 'X')) +
+    R(F(B('25'), 3, 'STLB-Bau')) +
+    R(F(F(B('79'), 3, 'STLB-Bau'), 13, 'VJ 1996 VM 10 LB 012 TLG 60')) +
+    R(F(B('79'), 13, 'BM 2 BMI 0 AP 16')) +
+    R(F(B('T1'), 3, 'mitten im LV')) +
+    R(F(B('99'), 70, '00005'));
+  Diags := TLandrixGaebDiagnostics.Create;
+  G := MapText(S, Diags, T);
+  try
+    CheckEquals(2, Integer(G.Award.AddText.Count), 'two blocks of contract terms');
+    CheckEquals(1, Diags.CountOf('GAEB-BR-D90-013'), 'one inside the bill');
+    List := TLandrixGaebXmlBoQCtgy(G.Award.BoQ.BoQBody.Children[0]).BoQBody.Itemlist;
+    Check(List.Children[0] is TLandrixGaebXmlPerfDescr, 'execution description first');
+    Perf := TLandrixGaebXmlPerfDescr(List.Children[0]);
+    CheckEqualsGaebStr('0001', Perf.PerfNo, 'AUSNR');
+    CheckEqualsGaebStr('Mauerwerk allgemein', Perf.PerfLbl, 'AUSBEZ');
+    CheckEquals(2, Integer(Perf.Description.Count), 'two blocks');
+    CheckEqualsGaebStr('01234567890123456', Perf.Description[0].StLNo.Value, 'STLNR of the block');
+    CheckEqualsGaebStr('StLB', Perf.Description[0].StLNo.TypeAttr, 'TEXTSYST 1');
+    It := TLandrixGaebXmlItem(List.Children[1]);
+    CheckEqualsGaebStr('Yes', It.SumDescr, 'lead description');
+    CheckEquals(3, Integer(It.SubDescr.Count), 'three sub descriptions');
+    CheckEqualsGaebStr('', It.SubDescr[2].SubDNo, 'UB 0 left out');
+    Check(Pos('24/UB', DiagnosticText(Diags, 'GAEB-D90-MAP-004')) > 0, 'UB 0 reported');
+    Sub := It.SubDescr[0];
+    CheckEqualsGaebStr('01', Sub.SubDNo, 'UB');
+    CheckEqualsGaebStr('4.000', LandrixXmlUtf8ToWide(Sub.Qty.Text), 'UBMENGE');
+    CheckEqualsGaebStr('m2', Sub.QU, 'unit with quantity');
+    CheckEqualsGaebStr('', It.SubDescr[1].QU, 'no unit without quantity');
+    CheckEquals(1, Integer(It.QtySplit.Count), 'quantity split');
+    CheckEqualsGaebStr('6.000', LandrixXmlUtf8ToWide(It.QtySplit[0].Qty.Text), 'TEILMENG');
+    It2 := TLandrixGaebXmlItem(List.Children[2]);
+    CheckEqualsGaebStr('Rep', It2.RefDescr, 'repetition');
+    CheckEqualsGaebStr(It.ID, It2.RefRNo.IDRef, 'reference to the item');
+    It2 := TLandrixGaebXmlItem(List.Children[3]);
+    CheckEqualsGaebStr(Perf.ID, It2.RefPerfNo.IDRef, 'reference to the execution description');
+    It2 := TLandrixGaebXmlItem(List.Children[5]);
+    CheckEqualsGaebStr('STLB-Bau', It2.Description.STLBBau.STLBBauCtlg.CtlgName, 'catalogue');
+    CheckEqualsGaebStr('1996-10', It2.Description.STLBBau.STLBBauCtlg.VersDate, 'version');
+    CheckEqualsGaebStr('60', It2.Description.STLBBau.STLBBauCtlg.Group, 'TLG');
+    CheckEquals(1, Integer(It2.Description.STLBBau.STLBBauID.Count), 'one characteristic');
+    CheckEqualsGaebStr('16', It2.Description.STLBBau.STLBBauID[0].ChVIdent, 'AP');
+    CheckEquals(1, Diags.CountOf('GAEB-D90-MAP-016'), 'unresolved reference');
+    CheckEquals(0, Diags.CountOf('GAEB-BR-D90-009'), 'WIEVOR fits');
+    Xml := WriteXml(G, T);
+    Check(Contains(Xml, '<span>Unter zwei kurz</span>'), 'KURZAN of a sub description as its short text');
+    CheckEquals(1, Integer(It.QtySplit.Count), 'a 27 without TEILMENG adds no split');
+    CheckEqualsGaebStr('Yes', It.SubDescr[1].QtySpec, 'free quantity: QtySpec');
+    CheckEqualsGaebStr('Yes', It.SubDescr[1].QtyTBD, 'free quantity');
+    Check(Pos('21/WIEVOR: 1 ', DiagnosticText(Diags, 'GAEB-D90-MAP-004')) > 0, 'WIEVOR X counted once');
+    Check(Contains(Xml, '<span>Vertragsbedingungen</span>'), 'contract terms');
+  finally
+    G.Free;
+    Diags.Free;
+  end;
+end;
+
 { Remarks in a row and the look-ahead: linear time. }
 procedure TestManyRemarks;
 var
@@ -746,6 +841,7 @@ begin
   RegisterTest('DA90Mapping.MasksAndRules', TestMasksAndRules);
   RegisterTest('DA90Mapping.ReviewCases', TestReviewCases);
   RegisterTest('DA90Mapping.ReviewCases2', TestReviewCases2);
+  RegisterTest('DA90Mapping.DescriptionsAndRefs', TestDescriptionsAndRefs);
   RegisterTest('DA90Mapping.ManyRemarks', TestManyRemarks);
   RegisterTest('DA90Mapping.Rejected', TestRejected);
   RegisterTest('Local.DA90Map', TestLocalMap);

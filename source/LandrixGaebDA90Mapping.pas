@@ -59,7 +59,20 @@
     ComplBody (dots, underscores or nothing -> Empty), after -> ComplTail;
     TA/TB -> ComplTSA/ComplTSB;
   - 99: LVSUMME -> BoQInfo/Totals/Total, UST -> VAT, ANGEBOTS ->
-    TotalGross, PAUSCH -> TotalLSUM.
+    TotalGross, PAUSCH -> TotalLSUM;
+  - 24 -> SubDescr of the item (UB -> SubDNo, UBMENGE -> Qty, EINHEIT ->
+    QU, KZFRMENG -> QtyTBD, its 28/25/26/79 -> Description); 27 -> QtySplit
+    (TEILMENG -> Qty); 28: OZ -> RefRNo, AUSNR -> RefPerfNo (IDRef of the
+    item or execution description with that number), KURZAN -> the short
+    text when the item has no 25 (a different one is counted);
+  - 41 with its blocks 42 (25/26) -> PerfDescr (AUSNR -> PerfNo, AUSBEZ ->
+    PerfLbl, each block -> Description), placed as a remark;
+  - STLNR with TEXTSYST 1/2 (20, 21, 24, 42) -> StLNo (Type StLB/StLK);
+    79 -> STLBBau (STLPAR -> CtlgName, VJ/VM -> VersDate, LB -> WCtg, TLG ->
+    Group, each BM/BMI/AP -> STLBBauID ArtChrIdent/ArtChIdx/ChVIdent), which
+    takes the place of StLNo;
+  - T0/T1/T9 (contract terms) -> Award/AddText, one per block, a paragraph
+    per T1 line (DetailAddText).
   Numbers carry an implied decimal point; spaces instead of leading zeros
   are read, spaces behind are not. Dates TT.MM.JJ become YYYY-MM-DD (JJ
   below 70: 20JJ, else 19JJ; days checked against the calendar), times HH:MM become HH:MM:SS. IDs are generated (LGB, LGC, LGI, LGR
@@ -76,9 +89,13 @@
                                  16 combinations (NNH: warning, read as a
                                  note text)
     GAEB-BR-D90-008 warning      POSSTAT other than R or space
+    GAEB-BR-D90-009 error        WIEVOR W without the OZ of its 28, A without
+                                 its AUSNR, or a 28 with a reference its
+                                 WIEVOR does not name
     GAEB-BR-D90-011 warning      text complement lines with TEKZ other
                                  than A or B, or KNR without TEKZ (text
                                  kept)
+    GAEB-BR-D90-013 warning      contract terms (T0 to T9) inside the bill
     GAEB-BR-D90-014 information  record types GAEB 90 does not define
                                  (free range 70 to 89, vendor records,
                                  others) skipped
@@ -110,6 +127,10 @@
                                  (owner decision 15.11.2026), an empty LblTx
                                  for categories without record 12
                                  (GAEBInfo/Date stays missing)
+    GAEB-D90-MAP-015 information KURZAN of 28 other than the first line of
+                                 the short text (the short text kept)
+    GAEB-D90-MAP-016 warning     references (28) to a number that no item
+                                 or execution description has (left out)
   Messages name record types and fields, never values.
 
   DE: Abbildung der Saetze einer GAEB-90-Datei in das Syntaxmodell von
@@ -182,11 +203,15 @@ const
   RuleSecondBill = 'GAEB-D90-MAP-012';
   RuleNumbers = 'GAEB-D90-MAP-013';
   RuleFilled = 'GAEB-D90-MAP-014';
+  RuleKurzan = 'GAEB-D90-MAP-015';
+  RuleReference = 'GAEB-D90-MAP-016';
+  RuleRefKind = 'GAEB-BR-D90-009';
+  RuleContractInside = 'GAEB-BR-D90-013';
 
   { the 16 combinations of POSART1, POSART2 and POSTYP }
   PositionKinds = '|NNN|NNL|NEN|NEL|NMN|NML|ANN|ANL|GNN|GNL|AEN|AEL|GMN|GML|SNN|SNL|';
   { record types of GAEB 90 that are not mapped yet }
-  NotMappedKinds = '|T0|T1|T9|07|10|24|27|28|33|34|35|41|42|45|46|47|79|';
+  NotMappedKinds = '|07|10|33|34|35|45|46|47|';
 
 type
   { counts per name, reported in the order the names first occurred }
@@ -255,6 +280,17 @@ type
     FMarkupValues, FBadKinds, FOldNotes, FStatus, FItems: Integer;
     FMaskSpaces: Boolean;
     FVergag: TLandrixGaebString;
+    { items and execution descriptions by number, and the references to
+      resolve at the end }
+    FItemTable, FPerfTable: TLandrixGaebNameTable;
+    FItemIds, FPerfIds: array of TLandrixGaebString;
+    FItemCount, FPerfCount: Integer;
+    FRefs: array of TLandrixGaebXmlRefItem;
+    FRefKeys: array of TLandrixGaebString;
+    FRefIsPerf: array of Boolean;
+    FRefCount, FUnresolved, FRefKind, FKurzan, FIncompleteStlb, FIncompletePerf: Integer;
+    FInBill: Boolean;
+    FContractInside: Integer;
     { set while ItemlistFor looks ahead: nothing is counted twice }
     FQuiet: Boolean;
     { the look-ahead of ItemlistFor: from FLookFrom on, the next record
@@ -296,7 +332,18 @@ type
       const AKnr, ACaption, ABody, ATail: TLandrixGaebString);
     procedure MapLong(ALines: TLines; ADetail: TLandrixGaebXmlBoQText);
     procedure MapShort(ALines: TLines; AOutline: TLandrixGaebXmlOutlTxt);
+    function MapTextParts(AShort, ALong: TLines; ATA, ATB: Boolean; AComplete: TLandrixGaebXmlCompleteText;
+      AOutline: TLandrixGaebXmlOutlineText): Boolean;
     procedure MapTexts(AShort, ALong: TLines; ATA, ATB: Boolean; ADescription: TLandrixGaebXmlDescription);
+    function MapStLNo(AIndex, ASystem, AFrom, ATo: Integer; AStLNo: TLandrixGaebXmlStLNo): Boolean;
+    function MapStlbBau(const ACatalog, AText: TLandrixGaebString; AStlb: TLandrixGaebXmlSTLBBau): Boolean;
+    function NumberKey(const AOZ: TLandrixGaebString): TLandrixGaebString;
+    function PerfKey(const ANo: TLandrixGaebString): TLandrixGaebString;
+    procedure AddRef(ARef: TLandrixGaebXmlRefItem; const AKey: TLandrixGaebString; AIsPerf: Boolean);
+    procedure ResolveRefs;
+    procedure MapSub(var AIndex: Integer; AItem: TLandrixGaebXmlItem);
+    procedure MapPerf(var AIndex: Integer);
+    procedure MapContract(var AIndex: Integer);
     { records }
     procedure MapHeader00(AIndex: Integer);
     procedure MapHeader01(AIndex: Integer);
@@ -494,10 +541,14 @@ begin
   FItemLevel := -1;
   FIndexLevel := -1;
   FCtgyTable := TLandrixGaebNameTable.Create;
+  FItemTable := TLandrixGaebNameTable.Create;
+  FPerfTable := TLandrixGaebNameTable.Create;
 end;
 
 destructor TMapper.Destroy;
 begin
+  FPerfTable.Free;
+  FItemTable.Free;
   FCtgyTable.Free;
   FDescrLong.Free;
   FDescrShort.Free;
@@ -1334,7 +1385,10 @@ begin
   Result := False;
 end;
 
-procedure TMapper.MapTexts(AShort, ALong: TLines; ATA, ATB: Boolean; ADescription: TLandrixGaebXmlDescription);
+{ The texts into AComplete (with a long text) or AOutline (short text
+  only) of a description; False when there is no text. }
+function TMapper.MapTextParts(AShort, ALong: TLines; ATA, ATB: Boolean; AComplete: TLandrixGaebXmlCompleteText;
+  AOutline: TLandrixGaebXmlOutlineText): Boolean;
 var
   HasShort, HasLong: Boolean;
 begin
@@ -1344,27 +1398,236 @@ begin
     FLimits.Add('25');
   if ALong.Count > 999 then
     FLimits.Add('26');
+  Result := HasShort or HasLong;
   if HasLong then
   begin
-    ADescription.Present := True;
-    MapLong(ALong, ADescription.CompleteText.DetailTxt);
+    MapLong(ALong, AComplete.DetailTxt);
     if ATA then
-      ADescription.CompleteText.ComplTSA := 'Yes';
+      AComplete.ComplTSA := 'Yes';
     if ATB then
-      ADescription.CompleteText.ComplTSB := 'Yes';
+      AComplete.ComplTSB := 'Yes';
     if HasShort then
     begin
-      MapShort(AShort, ADescription.CompleteText.OutlineText.OutlTxt);
+      MapShort(AShort, AComplete.OutlineText.OutlTxt);
       if ATA then
-        ADescription.CompleteText.OutlineText.OutlTSA := 'Yes';
+        AComplete.OutlineText.OutlTSA := 'Yes';
     end;
   end
   else if HasShort then
   begin
-    ADescription.Present := True;
-    MapShort(AShort, ADescription.OutlineText.OutlTxt);
+    MapShort(AShort, AOutline.OutlTxt);
     if ATA then
-      ADescription.OutlineText.OutlTSA := 'Yes';
+      AOutline.OutlTSA := 'Yes';
+  end;
+end;
+
+procedure TMapper.MapTexts(AShort, ALong: TLines; ATA, ATB: Boolean; ADescription: TLandrixGaebXmlDescription);
+begin
+  if MapTextParts(AShort, ALong, ATA, ATB, ADescription.CompleteText, ADescription.OutlineText) then
+    ADescription.Present := True;
+end;
+
+{ STLNR (columns AFrom to ATo, 17 digits, spaces around tolerated) with
+  TEXTSYST in column ASystem -> StLNo (1 StLB, 2 StLK); False when unset. }
+function TMapper.MapStLNo(AIndex, ASystem, AFrom, ATo: Integer; AStLNo: TLandrixGaebXmlStLNo): Boolean;
+var
+  S: TLandrixGaebString;
+  Sys: Char;
+begin
+  Result := False;
+  Sys := Code(AIndex, ASystem, 'TEXTSYST', '12');
+  S := Str(AIndex, AFrom, ATo);
+  if S = '' then
+    Exit;
+  if not IsDigits(S) then
+  begin
+    FValues.Add(FDoc.Kind(AIndex) + '/STLNR');
+    Exit;
+  end;
+  AStLNo.Present := True;
+  AStLNo.Value := S;
+  if Sys = '1' then
+    AStLNo.TypeAttr := 'StLB'
+  else if Sys = '2' then
+    AStLNo.TypeAttr := 'StLK';
+  Result := True;
+end;
+
+{ 79: ACatalog (STLPAR) and the tokens of AText (STLWERT of all 79 of the
+  description): VJ year, VM month, LB, TLG, then any number of BM, BMI,
+  AP. False (and AStlb cleared) without catalogue name or group. }
+function TMapper.MapStlbBau(const ACatalog, AText: TLandrixGaebString; AStlb: TLandrixGaebXmlSTLBBau): Boolean;
+var
+  Tokens: array of TLandrixGaebString;
+  N, I, Start, M: Integer;
+  Key: string;
+  Year, Month: TLandrixGaebString;
+  Ctlg: TLandrixGaebXmlSTLBBauCtlg;
+  Id: TLandrixGaebXmlSTLBBauID;
+  Bad: Boolean;
+begin
+  Tokens := nil;
+  N := 0;
+  I := 1;
+  while I <= Length(AText) do
+  begin
+    while (I <= Length(AText)) and (AText[I] = ' ') do
+      Inc(I);
+    Start := I;
+    while (I <= Length(AText)) and (AText[I] <> ' ') do
+      Inc(I);
+    if I > Start then
+    begin
+      if N >= Length(Tokens) then
+        SetLength(Tokens, 2 * N + 16);
+      Tokens[N] := Copy(AText, Start, I - Start);
+      Inc(N);
+    end;
+  end;
+  Ctlg := AStlb.STLBBauCtlg;
+  Ctlg.CtlgName := ACatalog;
+  Year := '';
+  Month := '';
+  Id := nil;
+  Bad := False;
+  I := 0;
+  while I < N do
+  begin
+    Key := UpperCase(AsciiOf(Tokens[I]));
+    if I + 1 >= N then
+    begin
+      Bad := True;
+      Break;
+    end;
+    if Key = 'VJ' then
+      Year := Tokens[I + 1]
+    else if Key = 'VM' then
+      Month := Tokens[I + 1]
+    else if Key = 'LB' then
+      Ctlg.WCtg := Tokens[I + 1]
+    else if Key = 'TLG' then
+    begin
+      if IsDigits(Tokens[I + 1]) then
+        Ctlg.Group := Tokens[I + 1]
+      else
+        Bad := True;
+    end
+    else if Key = 'BM' then
+    begin
+      if IsDigits(Tokens[I + 1]) then
+      begin
+        Id := AStlb.STLBBauID.Add;
+        Id.Present := True;
+        Id.ArtChrIdent := Tokens[I + 1];
+      end
+      else
+      begin
+        Id := nil;
+        Bad := True;
+      end;
+    end
+    else if (Key = 'BMI') and (Id <> nil) and IsDigits(Tokens[I + 1]) then
+      Id.ArtChIdx := Tokens[I + 1]
+    else if (Key = 'AP') and (Id <> nil) and IsDigits(Tokens[I + 1]) then
+      Id.ChVIdent := Tokens[I + 1]
+    else
+      Bad := True;
+    Inc(I, 2);
+  end;
+  if (Year <> '') or (Month <> '') then
+  begin
+    M := StrToIntDef(AsciiOf(Month), 0);
+    if (Length(Year) = 4) and IsDigits(Year) and (M >= 1) and (M <= 12) then
+      Ctlg.VersDate := Year + W('-' + Copy(IntToStr(100 + M), 2, 2))
+    else
+      Bad := True;
+  end;
+  if Bad then
+    FValues.Add('79/STLWERT');
+  Result := (Ctlg.CtlgName <> '') and (Ctlg.Group <> '');
+  if Result then
+  begin
+    AStlb.Present := True;
+    Ctlg.Present := True;
+  end
+  else
+  begin
+    Inc(FIncompleteStlb);
+    AStlb.Clear;
+  end;
+end;
+
+{ The key of an ordinal number: its cleaned parts, as items are kept. }
+function TMapper.NumberKey(const AOZ: TLandrixGaebString): TLandrixGaebString;
+var
+  Parts: TPartArray;
+  Depth: Integer;
+  ItemPart, IndexPart: TLandrixGaebString;
+  Bad: Boolean;
+begin
+  Parts := nil;
+  FQuiet := True;
+  try
+    PartsOf(AOZ, Parts, Depth, ItemPart, IndexPart, Bad);
+  finally
+    FQuiet := False;
+  end;
+  Result := PathKey(Parts, Depth) + #10 + ItemPart + #10 + IndexPart;
+end;
+
+{ The key of AUSNR: digits without leading zeros, else as written. }
+function TMapper.PerfKey(const ANo: TLandrixGaebString): TLandrixGaebString;
+var
+  I: Integer;
+begin
+  Result := TrimW(ANo);
+  if not IsDigits(Result) then
+    Exit;
+  I := 1;
+  while (I < Length(Result)) and (Result[I] = '0') do
+    Inc(I);
+  Result := Copy(Result, I, MaxInt);
+end;
+
+procedure TMapper.AddRef(ARef: TLandrixGaebXmlRefItem; const AKey: TLandrixGaebString; AIsPerf: Boolean);
+begin
+  if FRefCount >= Length(FRefs) then
+  begin
+    SetLength(FRefs, 2 * FRefCount + 16);
+    SetLength(FRefKeys, 2 * FRefCount + 16);
+    SetLength(FRefIsPerf, 2 * FRefCount + 16);
+  end;
+  FRefs[FRefCount] := ARef;
+  FRefKeys[FRefCount] := AKey;
+  FRefIsPerf[FRefCount] := AIsPerf;
+  Inc(FRefCount);
+end;
+
+{ References of 28 to the IDs of items and execution descriptions, which
+  may come later in the file; one to a number not in the file is left
+  out and counted (GAEB-D90-MAP-016). }
+procedure TMapper.ResolveRefs;
+var
+  I, K: Integer;
+begin
+  for I := 0 to FRefCount - 1 do
+  begin
+    if FRefIsPerf[I] then
+    begin
+      K := FPerfTable.Find(FRefKeys[I]);
+      if K >= 0 then
+        FRefs[I].IDRef := FPerfIds[K];
+    end
+    else
+    begin
+      K := FItemTable.Find(FRefKeys[I]);
+      if K >= 0 then
+        FRefs[I].IDRef := FItemIds[K];
+    end;
+    if K >= 0 then
+      FRefs[I].Present := True
+    else
+      Inc(FUnresolved);
   end;
 end;
 
@@ -1674,7 +1937,6 @@ begin
   FDescrShort.Clear;
   FDescrLong.Clear;
   CollectText(AIndex, FDescrLong, '26');
-  Unmapped(First, 5, 22, 'TEXTSYST/STLNR');
   if not HasContent(FDescrLong) then
   begin
     { GAEB DA XML needs the description of a remark }
@@ -1695,6 +1957,230 @@ begin
   R.Present := True;
   R.ID := NewId('LGR');
   MapTexts(FDescrShort, FDescrLong, Code(First, 3, 'TA', 'X') = 'X', False, R.Description);
+  MapStLNo(First, 5, 6, 22, R.Description.StLNo);
+end;
+
+{ 24 and its 28/25/26/79: a sub description of AItem. }
+procedure TMapper.MapSub(var AIndex: Integer; AItem: TLandrixGaebXmlItem);
+var
+  First, N: Integer;
+  Sub: TLandrixGaebXmlSubDescr;
+  S, Kurzan, StlbName, StlbText: TLandrixGaebString;
+  K: string;
+  Short, Long: TLines;
+  Stlb: Boolean;
+begin
+  First := AIndex;
+  FUsed[AIndex] := True;
+  Sub := AItem.SubDescr.Add;
+  Sub.Present := True;
+  S := Str(AIndex, 3, 4);
+  { SubDNo is 1 to 99 }
+  if IsDigits(S) and (StrToInt(AsciiOf(S)) >= 1) then
+    Sub.SubDNo := S
+  else
+    FValues.Add('24/UB');
+  { GAEB DA XML takes a unit only with a quantity }
+  if NumField(AIndex, 6, 16, 3, 5, 'UBMENGE', Sub.Qty) then
+    Sub.QU := Str(AIndex, 17, 20)
+  else
+    Unmapped(AIndex, 17, 20, 'EINHEIT without UBMENGE');
+  { a free quantity is a quantity to be stated (QtySpec comes first) }
+  if Code(AIndex, 41, 'KZFRMENG', 'X') = 'X' then
+  begin
+    Sub.QtySpec := 'Yes';
+    Sub.QtyTBD := 'Yes';
+  end;
+  Inc(AIndex);
+  Kurzan := '';
+  StlbName := '';
+  StlbText := '';
+  N := 0;
+  Short := TLines.Create;
+  Long := TLines.Create;
+  try
+    while AIndex < FDoc.Count do
+    begin
+      K := FDoc.Kind(AIndex);
+      if K = '28' then
+      begin
+        FUsed[AIndex] := True;
+        Kurzan := TrimRightW(Raw(AIndex, 3, 57));
+        { a shortened sub description names no reference }
+        Unmapped(AIndex, 58, 70, 'OZ/AUSNR of a sub description');
+        Inc(AIndex);
+      end
+      else if K = '25' then
+        CollectText(AIndex, Short, '25')
+      else if K = '26' then
+        CollectText(AIndex, Long, '26')
+      else if K = '79' then
+      begin
+        FUsed[AIndex] := True;
+        if N = 0 then
+          StlbName := Str(AIndex, 3, 12);
+        if N < 99 then
+          StlbText := StlbText + ' ' + Raw(AIndex, 13, 74);
+        Inc(N);
+        Inc(AIndex);
+      end
+      else
+        Break;
+    end;
+    if N > 9 then
+      FLimits.Add('79');
+    if (Short.Count = 0) and (TrimW(Kurzan) <> '') then
+      Short.Add(Kurzan, '', ' ');
+    if MapTextParts(Short, Long, Code(First, 21, 'TA', 'X') = 'X', Code(First, 22, 'TB', 'X') = 'X',
+      Sub.Description.CompleteText, Sub.Description.OutlineText) then
+      Sub.Description.Present := True;
+    Stlb := (N > 0) and MapStlbBau(StlbName, StlbText, Sub.Description.STLBBau);
+    if Stlb then
+    begin
+      Sub.Description.Present := True;
+      Unmapped(First, 23, 40, 'TEXTSYST/STLNR beside STLB-Bau');
+    end
+    else if MapStLNo(First, 23, 24, 40, Sub.Description.StLNo) then
+      Sub.Description.Present := True;
+  finally
+    Long.Free;
+    Short.Free;
+  end;
+  Unmapped(First, 42, 74, 'FILLER');
+end;
+
+{ 41 and its blocks (42 with 25/26): an execution description, placed as
+  a remark. }
+procedure TMapper.MapPerf(var AIndex: Integer);
+var
+  First, Block, J: Integer;
+  List: TLandrixGaebXmlItemlist;
+  Perf: TLandrixGaebXmlPerfDescr;
+  D: TLandrixGaebXmlPerfDescription;
+  No: TLandrixGaebString;
+  Short, Long: TLines;
+  Has: Boolean;
+begin
+  First := AIndex;
+  FUsed[AIndex] := True;
+  Inc(AIndex);
+  { the place: that of a remark before the next item or group }
+  J := AIndex;
+  while (J < FDoc.Count) and InList(FDoc.Kind(J), '|42|25|26|') do
+    Inc(J);
+  List := ItemlistFor(J - 1);
+  if List <> nil then
+  begin
+    List.Present := True;
+    Perf := List.AddPerfDescr;
+  end
+  else
+    Perf := BodyAt(FOpenDepth).AddPerfDescr;
+  Perf.Present := True;
+  Perf.ID := NewId('LGP');
+  No := Str(First, 3, 6);
+  if IsDigits(No) then
+  begin
+    Perf.PerfNo := No;
+    if FPerfTable.Add(PerfKey(No), FPerfCount) then
+    begin
+      if FPerfCount >= Length(FPerfIds) then
+        SetLength(FPerfIds, 2 * FPerfCount + 16);
+      FPerfIds[FPerfCount] := Perf.ID;
+      Inc(FPerfCount);
+    end;
+  end
+  else if No <> '' then
+    FValues.Add('41/AUSNR');
+  Perf.PerfLbl := Str(First, 7, 61);
+  Has := False;
+  Short := TLines.Create;
+  Long := TLines.Create;
+  try
+    while (AIndex < FDoc.Count) and InList(FDoc.Kind(AIndex), '|42|25|26|') do
+    begin
+      { a block: its 42 (or the texts right after 41) and its texts }
+      Block := -1;
+      if FDoc.Kind(AIndex) = '42' then
+      begin
+        Block := AIndex;
+        FUsed[AIndex] := True;
+        Inc(AIndex);
+      end;
+      Short.Clear;
+      Long.Clear;
+      while (AIndex < FDoc.Count) and ((FDoc.Kind(AIndex) = '25') or (FDoc.Kind(AIndex) = '26')) do
+        if FDoc.Kind(AIndex) = '25' then
+          CollectText(AIndex, Short, '25')
+        else
+          CollectText(AIndex, Long, '26');
+      D := Perf.Description.Add;
+      D.Present := True;
+      if Block >= 0 then
+      begin
+        MapTextParts(Short, Long, Code(Block, 3, 'TA', 'X') = 'X', Code(Block, 4, 'TB', 'X') = 'X',
+          D.CompleteText, D.OutlineText);
+        MapStLNo(Block, 5, 6, 22, D.StLNo);
+      end
+      else
+        MapTextParts(Short, Long, False, False, D.CompleteText, D.OutlineText);
+      Has := True;
+    end;
+  finally
+    Long.Free;
+    Short.Free;
+  end;
+  if (Perf.PerfNo = '') or (Perf.PerfLbl = '') or not Has then
+    Inc(FIncompletePerf);
+end;
+
+{ A block of contract terms (T0, T1 lines, T9; the block also ends at the
+  next other record): one Award/AddText, a paragraph per T1 line. }
+procedure TMapper.MapContract(var AIndex: Integer);
+var
+  A: TLandrixGaebXmlAddText;
+  P: TLandrixGaebXmlP;
+  S: TLandrixGaebString;
+  K: string;
+begin
+  A := nil;
+  if FInBill then
+    Inc(FContractInside);
+  if FDoc.Kind(AIndex) = 'T0' then
+  begin
+    FUsed[AIndex] := True;
+    Unmapped(AIndex, 3, 74, 'FILLER');
+    Inc(AIndex);
+  end;
+  while AIndex < FDoc.Count do
+  begin
+    K := FDoc.Kind(AIndex);
+    if K = 'T1' then
+    begin
+      FUsed[AIndex] := True;
+      if A = nil then
+      begin
+        A := FG.Award.AddText.Add;
+        A.Present := True;
+        A.DetailAddText.Present := True;
+      end;
+      S := TrimRightW(Raw(AIndex, 3, 74));
+      P := A.DetailAddText.AddP;
+      P.Present := True;
+      if S <> '' then
+        P.AddSpan.Value := S;
+      Inc(AIndex);
+    end
+    else if K = 'T9' then
+    begin
+      FUsed[AIndex] := True;
+      Unmapped(AIndex, 3, 74, 'FILLER');
+      Inc(AIndex);
+      Break;
+    end
+    else
+      Break;
+  end;
 end;
 
 { 21 (or a 23 without 21) and the records of the item. }
@@ -1704,7 +2190,11 @@ var
   OZ, ItemPart, IndexPart, QU, Zz: TLandrixGaebString;
   Parts: TPartArray;
   Kind, K: string;
-  Has21, IsMarkup, IsNote, QtyTBD, TA, TB, Bad: Boolean;
+  Has21, IsMarkup, IsNote, QtyTBD, TA, TB, Bad, Stlb: Boolean;
+  Kurzan, RefOZ, RefNo, StlbName, StlbText, ItemId: TLandrixGaebString;
+  NStlb: Integer;
+  Split: TLandrixGaebXmlQtySplit;
+  SplitQty: TLandrixGaebDecimal;
   Item: TLandrixGaebXmlItem;
   Markup: TLandrixGaebXmlMarkupItem;
   Descr: TLandrixGaebXmlDescription;
@@ -1721,6 +2211,7 @@ begin
   if Bad or (ItemPart = '') then
     Inc(FNumberProblems);
   IsNote := False;
+  Wv := ' ';
   P1 := ' ';
   P2 := ' ';
   Typ := ' ';
@@ -1782,7 +2273,21 @@ begin
     Descr := Item.Description;
   end;
   if not IsNote then
+  begin
     Inc(FItems);
+    { the number for the references of 28 (first one wins) }
+    if Item <> nil then
+      ItemId := Item.ID
+    else
+      ItemId := Markup.ID;
+    if FItemTable.Add(PathKey(Parts, Depth) + #10 + ItemPart + #10 + IndexPart, FItemCount) then
+    begin
+      if FItemCount >= Length(FItemIds) then
+        SetLength(FItemIds, 2 * FItemCount + 16);
+      FItemIds[FItemCount] := ItemId;
+      Inc(FItemCount);
+    end;
+  end;
   QtyTBD := False;
   TA := False;
   TB := False;
@@ -1880,20 +2385,24 @@ begin
         Item.RefDescr := W(K)
       else if Markup <> nil then
         Markup.RefDescr := W(K);
-    end
-    else if Wv = 'A' then
-      FFields.Add('21/WIEVOR A');
-    TA := Code(AIndex, 42, 'TA', 'X') = 'X';
+    end;
+    { A: the reference is the AUSNR of the 28 (RefPerfNo) }
+    TA :=Code(AIndex, 42, 'TA', 'X') = 'X';
     TB := Code(AIndex, 43, 'TB', 'X') = 'X';
-    Unmapped(AIndex, 44, 61, 'TEXTSYST/STLNR');
     Unmapped(AIndex, 63, 63, 'KZBELO');
     Unmapped(AIndex, 64, 74, 'FILLER');
     Inc(AIndex);
   end;
   FDescrShort.Clear;
   FDescrLong.Clear;
+  Kurzan := '';
+  RefOZ := '';
+  RefNo := '';
+  StlbName := '';
+  StlbText := '';
+  NStlb := 0;
   { the records of the item; a sub description (24) and what follows it
-    belong to it, not to the item (not mapped yet) }
+    belong to the sub description }
   while AIndex < FDoc.Count do
   begin
     K := FDoc.Kind(AIndex);
@@ -1967,28 +2476,110 @@ begin
       CollectText(AIndex, FDescrShort, '25')
     else if K = '26' then
       CollectText(AIndex, FDescrLong, '26')
-    else if (K = '27') or (K = '28') or (K = '79') then
+    else if K = '27' then
     begin
-      FNotMapped.Add(K);
       FUsed[AIndex] := True;
+      if Item <> nil then
+      begin
+        { a split needs its quantity: only then it is added }
+        SplitQty.Clear;
+        if NumField(AIndex, 33, 43, 3, 32, 'TEILMENG', SplitQty) then
+        begin
+          Split := Item.QtySplit.Add;
+          Split.Present := True;
+          Split.Qty := SplitQty;
+        end
+        else
+          FOrphans.Add('27 without TEILMENG');
+        Unmapped(AIndex, 3, 31, 'KOSTENNR/LOKALIT');
+        Unmapped(AIndex, 44, 66, 'LOKALNR/DATUM/LBKE');
+      end
+      else
+        FOrphans.Add('27 of a markup item or note text');
+      Inc(AIndex);
+    end
+    else if K = '28' then
+    begin
+      FUsed[AIndex] := True;
+      Kurzan := TrimRightW(Raw(AIndex, 3, 57));
+      RefOZ := FDoc.Field(AIndex, 58, 66);
+      RefNo := Str(AIndex, 67, 70);
+      Inc(AIndex);
+    end
+    else if K = '79' then
+    begin
+      FUsed[AIndex] := True;
+      if NStlb = 0 then
+        StlbName := Str(AIndex, 3, 12);
+      if NStlb < 99 then
+        StlbText := StlbText + ' ' + Raw(AIndex, 13, 74);
+      Inc(NStlb);
       Inc(AIndex);
     end
     else if K = '24' then
     begin
-      { the sub descriptions with their texts }
-      J := AIndex;
-      while (J < FDoc.Count) and InList(FDoc.Kind(J), '|24|25|26|28|') do
+      if Item <> nil then
+        MapSub(AIndex, Item)
+      else
       begin
-        FNotMapped.Add(FDoc.Kind(J));
-        FUsed[J] := True;
-        Inc(J);
+        { a markup item or note text has no sub descriptions }
+        J := AIndex;
+        while (J < FDoc.Count) and InList(FDoc.Kind(J), '|24|25|26|28|79|') do
+        begin
+          FOrphans.Add(FDoc.Kind(J) + ' of a sub description without item');
+          FUsed[J] := True;
+          Inc(J);
+        end;
+        AIndex := J;
       end;
-      AIndex := J;
     end
     else
       Break;
   end;
+  { KURZAN: the short text when there is none, else only compared }
+  if TrimW(Kurzan) <> '' then
+  begin
+    if FDescrShort.Count = 0 then
+      FDescrShort.Add(Kurzan, '', ' ')
+    else if TrimW(Kurzan) <> TrimW(FDescrShort.Text[0]) then
+      Inc(FKurzan);
+  end;
   MapTexts(FDescrShort, FDescrLong, TA, TB, Descr);
+  if NStlb > 9 then
+    FLimits.Add('79');
+  Stlb := (NStlb > 0) and MapStlbBau(StlbName, StlbText, Descr.STLBBau);
+  if Stlb then
+  begin
+    Descr.Present := True;
+    if Has21 then
+      Unmapped(First, 44, 61, 'TEXTSYST/STLNR beside STLB-Bau');
+  end
+  else if Has21 and MapStLNo(First, 44, 45, 61, Descr.StLNo) then
+    Descr.Present := True;
+  { references: OZ (W) and AUSNR (A) of the 28 }
+  if TrimW(RefOZ) <> '' then
+  begin
+    if Item <> nil then
+      AddRef(Item.RefRNo, NumberKey(RefOZ), False)
+    else if Markup <> nil then
+      AddRef(Markup.RefRNo, NumberKey(RefOZ), False);
+  end;
+  if RefNo <> '' then
+  begin
+    if Item <> nil then
+      AddRef(Item.RefPerfNo, PerfKey(RefNo), True)
+    else if Markup <> nil then
+      AddRef(Markup.RefPerfNo, PerfKey(RefNo), True);
+  end;
+  if Has21 then
+  begin
+    { Wv as read from the 21 above (read once: Code counts) }
+    if ((Wv = 'W') and (TrimW(RefOZ) = '')) or ((Wv = 'A') and (RefNo = '')) or
+      ((TrimW(RefOZ) <> '') and (Wv <> 'W')) or ((RefNo <> '') and (Wv <> 'A')) then
+      Inc(FRefKind);
+  end
+  else if (TrimW(RefOZ) <> '') or (RefNo <> '') then
+    Inc(FRefKind);
 end;
 
 procedure TMapper.MapClosing(AIndex: Integer);
@@ -2154,6 +2745,17 @@ begin
     FRootBody := BoQ.BoQBody;
     FUsed[Header] := True;
     MapHeader00(Header);
+    { contract terms before the bill }
+    I := 0;
+    while I < Header do
+    begin
+      K := FDoc.Kind(I);
+      if (K = 'T0') or (K = 'T1') then
+        MapContract(I)
+      else
+        Inc(I);
+    end;
+    FInBill := True;
     Bills := 0;
     I := Header + 1;
     while I < FDoc.Count do
@@ -2225,15 +2827,25 @@ begin
       else if K = '99' then
       begin
         MapClosing(I);
+        FInBill := False;
         Inc(I);
       end
       else if K = '41' then
-        SkipBlock(I, '|42|25|26|')
+        MapPerf(I)
       else if (K = 'T0') or (K = 'T1') or (K = 'T9') then
-        SkipBlock(I, '|T1|T9|')
+      begin
+        if K = 'T9' then
+        begin
+          { a T9 without its block }
+          FUsed[I] := True;
+          Inc(I);
+        end
+        else
+          MapContract(I);
+      end
       else if InList(K, NotMappedKinds) then
         SkipBlock(I, '|')
-      else if InList(K, '|12|22|24|25|26|27|28|30|79|') then
+      else if InList(K, '|12|22|24|25|26|27|28|30|42|79|') then
       begin
         FOrphans.Add(K);
         FUsed[I] := True;
@@ -2256,17 +2868,14 @@ begin
         Inc(I);
       end;
     end;
-    { records before the opening record: contract terms }
+    { other records before the opening record }
     for I := 0 to Header - 1 do
       if not FUsed[I] then
       begin
-        K := FDoc.Kind(I);
-        if (K = 'T0') or (K = 'T1') or (K = 'T9') then
-          FNotMapped.Add(K)
-        else
-          FOrphans.Add(K + ' before 00');
+        FOrphans.Add(FDoc.Kind(I) + ' before 00');
         FUsed[I] := True;
       end;
+    ResolveRefs;
     AddBreakdown;
     FillRequired;
 
@@ -2311,6 +2920,24 @@ begin
         ' position(s) with POSSTAT other than R or space; not mapped');
     if FControl > 0 then
       Report(-1, RuleControl, gsWarning, IntToStr(FControl) + ' control character(s) removed (not allowed in XML)');
+    if FUnresolved > 0 then
+      Report(-1, RuleReference, gsWarning, IntToStr(FUnresolved) +
+        ' reference(s) of 28 (OZ, AUSNR) to a number not in the file; left out');
+    if FRefKind > 0 then
+      Report(-1, RuleRefKind, gsError, IntToStr(FRefKind) +
+        ' position(s) whose WIEVOR does not fit the reference of their 28');
+    if FKurzan > 0 then
+      Report(-1, RuleKurzan, gsInformation, IntToStr(FKurzan) +
+        ' KURZAN of 28 other than the first line of the short text; the short text kept');
+    if FIncompleteStlb > 0 then
+      Report(-1, RuleValue, gsWarning, IntToStr(FIncompleteStlb) +
+        ' STLB-Bau key(s) (79) without catalogue name or TLG; left out');
+    if FIncompletePerf > 0 then
+      Report(-1, RuleOrphan, gsWarning, IntToStr(FIncompletePerf) +
+        ' execution description(s) (41) without AUSNR, AUSBEZ or text, which PerfDescr requires; kept');
+    if FContractInside > 0 then
+      Report(-1, RuleContractInside, gsWarning, IntToStr(FContractInside) +
+        ' block(s) of contract terms (T0 to T9) inside the bill; read as Award/AddText');
   except
     FG.Free;
     raise;
