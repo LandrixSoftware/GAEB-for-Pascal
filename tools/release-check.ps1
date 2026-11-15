@@ -11,7 +11,8 @@
     2. Static checks: tools/check-forbidden.py, tools/check-api.py and every
        generator with --check (schema extraction, merge, model, schema
        checksums, coverage, legacy and rule cases) and the consistency of
-       the GAEB DA 2000 table (tools/legacy/da2000-blocks.py --check).
+       the GAEB DA 2000 and GAEB 90 tables (tools/legacy/da2000-blocks.py
+       and da90-records.py, --check).
     3. Schemas: SHA-256 of every schema file listed in
        tools/schema/manifest.json, compared with the manifest.
     4. Full matrix: tools/build.ps1 all -Full (every toolchain, the complete
@@ -178,7 +179,8 @@ try {
     @{ Name = 'make-coverage-cases'; Args = @('tools/coverage/make-coverage-cases.py', '--check') },
     @{ Name = 'make-legacy-cases';   Args = @('tools/legacy/make-legacy-cases.py', '--check') },
     @{ Name = 'make-rule-cases';     Args = @('tools/rules/make-rule-cases.py', '--check') },
-    @{ Name = 'da2000-blocks';       Args = @('tools/legacy/da2000-blocks.py', '--check') }
+    @{ Name = 'da2000-blocks';       Args = @('tools/legacy/da2000-blocks.py', '--check') },
+    @{ Name = 'da90-records';        Args = @('tools/legacy/da90-records.py', '--check') }
   )
   foreach ($s in $static) {
     $a = $s.Args
