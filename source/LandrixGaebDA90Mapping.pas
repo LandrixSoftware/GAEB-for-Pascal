@@ -72,7 +72,26 @@
     Group, each BM/BMI/AP -> STLBBauID ArtChrIdent/ArtChIdx/ChVIdent), which
     takes the place of StLNo;
   - T0/T1/T9 (contract terms) -> Award/AddText, one per block, a paragraph
-    per T1 line (DetailAddText).
+    per T1 line (DetailAddText);
+  - lots, which GAEB 90 keeps outside the ordinal number: with records 10
+    the breakdown gets a level Lot (length 2) above the levels of the mask;
+    10 opens the lot category (LOSNR -> RNoPart, LOSBEZ -> LblTx), what
+    follows up to its 33 belongs to it, 33 -> its Totals; the numbers of a
+    lot (also those 28 refers to) are taken within it; 34 -> BoQ/LotGrp
+    (LOSGRNR -> LotGrNo, Totals), each LOSNR of 35 -> RefLotNo;
+  - wage changes: 46 -> Award/WgChange/LblRefWage (lines joined), 47 ->
+    RefGroup with RefBoQ, 45 with LOSNR or LOSGRNR -> RefGroup with RefLotNo
+    or RefLotGrNo (the amounts and rates are not mapped);
+  - AUFABFAK (factor f, 32/33/34/99) -> DiscountPcnt (1 - f) x 100 and
+    TotAfterDisc (total x f, rounded commercially), AUFABDM -> DiscountAmt
+    (minus: a discount) and TotAfterDisc, unless the totals carry a lump
+    sum (GAEB DA XML takes one of them); f of 23 -> DiscountPcnt of the
+    item; f 0 or 1 is no discount (0 stands for an empty field in the
+    files seen, never for a discount of 100 percent); SKONTO with ZAFRIST
+    of 99 -> AwardInfo/CashDiscount;
+  - a second record of totals (32, 33) for the same group or lot is not
+    mapped (the first one counts); a wage change without LblRefWage (46)
+    or without any reference it can carry is left out.
   Numbers carry an implied decimal point; spaces instead of leading zeros
   are read, spaces behind are not. Dates TT.MM.JJ become YYYY-MM-DD (JJ
   below 70: 20JJ, else 19JJ; days checked against the calendar), times HH:MM become HH:MM:SS. IDs are generated (LGB, LGC, LGI, LGR
@@ -96,6 +115,10 @@
                                  than A or B, or KNR without TEKZ (text
                                  kept)
     GAEB-BR-D90-013 warning      contract terms (T0 to T9) inside the bill
+    GAEB-BR-D90-017 error        LOSKZ X without lots, or lots without LOSKZ
+                                 X; records outside any lot in a file with
+                                 lots; lot or lot group numbers used a
+                                 second time (references go to the first)
     GAEB-BR-D90-014 information  record types GAEB 90 does not define
                                  (free range 70 to 89, vendor records,
                                  others) skipped
@@ -123,14 +146,22 @@
                                  a filled one, or without an item number
     GAEB-D90-MAP-014 information required parts of GAEB DA XML GAEB 90 has
                                  no source for, filled: BoQInfo/Name from
-                                 VERGAG or the first 20 characters of LVBEZ
-                                 (owner decision 15.11.2026), an empty LblTx
+                                 VERGAG or the first 20 characters of LVBEZ,
+                                 PrjInfo/NamePrj from the first line of
+                                 PROBEZ, else VERGAG, else LVBEZ (owner
+                                 decisions 15.11.2026), an empty LblTx
                                  for categories without record 12
                                  (GAEBInfo/Date stays missing)
     GAEB-D90-MAP-015 information KURZAN of 28 other than the first line of
                                  the short text (the short text kept)
-    GAEB-D90-MAP-016 warning     references (28) to a number that no item
-                                 or execution description has (left out)
+    GAEB-D90-MAP-016 warning     references (28, 35, 45) to a number that no
+                                 item, execution description, lot or lot
+                                 group has (left out)
+    GAEB-D90-MAP-017 warning     discounts and surcharges the totals cannot
+                                 carry (no total, or a lump sum beside
+                                 them), wage change texts over 120
+                                 characters (cut), cash discounts without
+                                 days
   Messages name record types and fields, never values.
 
   DE: Abbildung der Saetze einer GAEB-90-Datei in das Syntaxmodell von
@@ -177,6 +208,7 @@ implementation
 
 uses
   LandrixXmlBase,
+  LandrixXmlDecimal,
   LandrixGaebNameTable;
 
 const
@@ -207,11 +239,13 @@ const
   RuleReference = 'GAEB-D90-MAP-016';
   RuleRefKind = 'GAEB-BR-D90-009';
   RuleContractInside = 'GAEB-BR-D90-013';
+  RuleLots = 'GAEB-BR-D90-017';
+  RuleDiscount = 'GAEB-D90-MAP-017';
 
   { the 16 combinations of POSART1, POSART2 and POSTYP }
   PositionKinds = '|NNN|NNL|NEN|NEL|NMN|NML|ANN|ANL|GNN|GNL|AEN|AEL|GMN|GML|SNN|SNL|';
   { record types of GAEB 90 that are not mapped yet }
-  NotMappedKinds = '|07|10|33|34|35|45|46|47|';
+  NotMappedKinds = '|07|';
 
 type
   { counts per name, reported in the order the names first occurred }
@@ -284,6 +318,11 @@ type
       resolve at the end }
     FItemTable, FPerfTable: TLandrixGaebNameTable;
     FItemIds, FPerfIds: array of TLandrixGaebString;
+    { with lots: items by number without the lot (an empty ID: the number
+      is in more than one lot) }
+    FOzTable: TLandrixGaebNameTable;
+    FOzIds: array of TLandrixGaebString;
+    FOzCount: Integer;
     FItemCount, FPerfCount: Integer;
     FRefs: array of TLandrixGaebXmlRefItem;
     FRefKeys: array of TLandrixGaebString;
@@ -291,6 +330,23 @@ type
     FRefCount, FUnresolved, FRefKind, FKurzan, FIncompleteStlb, FIncompletePerf: Integer;
     FInBill: Boolean;
     FContractInside: Integer;
+    { lots: the current lot number ('' outside), lot groups by number }
+    FHasLots: Boolean;
+    FCurLot: TLandrixGaebString;
+    FLotGrpTable: TLandrixGaebNameTable;
+    FLotGrps: array of TLandrixGaebXmlLotGrp;
+    FLotGrpCount: Integer;
+    FLotRefs: array of TLandrixGaebXmlRefBoQCtgy;
+    FLotRefKeys: array of TLandrixGaebString;
+    FLotRefCount: Integer;
+    FGrpRefs: array of TLandrixGaebXmlRefLotGrp;
+    FGrpRefKeys: array of TLandrixGaebString;
+    FGrpRefCount: Integer;
+    FOutsideLot, FDiscountLost, FLotTwice: Integer;
+    FWgLines: TLandrixGaebString;
+    { the last lot group (34), for its 35 }
+    FLastGrp: TLandrixGaebXmlLotGrp;
+    FLastGrpNo: TLandrixGaebString;
     { set while ItemlistFor looks ahead: nothing is counted twice }
     FQuiet: Boolean;
     { the look-ahead of ItemlistFor: from FLookFrom on, the next record
@@ -338,12 +394,22 @@ type
     function MapStLNo(AIndex, ASystem, AFrom, ATo: Integer; AStLNo: TLandrixGaebXmlStLNo): Boolean;
     function MapStlbBau(const ACatalog, AText: TLandrixGaebString; AStlb: TLandrixGaebXmlSTLBBau): Boolean;
     function NumberKey(const AOZ: TLandrixGaebString): TLandrixGaebString;
+    procedure AddOz(const AKey, AId: TLandrixGaebString);
     function PerfKey(const ANo: TLandrixGaebString): TLandrixGaebString;
     procedure AddRef(ARef: TLandrixGaebXmlRefItem; const AKey: TLandrixGaebString; AIsPerf: Boolean);
     procedure ResolveRefs;
     procedure MapSub(var AIndex: Integer; AItem: TLandrixGaebXmlItem);
     procedure MapPerf(var AIndex: Integer);
     procedure MapContract(var AIndex: Integer);
+    procedure MapDiscount(AIndex, AFactor, ASign, AAmount: Integer; ATotals: TLandrixGaebXmlTotals);
+    procedure MapLot(AIndex: Integer);
+    procedure MapLotEnd(AIndex: Integer);
+    procedure MapLotGroup(AIndex: Integer);
+    procedure MapLotGroupLots(AIndex: Integer);
+    procedure MapWage(AIndex: Integer);
+    procedure FinishWage;
+    procedure AddLotRef(ARef: TLandrixGaebXmlRefBoQCtgy; const ALot: TLandrixGaebString);
+    procedure AddGroupRef(ARef: TLandrixGaebXmlRefLotGrp; const AGroup: TLandrixGaebString);
     { records }
     procedure MapHeader00(AIndex: Integer);
     procedure MapHeader01(AIndex: Integer);
@@ -467,6 +533,12 @@ begin
   Result := Pos('|' + AKey + '|', AList) > 0;
 end;
 
+function ToDecimal(const A: TLandrixXmlDecimal; out AValue: TLandrixGaebDecimal): Boolean;
+begin
+  AValue.Clear;
+  Result := AValue.TrySetText(LandrixXmlFormatDecimal(A));
+end;
+
 { ---- TCounts ---- }
 
 constructor TCounts.Create;
@@ -542,12 +614,16 @@ begin
   FIndexLevel := -1;
   FCtgyTable := TLandrixGaebNameTable.Create;
   FItemTable := TLandrixGaebNameTable.Create;
+  FOzTable := TLandrixGaebNameTable.Create;
   FPerfTable := TLandrixGaebNameTable.Create;
+  FLotGrpTable := TLandrixGaebNameTable.Create;
 end;
 
 destructor TMapper.Destroy;
 begin
+  FLotGrpTable.Free;
   FPerfTable.Free;
+  FOzTable.Free;
   FItemTable.Free;
   FCtgyTable.Free;
   FDescrLong.Free;
@@ -868,11 +944,22 @@ begin
   end
   else if FMaskSpaces then
     Report(AIndex, RuleMaskSpaces, gsWarning, 'OZMASKE with spaces as fill; read as 0');
+  { lots stand outside the ordinal number: a level of its own on top }
+  if FHasLots then
+  begin
+    SetLength(FLevels, N + 1);
+    for I := N downto 1 do
+      FLevels[I] := FLevels[I - 1];
+    FLevels[0].Kind := 'Lot';
+    FLevels[0].Start := 0;
+    FLevels[0].Length := 2;
+    Inc(N);
+  end;
   FCategoryLevels := 0;
   FItemLevel := -1;
   FIndexLevel := -1;
   for I := 0 to N - 1 do
-    if FLevels[I].Kind = 'BoQLevel' then
+    if (FLevels[I].Kind = 'BoQLevel') or (FLevels[I].Kind = 'Lot') then
       Inc(FCategoryLevels)
     else if FLevels[I].Kind = 'Item' then
       FItemLevel := I
@@ -935,9 +1022,12 @@ begin
   Dummy := 0;
   for I := 0 to Integer(Length(FLevels)) - 1 do
   begin
-    Raw := Copy(AOZ, FLevels[I].Start, FLevels[I].Length);
+    if FLevels[I].Kind = 'Lot' then
+      Raw := FCurLot
+    else
+      Raw := Copy(AOZ, FLevels[I].Start, FLevels[I].Length);
     Note(I, Raw);
-    if FLevels[I].Kind = 'BoQLevel' then
+    if (FLevels[I].Kind = 'BoQLevel') or (FLevels[I].Kind = 'Lot') then
     begin
       AParts[I] := Clean(Raw);
       if AParts[I] = '' then
@@ -1019,13 +1109,13 @@ begin
     FOpenHasCtgy[L] := False;
     FOpenHasItem[L] := False;
     FOpenDepth := L + 1;
-    if FCtgyTable.Add(PathKey(AParts, L + 1), FCtgyCount) then
-    begin
-      if FCtgyCount >= Length(FCtgys) then
-        SetLength(FCtgys, 2 * FCtgyCount + 16);
-      FCtgys[FCtgyCount] := Ctgy;
-      Inc(FCtgyCount);
-    end;
+    { every category (FillRequired visits all), the table names the first
+      one of a path }
+    if FCtgyCount >= Length(FCtgys) then
+      SetLength(FCtgys, 2 * FCtgyCount + 16);
+    FCtgys[FCtgyCount] := Ctgy;
+    FCtgyTable.Add(PathKey(AParts, L + 1), FCtgyCount);
+    Inc(FCtgyCount);
   end;
 end;
 
@@ -1066,7 +1156,8 @@ begin
     for J := AIndex + 1 to FDoc.Count - 1 do
     begin
       K := FDoc.Kind(J);
-      if (K = '21') or (K = '23') or (K = '11') or (K = '00') or (K = '99') then
+      if (K = '21') or (K = '23') or (K = '11') or (K = '10') or (K = '33') or (K = '00') or
+        (K = '99') then
       begin
         FLookAt := J;
         Break;
@@ -1088,6 +1179,10 @@ begin
       end;
       if K = '11' then
       begin
+        { an 11 in a lot without a group number (MapGroup leaves it out):
+          the open path stays }
+        if FHasLots and (Depth = 1) then
+          Break;
         if Depth > 0 then
           Dec(Depth);
         OpenPath(Parts, Depth, -1);
@@ -1096,6 +1191,12 @@ begin
       OpenPath(Parts, Depth, -1);
       NoteItem(Depth);
       Result := BodyAt(Depth).Itemlist;
+      Exit;
+    end;
+    if K = '10' then
+    begin
+      { before a lot: on top, beside the lots }
+      FOpenDepth := 0;
       Exit;
     end;
     if (K = '00') or (K = '99') then
@@ -1575,6 +1676,37 @@ begin
   Result := PathKey(Parts, Depth) + #10 + ItemPart + #10 + IndexPart;
 end;
 
+{ A key of NumberKey without its lot part (the first one). }
+function WithoutLot(const AKey: TLandrixGaebString): TLandrixGaebString;
+var
+  I: Integer;
+begin
+  I := 1;
+  while (I <= Length(AKey)) and (AKey[I] <> #10) do
+    Inc(I);
+  Result := Copy(AKey, I + 1, MaxInt);
+end;
+
+procedure TMapper.AddOz(const AKey, AId: TLandrixGaebString);
+var
+  K: Integer;
+begin
+  if FOzTable.Add(AKey, FOzCount) then
+  begin
+    if FOzCount >= Length(FOzIds) then
+      SetLength(FOzIds, 2 * FOzCount + 16);
+    FOzIds[FOzCount] := AId;
+    Inc(FOzCount);
+  end
+  else
+  begin
+    { the number again: ambiguous across lots }
+    K := FOzTable.Find(AKey);
+    if K >= 0 then
+      FOzIds[K] := '';
+  end;
+end;
+
 { The key of AUSNR: digits without leading zeros, else as written. }
 function TMapper.PerfKey(const ANo: TLandrixGaebString): TLandrixGaebString;
 var
@@ -1606,10 +1738,82 @@ end;
 { References of 28 to the IDs of items and execution descriptions, which
   may come later in the file; one to a number not in the file is left
   out and counted (GAEB-D90-MAP-016). }
+function GroupHasLot(AGroup: TLandrixGaebXmlLotGrp): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 0 to Integer(AGroup.RefLotNo.Count) - 1 do
+    if AGroup.RefLotNo[I].IsPresent then
+    begin
+      Result := True;
+      Exit;
+    end;
+end;
+
 procedure TMapper.ResolveRefs;
 var
   I, K: Integer;
+  Parts: TPartArray;
+  Groups: TLandrixGaebXmlLotGrpList;
+  Group: TLandrixGaebXmlLotGrp;
 begin
+  Parts := nil;
+  SetLength(Parts, FCategoryLevels);
+  for I := 0 to FLotRefCount - 1 do
+  begin
+    K := -1;
+    if FHasLots and (FCategoryLevels > 0) then
+    begin
+      Parts[0] := FLotRefKeys[I];
+      K := FCtgyTable.Find(PathKey(Parts, 1));
+    end;
+    if K >= 0 then
+    begin
+      FLotRefs[I].IDRef := FCtgys[K].ID;
+      FLotRefs[I].Present := True;
+    end
+    else
+      Inc(FUnresolved);
+  end;
+  { phase 83 needs a lot in each lot group: one without (no 35, or none of
+    its lots in the file) is left out (84 takes groups without lots)
+    DE: Phase 83 verlangt in jeder Losgruppe ein Los: eine ohne (kein 35
+    oder keines ihrer Lose in der Datei) entfaellt (84 nimmt Gruppen ohne
+    Lose) }
+  if FPhase = '83' then
+  begin
+    for I := 0 to FLotGrpCount - 1 do
+      if not GroupHasLot(FLotGrps[I]) then
+        FLotGrps[I] := nil;
+    { freed and packed in linear time }
+    Groups := FG.Award.BoQ.LotGrp;
+    Groups.OwnsObjects := False;
+    try
+      for I := 0 to Integer(Groups.Count) - 1 do
+        if not GroupHasLot(Groups[I]) then
+        begin
+          FOrphans.Add('34 without a lot (35)');
+          Group := Groups[I];
+          TObjectList(Groups)[I] := nil;
+          Group.Free;
+        end;
+      Groups.Pack;
+    finally
+      Groups.OwnsObjects := True;
+    end;
+  end;
+  for I := 0 to FGrpRefCount - 1 do
+  begin
+    K := FLotGrpTable.Find(FGrpRefKeys[I]);
+    if (K >= 0) and (FLotGrps[K] <> nil) then
+    begin
+      FGrpRefs[I].IDRef := FLotGrps[K].ID;
+      FGrpRefs[I].Present := True;
+    end
+    else
+      Inc(FUnresolved);
+  end;
   for I := 0 to FRefCount - 1 do
   begin
     if FRefIsPerf[I] then
@@ -1622,7 +1826,18 @@ begin
     begin
       K := FItemTable.Find(FRefKeys[I]);
       if K >= 0 then
-        FRefs[I].IDRef := FItemIds[K];
+        FRefs[I].IDRef := FItemIds[K]
+      else if FHasLots then
+      begin
+        { the number in another lot: GAEB 90 numbers are unique in the
+          bill, the lot lies outside them (a number in more lots stays
+          unresolved) }
+        K := FOzTable.Find(WithoutLot(FRefKeys[I]));
+        if (K >= 0) and (FOzIds[K] <> '') then
+          FRefs[I].IDRef := FOzIds[K]
+        else
+          K := -1;
+      end;
     end;
     if K >= 0 then
       FRefs[I].Present := True
@@ -1679,7 +1894,8 @@ begin
   S := FDoc.Field(AIndex, 72, 73);
   if (S <> '90') and (S <> '  ') then
     FValues.Add('00/VERSDTA');
-  Unmapped(AIndex, 74, 74, 'LOSKZ');
+  { LOSKZ is checked against the records 10 }
+  Code(AIndex, 74, 'LOSKZ', 'X');
   Unmapped(AIndex, 3, 10, 'FILLER');
 end;
 
@@ -1834,7 +2050,8 @@ begin
   if Bad then
     Inc(FNumberProblems);
   Inc(AIndex);
-  if Depth = 0 then
+  { the level Lot comes from the 10, not from the number }
+  if (Depth = 0) or (FHasLots and (Depth = 1)) then
   begin
     FOrphans.Add('11 without a group number');
     while (AIndex < FDoc.Count) and (FDoc.Kind(AIndex) = '12') do
@@ -1854,7 +2071,7 @@ begin
   begin
     if IsDigits(Copy(Zzv, 1, 3)) then
     begin
-      Ctgy.ALNBGroupNo := Copy(Zzv, 1, 3);
+      { the group number only with a serial number (both or none) }
       if Art = 'G' then
         Ctgy.ALNBSerNo := '0'
       else if IsDigits(Copy(Zzv, 4, 1)) and (Zzv[4] <> '0') then
@@ -1862,6 +2079,8 @@ begin
         Ctgy.ALNBSerNo := Copy(Zzv, 4, 1)
       else
         FValues.Add('11/ZZV');
+      if Ctgy.ALNBSerNo <> '' then
+        Ctgy.ALNBGroupNo := Copy(Zzv, 1, 3);
     end
     else
       FValues.Add('11/ZZV');
@@ -1892,34 +2111,55 @@ end;
 procedure TMapper.MapGroupTotals(AIndex: Integer);
 var
   Parts: TPartArray;
-  Depth, K: Integer;
+  Depth, K, L: Integer;
   ItemPart, IndexPart: TLandrixGaebString;
   T: TLandrixGaebXmlTotals;
-  Bad: Boolean;
+  Ctgy: TLandrixGaebXmlBoQCtgy;
+  Bad, Open: Boolean;
 begin
   FUsed[AIndex] := True;
   Parts := nil;
   PartsOf(FDoc.Field(AIndex, 3, 11), Parts, Depth, ItemPart, IndexPart, Bad);
-  K := -1;
+  Ctgy := nil;
   { a number with a gap names no group: counted, the totals left out }
   if Bad then
     Inc(FNumberProblems)
-  else if Depth > 0 then
-    K := FCtgyTable.Find(PathKey(Parts, Depth));
-  if K < 0 then
+  else if (Depth > 1) or ((Depth = 1) and not FHasLots) then
+  begin
+    { the open group, else the first one of the number (the level Lot
+      comes from the 10, not from the number) }
+    Open := Depth <= FOpenDepth;
+    for L := 0 to Depth - 1 do
+      if Open and (FOpenPart[L] <> Parts[L]) then
+        Open := False;
+    if Open then
+      Ctgy := FOpenCtgy[Depth - 1]
+    else
+    begin
+      K := FCtgyTable.Find(PathKey(Parts, Depth));
+      if K >= 0 then
+        Ctgy := FCtgys[K];
+    end;
+  end;
+  if Ctgy = nil then
   begin
     FOrphans.Add('32 without its group');
     Exit;
   end;
-  T := FCtgys[K].Totals;
+  T := Ctgy.Totals;
+  if T.IsPresent then
+  begin
+    { the first totals count (a second set could mix exclusive parts) }
+    FFields.Add('32 a second time for its group');
+    Exit;
+  end;
   if not NumField(AIndex, 13, 24, 2, 12, 'SUMME', T.Total) then
     if (TrimW(FDoc.Field(AIndex, 13, 24)) <> '') and (FInvalidTotals <> nil) then
       FInvalidTotals.Add(T);
   NumField(AIndex, 46, 57, 2, 45, 'PAUSCH', T.TotalLSUM);
+  MapDiscount(AIndex, 25, 32, 33, T);
   if T.Total.HasValue or T.TotalLSUM.HasValue then
     T.Present := True;
-  Unmapped(AIndex, 25, 31, 'AUFABFAK');
-  Unmapped(AIndex, 32, 44, 'AUFABDM');
 end;
 
 { 20 and its 26: a remark in the item list of the next item, or before a
@@ -2187,14 +2427,14 @@ end;
 procedure TMapper.MapItem(var AIndex: Integer);
 var
   First, Depth, J: Integer;
-  OZ, ItemPart, IndexPart, QU, Zz: TLandrixGaebString;
+  OZ, ItemPart, IndexPart, QU, Zz, Zzv90: TLandrixGaebString;
   Parts: TPartArray;
   Kind, K: string;
   Has21, IsMarkup, IsNote, QtyTBD, TA, TB, Bad, Stlb: Boolean;
   Kurzan, RefOZ, RefNo, StlbName, StlbText, ItemId: TLandrixGaebString;
   NStlb: Integer;
   Split: TLandrixGaebXmlQtySplit;
-  SplitQty: TLandrixGaebDecimal;
+  SplitQty, ItemF: TLandrixGaebDecimal;
   Item: TLandrixGaebXmlItem;
   Markup: TLandrixGaebXmlMarkupItem;
   Descr: TLandrixGaebXmlDescription;
@@ -2286,6 +2526,10 @@ begin
         SetLength(FItemIds, 2 * FItemCount + 16);
       FItemIds[FItemCount] := ItemId;
       Inc(FItemCount);
+      { a number again in the same lot stays with the first one; only
+        other lots make it ambiguous }
+      if FHasLots then
+        AddOz(WithoutLot(PathKey(Parts, Depth) + #10 + ItemPart + #10 + IndexPart), ItemId);
     end;
   end;
   QtyTBD := False;
@@ -2299,10 +2543,8 @@ begin
     begin
       if IsDigits(Copy(Zz, 1, 3)) then
       begin
-        if Item <> nil then
-          Item.ALNGroupNo := Copy(Zz, 1, 3)
-        else if Markup <> nil then
-          Markup.ALNGroupNo := Copy(Zz, 1, 3);
+        { the group number only with a serial number (both or none) }
+        Zzv90 := Copy(Zz, 1, 3);
         if P1 = 'G' then
           Zz := '0'
         else if IsDigits(Copy(Zz, 4, 1)) and (Zz[4] <> '0') then
@@ -2314,9 +2556,15 @@ begin
           FValues.Add('21/ZZ');
         end;
         if (Item <> nil) and (Zz <> '') then
-          Item.ALNSerNo := Zz
+        begin
+          Item.ALNGroupNo := Zzv90;
+          Item.ALNSerNo := Zz;
+        end
         else if (Markup <> nil) and (Zz <> '') then
+        begin
+          Markup.ALNGroupNo := Zzv90;
           Markup.ALNSerNo := Zz;
+        end;
       end
       else
         FValues.Add('21/ZZ');
@@ -2429,7 +2677,11 @@ begin
           Price(AIndex, 13, 22, 12, 23, 'EP', Item.UP);
           NumField(AIndex, 25, 36, 2, 24, 'GB', Item.IT);
           NumField(AIndex, 38, 48, 3, 37, 'FREIEMEN', FreeQty);
-          Unmapped(AIndex, 49, 55, 'AUFABFAK');
+          { the factor of the item: f 0 or 1 is none }
+          ItemF.Clear;
+          if NumField(AIndex, 49, 55, 6, 0, 'AUFABFAK', ItemF) and (ItemF.Coefficient <> 0) and
+            (ItemF.Coefficient <> 1000000) then
+            Item.DiscountPcnt.SetValue((1000000 - ItemF.Coefficient) * 100, 6);
           Unmapped(AIndex, 56, 74, 'ZUSCHPR/ZUSCHSU');
         end;
         if FreeQty.HasValue and (QtyTBD or not Item.Qty.HasValue) then
@@ -2585,7 +2837,9 @@ end;
 procedure TMapper.MapClosing(AIndex: Integer);
 var
   T: TLandrixGaebXmlTotals;
-  N: TLandrixGaebDecimal;
+  N, Skonto: TLandrixGaebDecimal;
+  Days: TLandrixGaebString;
+  C: TLandrixGaebXmlCashDiscount;
 begin
   FUsed[AIndex] := True;
   T := FG.Award.BoQ.BoQInfo.Totals;
@@ -2595,11 +2849,26 @@ begin
   NumField(AIndex, 22, 25, 2, 0, 'UST', T.VAT);
   NumField(AIndex, 26, 37, 2, 0, 'ANGEBOTS', T.TotalGross);
   NumField(AIndex, 52, 63, 2, 51, 'PAUSCH', T.TotalLSUM);
+  MapDiscount(AIndex, 15, 38, 39, T);
   if T.Total.HasValue or T.VAT.HasValue or T.TotalGross.HasValue or T.TotalLSUM.HasValue then
     T.Present := True;
-  Unmapped(AIndex, 15, 21, 'AUFABFAK');
-  Unmapped(AIndex, 38, 50, 'AUFABDM');
-  Unmapped(AIndex, 64, 69, 'SKONTO/ZAFRIST');
+  { cash discount: SKONTO with the days of ZAFRIST }
+  Skonto.Clear;
+  if NumField(AIndex, 64, 67, 2, 0, 'SKONTO', Skonto) then
+  begin
+    Days := Str(AIndex, 68, 69);
+    if IsDigits(Days) and (StrToInt(AsciiOf(Days)) > 0) then
+    begin
+      C := FG.Award.AwardInfo.CashDiscount.Add;
+      C.Present := True;
+      C.DiscountPcnt := Skonto;
+      C.CashDiscDays.Present := True;
+      C.CashDiscDays.Days := Days;
+      FG.Award.AwardInfo.Present := True;
+    end
+    else
+      Inc(FDiscountLost);
+  end;
   N.Clear;
   if NumField(AIndex, 70, 74, 0, 0, 'ANZTEIL', N) and (N.Coefficient <> FItems) then
     Report(AIndex, RuleCount, gsWarning, 'ANZTEIL of 99 differs from the number of positions (' +
@@ -2619,6 +2888,319 @@ begin
     FUsed[AIndex] := True;
     Inc(AIndex);
   end;
+end;
+
+{ AUFABFAK in column AFactor (1,6) or AUFABDM in AAmount (10,2, its sign
+  in ASign) into ATotals: a discount or surcharge with the total after it
+  (GAEB DA XML needs both, and has no room for them beside a lump sum).
+  A factor of 0 or 1 is none: 0 stands for an empty field in the files
+  seen, never for a discount of 100 percent. }
+procedure TMapper.MapDiscount(AIndex, AFactor, ASign, AAmount: Integer; ATotals: TLandrixGaebXmlTotals);
+var
+  F, A: TLandrixGaebDecimal;
+  R: TLandrixGaebDecimal;
+  HasF, HasA: Boolean;
+begin
+  F.Clear;
+  A.Clear;
+  HasF := NumField(AIndex, AFactor, AFactor + 6, 6, 0, 'AUFABFAK', F) and (F.Coefficient <> 0) and
+    (F.Coefficient <> 1000000);
+  HasA := NumField(AIndex, AAmount, AAmount + 11, 2, ASign, 'AUFABDM', A) and (A.Coefficient <> 0);
+  if not (HasF or HasA) then
+    Exit;
+  if not ATotals.Total.HasValue or ATotals.TotalLSUM.HasValue then
+  begin
+    Inc(FDiscountLost);
+    Exit;
+  end;
+  R.Clear;
+  if HasF then
+  begin
+    { (1 - f) x 100 with six decimals: f has six }
+    ATotals.DiscountPcnt.SetValue((1000000 - F.Coefficient) * 100, 6);
+    if not ToDecimal(LandrixGaebRoundHalfAwayFromZero(LandrixXmlDecimalMultiply(ATotals.Total.AsXmlDecimal,
+      F.AsXmlDecimal), 2), R) then
+      Inc(FDiscountLost);
+  end
+  else
+  begin
+    { a minus marks a discount (Abschlag), else a surcharge }
+    ATotals.DiscountAmt.SetValue(-A.Coefficient, 2);
+    if not ToDecimal(LandrixGaebRoundHalfAwayFromZero(LandrixXmlDecimalSubtract(ATotals.Total.AsXmlDecimal,
+      ATotals.DiscountAmt.AsXmlDecimal), 2), R) then
+      Inc(FDiscountLost);
+  end;
+  { two decimals, as the total (an exact difference may have fewer) }
+  while R.HasValue and (R.Scale < 2) do
+    R.SetValue(R.Coefficient * 10, R.Scale + 1);
+  if R.HasValue then
+    ATotals.TotAfterDisc := R;
+  if HasF and HasA then
+    FFields.Add(FDoc.Kind(AIndex) + '/AUFABDM beside AUFABFAK');
+end;
+
+{ 10: the lot from here on, a category of the level Lot. }
+procedure TMapper.MapLot(AIndex: Integer);
+var
+  Parts: TPartArray;
+  Lbl: TLandrixGaebString;
+  Ctgy: TLandrixGaebXmlBoQCtgy;
+  P: TLandrixGaebXmlPMLText;
+begin
+  FUsed[AIndex] := True;
+  FCurLot := Str(AIndex, 3, 4);
+  if (FCurLot = '') or not FHasLots then
+  begin
+    FOrphans.Add('10 without LOSNR');
+    Exit;
+  end;
+  Parts := nil;
+  SetLength(Parts, FCategoryLevels);
+  Parts[0] := FCurLot;
+  { a lot number used before, not the open lot: a new category (its
+    references go to the first) }
+  if not ((FOpenDepth > 0) and (FOpenPart[0] = FCurLot)) and (FCtgyTable.Find(PathKey(Parts, 1)) >= 0) then
+    Inc(FLotTwice);
+  FLevelSeen[0] := True;
+  if not IsDigits(FCurLot) then
+    FLevelOther[0] := True;
+  OpenPath(Parts, 1, 0);
+  Ctgy := FOpenCtgy[0];
+  Lbl := Str(AIndex, 5, 44);
+  if (Lbl <> '') and (Ctgy.LblTx.Children.Count = 0) then
+  begin
+    Ctgy.LblTx.Present := True;
+    P := Ctgy.LblTx.AddP;
+    P.Present := True;
+    P.AddSpan.Value := Lbl;
+  end;
+  Unmapped(AIndex, 45, 74, 'FILLER');
+end;
+
+{ 33: the totals of the lot; the lot ends. }
+procedure TMapper.MapLotEnd(AIndex: Integer);
+var
+  Parts: TPartArray;
+  K: Integer;
+  T: TLandrixGaebXmlTotals;
+  Ctgy: TLandrixGaebXmlBoQCtgy;
+begin
+  FUsed[AIndex] := True;
+  Parts := nil;
+  SetLength(Parts, FCategoryLevels);
+  Ctgy := nil;
+  if FHasLots and (FCategoryLevels > 0) then
+  begin
+    Parts[0] := Str(AIndex, 3, 4);
+    { the open lot, else the first one of the number }
+    if (FOpenDepth > 0) and (FOpenPart[0] = Parts[0]) then
+      Ctgy := FOpenCtgy[0]
+    else
+    begin
+      K := FCtgyTable.Find(PathKey(Parts, 1));
+      if K >= 0 then
+        Ctgy := FCtgys[K];
+    end;
+  end;
+  { the lot ends: what follows is outside it }
+  FCurLot := '';
+  FOpenDepth := 0;
+  if Ctgy = nil then
+  begin
+    FOrphans.Add('33 without its lot');
+    Exit;
+  end;
+  T := Ctgy.Totals;
+  if T.IsPresent then
+  begin
+    FFields.Add('33 a second time for its lot');
+    Exit;
+  end;
+  if not NumField(AIndex, 5, 16, 2, 0, 'LOSUMME', T.Total) then
+    if (TrimW(FDoc.Field(AIndex, 5, 16)) <> '') and (FInvalidTotals <> nil) then
+      FInvalidTotals.Add(T);
+  NumField(AIndex, 24, 27, 2, 0, 'UST', T.VAT);
+  NumField(AIndex, 28, 39, 2, 0, 'ANGLOS', T.TotalGross);
+  NumField(AIndex, 54, 65, 2, 53, 'PAUSCH', T.TotalLSUM);
+  MapDiscount(AIndex, 17, 40, 41, T);
+  if T.Total.HasValue or T.TotalGross.HasValue or T.TotalLSUM.HasValue or T.VAT.HasValue then
+    T.Present := True;
+  Unmapped(AIndex, 66, 71, 'SKONTO/ZAFRIST');
+end;
+
+{ 34: a lot group with its totals. }
+procedure TMapper.MapLotGroup(AIndex: Integer);
+var
+  G: TLandrixGaebXmlLotGrp;
+  No: TLandrixGaebString;
+  T: TLandrixGaebXmlTotals;
+begin
+  FUsed[AIndex] := True;
+  No := Str(AIndex, 3, 4);
+  if No = '' then
+  begin
+    FOrphans.Add('34 without LOSGRNR');
+    Exit;
+  end;
+  G := FG.Award.BoQ.LotGrp.Add;
+  G.Present := True;
+  G.ID := NewId('LGG');
+  G.LotGrNo := No;
+  FLastGrp := G;
+  FLastGrpNo := No;
+  if FLotGrpTable.Add(No, FLotGrpCount) then
+  begin
+    if FLotGrpCount >= Length(FLotGrps) then
+      SetLength(FLotGrps, 2 * FLotGrpCount + 16);
+    FLotGrps[FLotGrpCount] := G;
+    Inc(FLotGrpCount);
+  end
+  else
+    { references go to the first group of the number }
+    Inc(FLotTwice);
+  T := G.Totals;
+  NumField(AIndex, 5, 16, 2, 0, 'LOSGRSUM', T.Total);
+  NumField(AIndex, 24, 27, 2, 0, 'UST', T.VAT);
+  NumField(AIndex, 28, 39, 2, 0, 'ANGGRLOS', T.TotalGross);
+  NumField(AIndex, 54, 65, 2, 53, 'PAUSCH', T.TotalLSUM);
+  MapDiscount(AIndex, 17, 40, 41, T);
+  if T.Total.HasValue or T.TotalGross.HasValue or T.TotalLSUM.HasValue or T.VAT.HasValue then
+    T.Present := True;
+  Unmapped(AIndex, 66, 71, 'SKONTO/ZAFRIST');
+end;
+
+{ 35: the lots of a lot group (35 numbers of two columns from column 5). }
+procedure TMapper.MapLotGroupLots(AIndex: Integer);
+var
+  K, I: Integer;
+  Lot: TLandrixGaebString;
+  Ref: TLandrixGaebXmlRefBoQCtgy;
+  G: TLandrixGaebXmlLotGrp;
+begin
+  FUsed[AIndex] := True;
+  { the last 34 of the number, else the first one }
+  G := nil;
+  if (FLastGrp <> nil) and (FLastGrpNo = Str(AIndex, 3, 4)) then
+    G := FLastGrp
+  else
+  begin
+    K := FLotGrpTable.Find(Str(AIndex, 3, 4));
+    if K >= 0 then
+      G := FLotGrps[K];
+  end;
+  if G = nil then
+  begin
+    FOrphans.Add('35 without its 34');
+    Exit;
+  end;
+  for I := 0 to 34 do
+  begin
+    Lot := Str(AIndex, 5 + 2 * I, 6 + 2 * I);
+    if Lot = '' then
+      Continue;
+    Ref := G.RefLotNo.Add;
+    AddLotRef(Ref, Lot);
+  end;
+end;
+
+{ 45/46/47: the wage change of the award. }
+procedure TMapper.MapWage(AIndex: Integer);
+var
+  W90: TLandrixGaebXmlWgChange;
+  R: TLandrixGaebXmlWgChangeRefGroup;
+  S: TLandrixGaebString;
+  K: string;
+begin
+  FUsed[AIndex] := True;
+  K := FDoc.Kind(AIndex);
+  W90 := FG.Award.WgChange;
+  W90.Present := True;
+  if K = '46' then
+  begin
+    S := Str(AIndex, 3, 57);
+    { bounded: beyond 120 characters the text is cut anyway }
+    if (S <> '') and (Length(FWgLines) < 200) then
+    begin
+      if FWgLines <> '' then
+        FWgLines := FWgLines + ' ';
+      FWgLines := FWgLines + S;
+    end;
+    Exit;
+  end;
+  R := W90.RefGroup.Add;
+  R.Present := True;
+  if K = '47' then
+  begin
+    R.AddRefBoQ.IDRef := FG.Award.BoQ.ID;
+    Unmapped(AIndex, 3, 45, 'FILOAEND/AENDSATZ/AUFLOHN/SEBETEIL/ERSTLOHN');
+    Exit;
+  end;
+  if Str(AIndex, 12, 13) <> '' then
+    AddLotRef(R.AddRefLotNo, Str(AIndex, 12, 13))
+  else if Str(AIndex, 14, 15) <> '' then
+    AddGroupRef(R.AddRefLotGrNo, Str(AIndex, 14, 15))
+  else
+    { a group of the bill: GAEB DA XML refers to lots, groups of lots and
+      items only }
+    Unmapped(AIndex, 3, 11, 'OZ of a wage change');
+  Unmapped(AIndex, 16, 34, 'FILOAEND/AENDSATZ/AUFLOHN');
+end;
+
+{ The wage change after the references are resolved: GAEB DA XML needs
+  LblRefWage and at least one reference; without them it is left out.
+  DE: Die Lohnaenderung nach dem Aufloesen der Verweise: GAEB DA XML
+  verlangt LblRefWage und mindestens einen Verweis; ohne sie entfaellt
+  sie. }
+procedure TMapper.FinishWage;
+var
+  W90: TLandrixGaebXmlWgChange;
+  I, J: Integer;
+  HasRef: Boolean;
+begin
+  W90 := FG.Award.WgChange;
+  HasRef := False;
+  for I := 0 to Integer(W90.RefGroup.Count) - 1 do
+    if W90.RefGroup[I].HasChildren then
+      for J := 0 to Integer(W90.RefGroup[I].Children.Count) - 1 do
+        if W90.RefGroup[I].Children[J].IsPresent then
+          HasRef := True;
+  if (FWgLines = '') or not HasRef then
+  begin
+    W90.Clear;
+    W90.Present := False;
+    FOrphans.Add('wage change without LblRefWage (46) or a reference');
+    Exit;
+  end;
+  if Length(FWgLines) > 120 then
+  begin
+    Inc(FDiscountLost);
+    FWgLines := TrimW(Copy(FWgLines, 1, 120));
+  end;
+  W90.LblRefWage := FWgLines;
+end;
+
+procedure TMapper.AddLotRef(ARef: TLandrixGaebXmlRefBoQCtgy; const ALot: TLandrixGaebString);
+begin
+  if FLotRefCount >= Length(FLotRefs) then
+  begin
+    SetLength(FLotRefs, 2 * FLotRefCount + 16);
+    SetLength(FLotRefKeys, 2 * FLotRefCount + 16);
+  end;
+  FLotRefs[FLotRefCount] := ARef;
+  FLotRefKeys[FLotRefCount] := ALot;
+  Inc(FLotRefCount);
+end;
+
+procedure TMapper.AddGroupRef(ARef: TLandrixGaebXmlRefLotGrp; const AGroup: TLandrixGaebString);
+begin
+  if FGrpRefCount >= Length(FGrpRefs) then
+  begin
+    SetLength(FGrpRefs, 2 * FGrpRefCount + 16);
+    SetLength(FGrpRefKeys, 2 * FGrpRefCount + 16);
+  end;
+  FGrpRefs[FGrpRefCount] := ARef;
+  FGrpRefKeys[FGrpRefCount] := AGroup;
+  Inc(FGrpRefCount);
 end;
 
 { Required parts of GAEB DA XML without a source in GAEB 90 (owner
@@ -2653,6 +3235,32 @@ begin
   end;
   if From <> '' then
     Report(-1, RuleFilled, gsInformation, 'BoQInfo/Name (required, GAEB 90 has none) taken from ' + From);
+  { PrjInfo/NamePrj (required once PrjInfo holds anything): the first line
+    of PROBEZ, else VERGAG, else LVBEZ (owner decision 15.11.2026) }
+  From := '';
+  if (FG.PrjInfo.NamePrj = '') and not FG.PrjInfo.IsEmpty then
+  begin
+    if FG.PrjInfo.LblPrj <> '' then
+    begin
+      FG.PrjInfo.NamePrj := TrimW(Copy(FG.PrjInfo.LblPrj, 1, 60));
+      From := 'PROBEZ';
+    end
+    else if FVergag <> '' then
+    begin
+      FG.PrjInfo.NamePrj := FVergag;
+      From := 'VERGAG';
+    end
+    else if Info.LblBoQ <> '' then
+    begin
+      FG.PrjInfo.NamePrj := TrimW(Copy(Info.LblBoQ, 1, 60));
+      From := 'LVBEZ';
+    end;
+  end;
+  if From <> '' then
+    Report(-1, RuleFilled, gsInformation, 'PrjInfo/NamePrj (required, GAEB 90 has none) taken from ' + From)
+  else if (FG.PrjInfo.NamePrj = '') and FG.PrjInfo.IsEmpty then
+    { nothing for the project: PrjInfo (optional) is left out }
+    FG.PrjInfo.Present := False;
   Empty := 0;
   for I := 0 to FCtgyCount - 1 do
     if FCtgys[I].LblTx.Children.Count = 0 then
@@ -2744,7 +3352,17 @@ begin
     BoQ.BoQBody.Present := True;
     FRootBody := BoQ.BoQBody;
     FUsed[Header] := True;
+    for I := Header + 1 to FDoc.Count - 1 do
+      if FDoc.Kind(I) = '10' then
+      begin
+        FHasLots := True;
+        Break;
+      end
+      else if FDoc.Kind(I) = '00' then
+        Break;
     MapHeader00(Header);
+    if (FDoc.Field(Header, 74, 74) = 'X') <> FHasLots then
+      Report(Header, RuleLots, gsError, 'LOSKZ and the lots (10) of the file do not agree');
     { contract terms before the bill }
     I := 0;
     while I < Header do
@@ -2809,7 +3427,11 @@ begin
         Inc(I);
       end
       else if K = '11' then
-        MapGroup(I)
+      begin
+        if FHasLots and (FCurLot = '') then
+          Inc(FOutsideLot);
+        MapGroup(I);
+      end
       else if K = '31' then
       begin
         FUsed[I] := True;
@@ -2823,7 +3445,11 @@ begin
       else if K = '20' then
         MapRemark(I)
       else if (K = '21') or (K = '23') then
-        MapItem(I)
+      begin
+        if FHasLots and (FCurLot = '') then
+          Inc(FOutsideLot);
+        MapItem(I);
+      end
       else if K = '99' then
       begin
         MapClosing(I);
@@ -2832,6 +3458,31 @@ begin
       end
       else if K = '41' then
         MapPerf(I)
+      else if K = '10' then
+      begin
+        MapLot(I);
+        Inc(I);
+      end
+      else if K = '33' then
+      begin
+        MapLotEnd(I);
+        Inc(I);
+      end
+      else if K = '34' then
+      begin
+        MapLotGroup(I);
+        Inc(I);
+      end
+      else if K = '35' then
+      begin
+        MapLotGroupLots(I);
+        Inc(I);
+      end
+      else if (K = '45') or (K = '46') or (K = '47') then
+      begin
+        MapWage(I);
+        Inc(I);
+      end
       else if (K = 'T0') or (K = 'T1') or (K = 'T9') then
       begin
         if K = 'T9' then
@@ -2876,6 +3527,8 @@ begin
         FUsed[I] := True;
       end;
     ResolveRefs;
+    if FG.Award.WgChange.Present then
+      FinishWage;
     AddBreakdown;
     FillRequired;
 
@@ -2922,7 +3575,7 @@ begin
       Report(-1, RuleControl, gsWarning, IntToStr(FControl) + ' control character(s) removed (not allowed in XML)');
     if FUnresolved > 0 then
       Report(-1, RuleReference, gsWarning, IntToStr(FUnresolved) +
-        ' reference(s) of 28 (OZ, AUSNR) to a number not in the file; left out');
+        ' reference(s) (28, 35, 45) to a number not in the file; left out');
     if FRefKind > 0 then
       Report(-1, RuleRefKind, gsError, IntToStr(FRefKind) +
         ' position(s) whose WIEVOR does not fit the reference of their 28');
@@ -2935,6 +3588,16 @@ begin
     if FIncompletePerf > 0 then
       Report(-1, RuleOrphan, gsWarning, IntToStr(FIncompletePerf) +
         ' execution description(s) (41) without AUSNR, AUSBEZ or text, which PerfDescr requires; kept');
+    if FOutsideLot > 0 then
+      Report(-1, RuleLots, gsError, IntToStr(FOutsideLot) +
+        ' group(s) or position(s) outside any lot in a file with lots');
+    if FLotTwice > 0 then
+      Report(-1, RuleLots, gsError, IntToStr(FLotTwice) +
+        ' lot or lot group number(s) used a second time; references go to the first');
+    if FDiscountLost > 0 then
+      Report(-1, RuleDiscount, gsWarning, IntToStr(FDiscountLost) +
+        ' discount(s), cash discount(s) or wage change text(s) the model cannot carry as they are; ' +
+        'left out or cut');
     if FContractInside > 0 then
       Report(-1, RuleContractInside, gsWarning, IntToStr(FContractInside) +
         ' block(s) of contract terms (T0 to T9) inside the bill; read as Award/AddText');

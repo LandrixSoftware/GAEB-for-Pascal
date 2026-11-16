@@ -214,7 +214,8 @@ begin
     CheckEqualsGaebStr('01', C2.RNoPart, 'derived sub category');
     CheckEquals(1, Integer(C2.LblTx.Children.Count), 'empty label of a derived category');
     CheckEqualsGaebStr('V-1', Info.Name, 'BoQInfo/Name from VERGAG');
-    CheckEquals(2, Diags.CountOf('GAEB-D90-MAP-014'), 'Name and empty labels reported');
+    CheckEqualsGaebStr('Neubau Halle', G.PrjInfo.NamePrj, 'NamePrj from PROBEZ');
+    CheckEquals(3, Diags.CountOf('GAEB-D90-MAP-014'), 'Name, NamePrj and empty labels reported');
     It := TLandrixGaebXmlItem(C2.BoQBody.Itemlist.Children[0]);
     CheckEqualsGaebStr('10', It.RNoPart, 'item part without spaces');
     CheckEqualsGaebStr('A', It.RNoIndex, 'index');
@@ -609,6 +610,223 @@ begin
   end;
 end;
 
+{ Part 2b-2: lots on a level of their own, lot groups, wage changes,
+  discounts, cash discount. }
+procedure TestLotsAndMoney;
+var
+  Diags: TLandrixGaebDiagnostics;
+  G: TLandrixGaebXmlGAEB;
+  T: TLandrixGaebTarget;
+  S: AnsiString;
+  Lot1, Lot2, C: TLandrixGaebXmlBoQCtgy;
+  It, It2: TLandrixGaebXmlItem;
+  Info: TLandrixGaebXmlBoQInfo;
+begin
+  NextNo := 0;
+  S := R(F(F(F(B('00'), 11, '83L'), 63, '11PPPP000'), 74, 'X')) +
+    R(F(F(B('10'), 3, '01'), 5, 'Rohbau')) +
+    R(F(F(B('11'), 3, '01'), 12, 'N')) +
+    R(F(F(F(F(B('21'), 3, '010010'), 12, 'NNN'), 24, '00000001000'), 35, 'm3')) +
+    R(F(F(F(B('23'), 3, '010010'), 13, '0000010000'), 49, '0980000')) +
+    R(F(F(F(B('32'), 3, '01'), 13, '000000100000'), 25, '0980000')) +
+    R(F(F(F(F(B('33'), 3, '01'), 5, '000000100000'), 40, '-'), 41, '000000002000')) +
+    R(F(F(B('10'), 3, '02'), 5, 'Ausbau')) +
+    R(F(F(B('11'), 3, '01'), 12, 'N')) +
+    R(F(F(F(F(B('21'), 3, '010010'), 12, 'NNN'), 24, '00000001000'), 35, 'm3')) +
+    R(F(F(F(B('21'), 3, '010020'), 12, 'NNN'), 21, 'W')) +
+    R(F(F(B('28'), 3, 'wie'), 58, '010010')) +
+    R(F(F(F(F(B('32'), 3, '01'), 13, '000000050000'), 25, '1020000'), 46, '000000040000')) +
+    R(F(F(B('33'), 3, '02'), 5, '000000050000')) +
+    R(F(F(B('34'), 3, '01'), 5, '000000150000')) +
+    R(F(F(F(B('35'), 3, '01'), 5, '01'), 7, '02')) +
+    R(F(B('46'), 3, 'Ecklohn Facharbeiter')) +
+    R(F(F(B('45'), 12, '01'), 19, '0005')) +
+    R(F(B('47'), 6, '0005')) +
+    R(F(F(F(F(B('99'), 3, '000000150000'), 15, '0980000'), 64, '0300'), 68, '14')) +
+    R(F(F(B('21'), 3, '010030'), 12, 'NNN'));
+  Diags := TLandrixGaebDiagnostics.Create;
+  G := MapText(S, Diags, T);
+  try
+    Info := G.Award.BoQ.BoQInfo;
+    CheckEquals(3, Integer(Info.BoQBkdn.Count), 'lot, level, item (no index)');
+    CheckEqualsGaebStr('Lot', Info.BoQBkdn[0].TypeElement, 'lot level on top');
+    CheckEqualsGaebStr('2', Info.BoQBkdn[0].LengthElement, 'lot length');
+    Lot1 := TLandrixGaebXmlBoQCtgy(G.Award.BoQ.BoQBody.Children[0]);
+    Lot2 := TLandrixGaebXmlBoQCtgy(G.Award.BoQ.BoQBody.Children[1]);
+    CheckEqualsGaebStr('01', Lot1.RNoPart, 'lot 01');
+    CheckEqualsGaebStr('02', Lot2.RNoPart, 'lot 02');
+    CheckEquals(1, Integer(Lot1.LblTx.Children.Count), 'LOSBEZ');
+    CheckEqualsGaebStr('1000.00', LandrixXmlUtf8ToWide(Lot1.Totals.Total.Text), 'LOSUMME');
+    CheckEqualsGaebStr('20.00', LandrixXmlUtf8ToWide(Lot1.Totals.DiscountAmt.Text), 'AUFABDM with minus: discount');
+    CheckEqualsGaebStr('980.00', LandrixXmlUtf8ToWide(Lot1.Totals.TotAfterDisc.Text), 'total after the discount');
+    C := TLandrixGaebXmlBoQCtgy(Lot1.BoQBody.Children[0]);
+    CheckEqualsGaebStr('2.000000', LandrixXmlUtf8ToWide(C.Totals.DiscountPcnt.Text), 'factor 0.98: 2 percent');
+    CheckEqualsGaebStr('980.00', LandrixXmlUtf8ToWide(C.Totals.TotAfterDisc.Text), 'group total after');
+    It := TLandrixGaebXmlItem(C.BoQBody.Itemlist.Children[0]);
+    CheckEqualsGaebStr('2.000000', LandrixXmlUtf8ToWide(It.DiscountPcnt.Text), 'item factor');
+    { the same number in the second lot is another item; 28 refers within the lot }
+    C := TLandrixGaebXmlBoQCtgy(Lot2.BoQBody.Children[0]);
+    It2 := TLandrixGaebXmlItem(C.BoQBody.Itemlist.Children[1]);
+    CheckEqualsGaebStr(TLandrixGaebXmlItem(C.BoQBody.Itemlist.Children[0]).ID, It2.RefRNo.IDRef,
+      'reference within the lot');
+    Check(not C.Totals.DiscountPcnt.HasValue, 'no discount beside a lump sum');
+    CheckEquals(1, Integer(G.Award.BoQ.LotGrp.Count), 'lot group');
+    CheckEqualsGaebStr('01', G.Award.BoQ.LotGrp[0].LotGrNo, 'LOSGRNR');
+    CheckEquals(2, Integer(G.Award.BoQ.LotGrp[0].RefLotNo.Count), 'two lots');
+    CheckEqualsGaebStr(Lot2.ID, G.Award.BoQ.LotGrp[0].RefLotNo[1].IDRef, 'lot reference');
+    CheckEqualsGaebStr('Ecklohn Facharbeiter', G.Award.WgChange.LblRefWage, 'LAENTEXT');
+    CheckEquals(2, Integer(G.Award.WgChange.RefGroup.Count), 'wage change of a lot and of the bill');
+    CheckEqualsGaebStr('2.000000', LandrixXmlUtf8ToWide(Info.Totals.DiscountPcnt.Text), 'bill factor 0.98');
+    CheckEqualsGaebStr('1470.00', LandrixXmlUtf8ToWide(Info.Totals.TotAfterDisc.Text), 'bill total after');
+    CheckEquals(1, Integer(G.Award.AwardInfo.CashDiscount.Count), 'cash discount');
+    CheckEqualsGaebStr('3.00', LandrixXmlUtf8ToWide(G.Award.AwardInfo.CashDiscount[0].DiscountPcnt.Text), 'SKONTO');
+    CheckEqualsGaebStr('14', G.Award.AwardInfo.CashDiscount[0].CashDiscDays.Days, 'ZAFRIST');
+    CheckEquals(1, Diags.CountOf('GAEB-BR-D90-017'), 'position outside the lots');
+    CheckEquals(1, Diags.CountOf('GAEB-D90-MAP-017'), 'discount beside a lump sum');
+    CheckEquals(0, Diags.CountOf('GAEB-D90-MAP-016'), 'all references resolved');
+  finally
+    G.Free;
+    Diags.Free;
+  end;
+end;
+
+{ Lot and lot group numbers used twice, totals twice, remarks around the end
+  of a lot, a wage change without references, a factor 0. }
+procedure TestLotsReview;
+var
+  Diags: TLandrixGaebDiagnostics;
+  G: TLandrixGaebXmlGAEB;
+  T: TLandrixGaebTarget;
+  S: AnsiString;
+  I: Integer;
+  Body: TLandrixGaebXmlBoQBody;
+  Lot1, Lot2, Lot3, C: TLandrixGaebXmlBoQCtgy;
+  It: TLandrixGaebXmlItem;
+begin
+  NextNo := 0;
+  S := R(F(F(F(B('00'), 11, '83L'), 63, '11PPPP000'), 74, 'X')) +
+    R(F(F(B('10'), 3, '01'), 5, 'Rohbau')) +
+    R(F(F(B('11'), 3, '01'), 12, 'N')) +
+    R(F(F(F(F(B('21'), 3, '010010'), 12, 'NNN'), 24, '00000001000'), 35, 'm3')) +
+    R(F(F(B('21'), 3, '010050'), 12, 'NNN')) +
+    R(B('20')) + R(F(B('26'), 6, 'Hinweis im Los')) +
+    R(F(F(B('32'), 3, '01'), 13, '000000010000')) +
+    R(F(F(B('32'), 3, '01'), 46, '000000020000')) +
+    R(F(F(F(B('33'), 3, '01'), 5, '000000010000'), 17, '0000000')) +
+    R(B('20')) + R(F(B('26'), 6, 'Hinweis nach dem Los')) +
+    R(F(F(B('10'), 3, '02'), 5, 'Ausbau')) +
+    R(F(F(B('11'), 3, '01'), 12, 'N')) +
+    R(F(F(B('21'), 3, '010010'), 12, 'NNN')) +
+    R(B('20')) + R(F(B('26'), 6, 'Hinweis vor 11 ohne Nummer')) +
+    R(F(B('11'), 12, 'N')) +
+    R(F(F(F(B('21'), 3, '010020'), 12, 'NNN'), 21, 'W')) +
+    R(F(F(B('28'), 3, 'wie'), 58, '010050')) +
+    R(F(B('32'), 13, '000000099900')) +
+    R(F(F(B('33'), 3, '02'), 5, '000000020000')) +
+    R(F(F(B('10'), 3, '01'), 5, 'Rohbau 2')) +
+    R(F(F(B('11'), 3, '01'), 12, 'N')) +
+    R(F(F(B('21'), 3, '010010'), 12, 'NNN')) +
+    R(F(F(B('21'), 3, '010050'), 12, 'NNN')) +
+    R(F(F(B('32'), 3, '01'), 13, '000000030000')) +
+    R(F(F(B('33'), 3, '01'), 5, '000000030000')) +
+    R(F(F(B('34'), 3, '01'), 5, '000000060000')) +
+    R(F(F(B('34'), 3, '01'), 5, '000000060000')) +
+    R(F(F(B('34'), 3, '05'), 5, '000000060000')) +
+    R(F(F(F(B('35'), 3, '05'), 5, '01'), 7, '02')) +
+    R(F(F(B('35'), 3, '01'), 5, '02')) +
+    R(F(B('46'), 3, 'Ecklohn')) +
+    R(F(B('99'), 3, '000000060000'));
+  Diags := TLandrixGaebDiagnostics.Create;
+  G := MapText(S, Diags, T);
+  try
+    Body := G.Award.BoQ.BoQBody;
+    CheckEquals(4, Integer(Body.Children.Count), 'three lots and the remark after the first');
+    Check(Body.Children[1] is TLandrixGaebXmlRemark, 'remark after the end of a lot: on top');
+    Lot1 := TLandrixGaebXmlBoQCtgy(Body.Children[0]);
+    Lot2 := TLandrixGaebXmlBoQCtgy(Body.Children[2]);
+    Lot3 := TLandrixGaebXmlBoQCtgy(Body.Children[3]);
+    CheckEqualsGaebStr('01', Lot3.RNoPart, 'the lot number again');
+    C := TLandrixGaebXmlBoQCtgy(Lot1.BoQBody.Children[0]);
+    CheckEquals(3, Integer(C.BoQBody.Itemlist.Children.Count), 'remark before the end of a lot: in it');
+    It := TLandrixGaebXmlItem(C.BoQBody.Itemlist.Children[1]);
+    CheckEqualsGaebStr('100.00', LandrixXmlUtf8ToWide(C.Totals.Total.Text), 'first 32 counts');
+    Check(not C.Totals.TotalLSUM.HasValue, 'second 32 not mapped');
+    CheckEqualsGaebStr('100.00', LandrixXmlUtf8ToWide(Lot1.Totals.Total.Text), 'first lot keeps its totals');
+    Check(not Lot1.Totals.DiscountPcnt.HasValue, 'factor 0 is none');
+    CheckEqualsGaebStr('200.00', LandrixXmlUtf8ToWide(Lot2.Totals.Total.Text), 'second lot');
+    CheckEqualsGaebStr('300.00', LandrixXmlUtf8ToWide(Lot3.Totals.Total.Text), '33 of the open lot');
+    C := TLandrixGaebXmlBoQCtgy(Lot3.BoQBody.Children[0]);
+    CheckEqualsGaebStr('300.00', LandrixXmlUtf8ToWide(C.Totals.Total.Text), '32 of the open group');
+    Check(C.LblTx.IsPresent, 'LblTx of a group in a reopened lot');
+    CheckEquals(1, Integer(Lot2.BoQBody.Children.Count), '11 without number: no new group');
+    C := TLandrixGaebXmlBoQCtgy(Lot2.BoQBody.Children[0]);
+    CheckEquals(3, Integer(C.BoQBody.Itemlist.Children.Count), 'remark before an 11 without number stays');
+    CheckEqualsGaebStr(It.ID, TLandrixGaebXmlItem(C.BoQBody.Itemlist.Children[2]).RefRNo.IDRef,
+      'reference into another lot');
+    CheckEquals(2, Integer(G.Award.BoQ.LotGrp.Count), 'the first 34 without lots left out');
+    CheckEquals(1, Integer(G.Award.BoQ.LotGrp[0].RefLotNo.Count), '35 to the last 34 of its number');
+    CheckEqualsGaebStr('05', G.Award.BoQ.LotGrp[1].LotGrNo, 'groups after the left out one in order');
+    Check(Pos('32 without its group', DiagnosticText(Diags, 'GAEB-D90-MAP-009')) > 0, '32 without a number');
+    Check(Pos('34 without a lot', DiagnosticText(Diags, 'GAEB-D90-MAP-009')) > 0, 'group without lots reported');
+    Check(not G.PrjInfo.IsPresent, 'PrjInfo without anything left out');
+    Check(not G.Award.WgChange.IsPresent, 'wage change without a reference left out');
+    Check(Pos('used a second time', DiagnosticText(Diags, 'GAEB-BR-D90-017')) > 0, 'numbers twice');
+    Check(Pos('32 a second time', DiagnosticText(Diags, 'GAEB-D90-MAP-002')) > 0, '32 twice');
+    Check(Pos('wage change', DiagnosticText(Diags, 'GAEB-D90-MAP-009')) > 0, 'wage change reported');
+  finally
+    G.Free;
+    Diags.Free;
+  end;
+  { phase 84 takes a lot group without lots; a description of the project
+    alone gets NamePrj from VERGAG }
+  NextNo := 0;
+  S := R(F(F(F(F(B('00'), 11, '84L'), 63, '11PPPP000'), 74, 'X'), 14, 'Vergabe 7')) +
+    R(B('02')) + R(F(B('02'), 3, 'Projektzeile')) +
+    R(F(F(B('10'), 3, '01'), 5, 'Rohbau')) +
+    R(F(F(B('11'), 3, '01'), 12, 'N')) +
+    R(F(F(B('21'), 3, '010010'), 12, 'NNN')) +
+    R(F(F(B('33'), 3, '01'), 5, '000000010000')) +
+    R(F(F(B('34'), 3, '07'), 5, '000000010000')) +
+    R(F(B('46'), 3, 'Ecklohn')) +
+    R(F(B('45'), 14, '07')) +
+    R(F(B('99'), 3, '000000010000'));
+  G := MapText(S, nil, T);
+  try
+    CheckEquals(1, Integer(G.Award.BoQ.LotGrp.Count), 'phase 84: lot group without lots kept');
+    Check(G.Award.WgChange.IsPresent, 'wage change of the lot group');
+    CheckEqualsGaebStr('Vergabe 7', G.PrjInfo.NamePrj, 'NamePrj from VERGAG');
+  finally
+    G.Free;
+  end;
+  { a 47 without 46, and many 46 }
+  NextNo := 0;
+  S := R(F(F(B('00'), 11, '83L'), 63, '11PPPP000')) +
+    R(F(F(F(B('21'), 3, '010010'), 12, 'NNN'), 21, ' ')) +
+    R(F(B('47'), 6, '0005')) + R(B('99'));
+  G := MapText(S, nil, T);
+  try
+    Check(not G.Award.WgChange.IsPresent, 'wage change without LblRefWage left out');
+  finally
+    G.Free;
+  end;
+  NextNo := 0;
+  S := R(F(F(B('00'), 11, '83L'), 63, '11PPPP000')) +
+    R(F(F(B('21'), 3, '010010'), 12, 'NNN'));
+  for I := 1 to 5000 do
+    S := S + R(F(B('46'), 3, 'Ecklohn Facharbeiter'));
+  S := S + R(F(B('47'), 6, '0005')) + R(B('99'));
+  Diags := TLandrixGaebDiagnostics.Create;
+  G := MapText(S, Diags, T);
+  try
+    Check(G.Award.WgChange.IsPresent, 'wage change with label and reference');
+    Check(Length(G.Award.WgChange.LblRefWage) <= 120, 'LblRefWage cut');
+    CheckEquals(1, Diags.CountOf('GAEB-D90-MAP-017'), 'cut reported');
+  finally
+    G.Free;
+    Diags.Free;
+  end;
+end;
+
 { Remarks in a row and the look-ahead: linear time. }
 procedure TestManyRemarks;
 var
@@ -766,9 +984,10 @@ begin
       { element paths only, never messages or values }
       if GetEnvironmentVariable('LANDRIX_CHECKPATHS') <> '' then
         AddRule('check ' + CheckDiags[I].RuleId + ' ' + StripIndexes(CheckDiags[I].Path));
-      { the messages of these two name elements only }
+      { the messages of these name elements and XSD codes only }
       if (GetEnvironmentVariable('LANDRIX_CHECKPATHS') = '2') and
-        ((CheckDiags[I].RuleId = 'GAEB-CHK-001') or (CheckDiags[I].RuleId = 'GAEB-CHK-002')) then
+        ((CheckDiags[I].RuleId = 'GAEB-CHK-001') or (CheckDiags[I].RuleId = 'GAEB-CHK-002') or
+        (CheckDiags[I].RuleId = 'GAEB-CHK-006')) then
         AddRule('message ' + StringReplace(CheckDiags[I].Message, ' ', '_', [rfReplaceAll]));
     end;
   finally
@@ -842,6 +1061,8 @@ begin
   RegisterTest('DA90Mapping.ReviewCases', TestReviewCases);
   RegisterTest('DA90Mapping.ReviewCases2', TestReviewCases2);
   RegisterTest('DA90Mapping.DescriptionsAndRefs', TestDescriptionsAndRefs);
+  RegisterTest('DA90Mapping.LotsAndMoney', TestLotsAndMoney);
+  RegisterTest('DA90Mapping.LotsReview', TestLotsReview);
   RegisterTest('DA90Mapping.ManyRemarks', TestManyRemarks);
   RegisterTest('DA90Mapping.Rejected', TestRejected);
   RegisterTest('Local.DA90Map', TestLocalMap);
