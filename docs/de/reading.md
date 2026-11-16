@@ -27,7 +27,7 @@ Ausnahmen:
 
 | Ausnahme | Wann |
 |---|---|
-| `ELandrixGaebError` | kein GAEB DA XML (auch XML, das in dem Teil, den die Erkennung liest, nicht wohlgeformt ist), ein Ziel, das nicht gelesen werden kann, Eingabe über der Grenze |
+| `ELandrixGaebError` | kein GAEB DA XML, GAEB DA 2000 oder GAEB 90 (auch XML, das in dem Teil, den die Erkennung liest, nicht wohlgeformt ist), ein Ziel, das nicht gelesen werden kann, Eingabe über der Grenze |
 | `ELandrixXmlError` (Unit `LandrixXmlBase`) | XML, das sich später als nicht wohlgeformt erweist, mit Zeile und Spalte |
 | `EFOpenError`, `EReadError` | Dateifehler der Laufzeitbibliothek |
 
@@ -119,6 +119,75 @@ der vollständige Text (`DetailAddText`) und ein `Text` daneben der kurze (`Outl
 `LandrixGaebDA2000ReadFile` (und `...Stream`, `...Buffer`) liefern nur das Syntaxmodell, wie
 es abgebildet ist (keine Summen berechnet), mit der Erkennung der Datei und dem Ziel des Modells.
 
+## GAEB 90
+
+Seit 1.4 lesen `LoadFromFile` und `LoadFromStream` auch GAEB-90-Dateien der Austauschphasen 81
+bis 86 (`.D81` bis `.D86`, am Inhalt erkannt: Sätze zu 80 Spalten). Wie bei GAEB DA 2000 wird
+die Datei in das Syntaxmodell GAEB DA XML 3.3 abgebildet (`Target` und `OutputTarget`
+3.3/2021-05 mit der Phase der Datei); `SourceFormat` ist `gfDA90`, `Source.SourcePhase` der
+`DP` und `Source.SourceVersion` das `VERSDTA` des Satzes `00` wie gefunden. Der Hinweis
+`GAEB-BOQ-003` vermerkt das Lesen.
+
+```pascal
+Options := LandrixGaebDA90DefaultReadOptions;
+Options.Charset := gcsOem;          // die Datei ist OEM ...
+Options.OemCodePage := gocCp437;    // ... in Codepage 437
+Bill := TLandrixGaebBillOfQuantities.LoadFromDA90File('anfrage.d83', Options, Diags);
+```
+
+GAEB 90 gibt keinen Zeichensatz an. Standardmäßig (`Charset` = `gcsUnknown`) bedeutet eine
+UTF-8-Bytereihenfolgemarke oder gültiges UTF-8 UTF-8, sonst entscheiden die Umlaute der ganzen
+Datei zwischen ANSI (Windows-1252) und OEM (`OemCodePage`, Standard 850); die Wahl wird als
+`GAEB-D90-FILE-001` gemeldet, `Source.SourceCharset` bleibt `gcsUnknown`. `Charset` und
+`OemCodePage` übersteuern die Entscheidung (Unit `LandrixGaebDA90Reader`; immer mit
+`LandrixGaebDA90DefaultReadOptions` beginnen); die Erkennung des Formats, die auf die Bytes
+schaut, ändern sie nicht.
+
+Fehlende Summen werden wie bei GAEB DA 2000 berechnet. Ein Angebot (84) zählt nach den Arten
+seiner Sätze `21`; stammt eine Position aus einem `23` ohne `21`, hat sie keine Art, und die
+fehlenden Summen des Angebots werden nicht berechnet (Warnung `GAEB-BOQ-004`).
+
+Die Abbildung folgt den Sätzen: Kopfsätze `00` bis `08`, die Gliederung aus Ordnungszahlen und
+`OZMASKE` (Bereiche ohne Satz `11` werden abgeleitet), Positionen, Preise, Texte mit
+Textergänzungen, Unterbeschreibungen, Teilmengen, Bezüge, Ausführungsbeschreibungen,
+`STLB-Bau`, Vertragsbedingungen (`T0` bis `T9`), Lose und Losgruppen (eine Stufe `Lot` über den
+Stufen der Maske), Lohnänderungen, Nachlässe und Skonto. Was kein Gegenstück hat, wird je
+Satzart oder Feld einmal mit Anzahl gemeldet (`GAEB-D90-MAP-001`, `-002`); die Meldungen nennen
+Satzarten, Felder und Zeilen, nie Werte. `ELandrixGaebError` wird ausgelöst für Eingaben, die
+kein GAEB 90 sind, eine Datei ohne Satz `00` und andere Phasen als 81 bis 86 (etwa 88).
+
+In Teile zerlegte Dateien (`.001`, `.002`, ...) werden nicht zusammengefügt: ein späterer Teil
+hat keinen Satz `00` und wird abgewiesen. Teile nur zusammenfügen, wo bekannt ist, wie sie
+geschnitten wurden.
+
+### Toleranzen
+
+| Regel | Schwere | Was geschieht |
+|---|---|---|
+| `GAEB-D90-FILE-001` | Hinweis | Zeichensatz und wie er gewählt wurde |
+| `GAEB-D90-FILE-002` | Warnung | Umlaute von ANSI und OEM in einer Datei |
+| `GAEB-D90-FILE-003` | Hinweis | Zeilenenden LF, CR LF, CR und CR CR LF, mit `NUL NUL` verkettete Sätze, Ctrl-Z am Ende, Leerzeilen, Bytereihenfolgemarke |
+| `GAEB-D90-FILE-004` | Hinweis / Warnung | Sätze kürzer (mit Leerzeichen aufgefüllt) oder länger (gekürzt) als 80 Spalten |
+| `GAEB-D90-FILE-005` | Warnung | `NUL` oder Ctrl-Z in Sätzen (als Leerzeichen gelesen), Bytes, die kein gültiges UTF-8 sind |
+| `GAEB-BR-D90-002` | Warnung | Satznummern fehlen oder sind nicht lückenlos |
+| `GAEB-BR-D90-013` | Warnung | Vertragsbedingungen mitten im LV (als `Award/AddText` gelesen) |
+| `GAEB-BR-D90-014` | Hinweis | Satzarten, die GAEB 90 nicht definiert (freier Bereich 70 bis 89, Herstellersätze), werden übersprungen |
+| `GAEB-D90-MAP-004` | Warnung | Kennzeichen außerhalb der Werte von GAEB 90 |
+| `GAEB-D90-MAP-008` | Warnung / Hinweis | Zahlen, die keine Ziffern sind, werden ausgelassen; Leerzeichen statt führender Nullen werden gelesen |
+| `GAEB-D90-MAP-009` | Warnung | Sätze ohne den Satz, zu dem sie gehören, werden ausgelassen |
+| `GAEB-D90-MAP-014` | Hinweis | Pflichtteile, für die GAEB 90 keine Quelle hat, werden gefüllt (`BoQInfo/Name`, `PrjInfo/NamePrj`, ein leeres `LblTx`); `GAEBInfo/Date` bleibt fehlend |
+| `GAEB-D90-MAP-016` | Warnung | Bezüge (`28`, `35`, `45`) auf eine Nummer, die nicht in der Datei steht, werden ausgelassen |
+
+Der Kopf der Unit `LandrixGaebDA90Mapping` nennt alle Regeln mit ihrer Schwere. Das aus der
+`.D83` eines LV gelesene Modell gleicht dem aus seiner von der GAEB-Toolbox geschriebenen `.X83`,
+abgesehen von IDs, Textformatierung und Abweichungen, wo GAEB 90 keine Quelle hat oder die
+Toolbox eigenen Konventionen folgt: `PrjInfo/NamePrj` und `BoQInfo/Name` (gefüllt, siehe
+`GAEB-D90-MAP-014`), eine Postleitzahl, die die Toolbox aus der Namenszeile des Auftraggebers nimmt, Namen
+und `Num` der Gliederungsstufen, der Umsatzsteuersatz aus Satz `99` (X83 trägt keine Summen) und
+`LumpSumItem` für die Einheit `psch`.
+`LandrixGaebDA90ReadFile` (und `...Stream`, `...Buffer`) liefern nur das Syntaxmodell, wie es
+abgebildet ist (keine Summen berechnet).
+
 ## Der Baum
 
 | Mitglied | Inhalt |
@@ -189,5 +258,6 @@ Ohne Fassade liest `LandrixGaebXmlReadFile` (Unit `LandrixGaebXmlReader`) in ein
 `TLandrixGaebXmlGAEB` und liefert die Erkennung (Format, Ziel). `LandrixGaebDetectFile` (Unit
 `LandrixGaebDetect`) erkennt nur Format und Ziel, auch für GAEB DA 2000 und GAEB 90. Für
 GAEB DA 2000 meldet sie zusätzlich den Kopf wie gefunden: `SourceVersion` (1.0, 1.1, 1.2),
-`SourcePhase` (DP, auch für Phasen ohne XML-Gegenstück) und `SourceCharset` (`Zeichensatz`);
-`Target` bleibt leer, es beschreibt nur GAEB DA XML. GAEB DA 2000 lesen: siehe oben.
+`SourcePhase` (DP, auch für Phasen ohne XML-Gegenstück) und `SourceCharset` (`Zeichensatz`), für
+GAEB 90 `SourceVersion` (`VERSDTA`) und `SourcePhase` (`DP`) des Satzes `00`. `Target` bleibt
+leer, es beschreibt nur GAEB DA XML. GAEB DA 2000 und GAEB 90 lesen: siehe oben.

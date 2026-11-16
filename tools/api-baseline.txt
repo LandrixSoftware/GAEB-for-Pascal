@@ -93,6 +93,8 @@ LandrixGaebBoQ: record tlandrixgaebtextevent
 LandrixGaebBoQ: record tlandrixgaebvatpart
 LandrixGaebBoQ: tlandrixgaebbillofquantities class function loadfromda2000file(const string, const tlandrixgaebda2000readoptions, tlandrixgaebdiagnostics): tlandrixgaebbillofquantities
 LandrixGaebBoQ: tlandrixgaebbillofquantities class function loadfromda2000stream(tstream, const tlandrixgaebda2000readoptions, tlandrixgaebdiagnostics): tlandrixgaebbillofquantities
+LandrixGaebBoQ: tlandrixgaebbillofquantities class function loadfromda90file(const string, const tlandrixgaebda90readoptions, tlandrixgaebdiagnostics): tlandrixgaebbillofquantities
+LandrixGaebBoQ: tlandrixgaebbillofquantities class function loadfromda90stream(tstream, const tlandrixgaebda90readoptions, tlandrixgaebdiagnostics): tlandrixgaebbillofquantities
 LandrixGaebBoQ: tlandrixgaebbillofquantities class function loadfromfile(const string, tlandrixgaebdiagnostics, int64): tlandrixgaebbillofquantities
 LandrixGaebBoQ: tlandrixgaebbillofquantities class function loadfromstream(tstream, tlandrixgaebdiagnostics, int64): tlandrixgaebbillofquantities
 LandrixGaebBoQ: tlandrixgaebbillofquantities constructor create(tlandrixgaebxmlgaeb, const tlandrixgaebtarget, boolean)
@@ -423,6 +425,17 @@ LandrixGaebDA2000Reader: function landrixgaebda2000readstream(tstream, const tla
 LandrixGaebDA2000Reader: record tlandrixgaebda2000readoptions
 LandrixGaebDA2000Reader: tlandrixgaebda2000readoptions field charset: tlandrixgaebcharset
 LandrixGaebDA2000Reader: tlandrixgaebda2000readoptions field maxsize: int64
+LandrixGaebDA90Reader: enum tlandrixgaeboemcodepage
+LandrixGaebDA90Reader: enum tlandrixgaeboemcodepage value goccp437
+LandrixGaebDA90Reader: enum tlandrixgaeboemcodepage value goccp850
+LandrixGaebDA90Reader: function landrixgaebda90defaultreadoptions(): tlandrixgaebda90readoptions
+LandrixGaebDA90Reader: function landrixgaebda90readbuffer(pointer, integer, const tlandrixgaebda90readoptions, tlandrixgaebdiagnostics, out tlandrixgaebdetection, out tlandrixgaebtarget): tlandrixgaebxmlgaeb
+LandrixGaebDA90Reader: function landrixgaebda90readfile(const string, const tlandrixgaebda90readoptions, tlandrixgaebdiagnostics, out tlandrixgaebdetection, out tlandrixgaebtarget): tlandrixgaebxmlgaeb
+LandrixGaebDA90Reader: function landrixgaebda90readstream(tstream, const tlandrixgaebda90readoptions, tlandrixgaebdiagnostics, out tlandrixgaebdetection, out tlandrixgaebtarget): tlandrixgaebxmlgaeb
+LandrixGaebDA90Reader: record tlandrixgaebda90readoptions
+LandrixGaebDA90Reader: tlandrixgaebda90readoptions field charset: tlandrixgaebcharset
+LandrixGaebDA90Reader: tlandrixgaebda90readoptions field maxsize: int64
+LandrixGaebDA90Reader: tlandrixgaebda90readoptions field oemcodepage: tlandrixgaeboemcodepage
 LandrixGaebDetect: const landrixgaebdefaultmaxsize (integer)
 LandrixGaebDetect: enum tlandrixgaebformat
 LandrixGaebDetect: enum tlandrixgaebformat value gfda2000

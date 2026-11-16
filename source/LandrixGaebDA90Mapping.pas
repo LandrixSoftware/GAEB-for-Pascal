@@ -187,6 +187,8 @@ uses
   LandrixGaebTypes,
   LandrixGaebDiagnostics,
   LandrixGaebXmlModel,
+  LandrixGaebCharsets,
+  LandrixGaebDetect,
   LandrixGaebDA90Parser;
 
 { Maps ADocument into a new GAEB DA XML 3.3 document. ATarget is
@@ -202,6 +204,41 @@ uses
   in unbrauchbarer Form enthaelt. }
 function LandrixGaebDA90Map(ADocument: TLandrixGaebDA90Document;
   ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+
+{ Reads a GAEB 90 file held in Buffer: detection, record reader and
+  mapping. AMaxSize <= 0 means LandrixGaebDefaultMaxSize; ACharset and
+  AOemCodePage as in LandrixGaebDA90Parse. ADetection describes the input,
+  ATarget the returned document. AItemsWithoutKind receives the number of
+  items and markup items made from a 23 without 21 (phase 84), which carry
+  no kind (basic, alternative, contingency). Raises ELandrixGaebError for input larger
+  than AMaxSize, input that is no GAEB 90 and the errors of the record
+  reader and the mapping. The caller owns the result.
+  DE: Liest eine GAEB-90-Datei aus Buffer: Erkennung, Satzleser und
+  Abbildung. AMaxSize <= 0 bedeutet LandrixGaebDefaultMaxSize; ACharset und
+  AOemCodePage wie bei LandrixGaebDA90Parse. ADetection beschreibt die
+  Eingabe, ATarget das gelieferte Dokument. AItemsWithoutKind erhaelt die
+  Zahl der Positionen und Zuschlagspositionen aus einem 23 ohne 21 (Phase
+  84), die keine Art
+  (Grund-, Alternativ-, Eventualposition) tragen. Loest ELandrixGaebError
+  aus fuer Eingaben ueber AMaxSize, Eingaben, die kein GAEB 90 sind, und
+  die Fehler von Satzleser und Abbildung. Das Ergebnis gehoert dem
+  Aufrufer. }
+function LandrixGaebDA90ReadMapped(Buffer: Pointer; Size: Integer; AMaxSize: Int64;
+  ACharset: TLandrixGaebCharset; AOemCodePage: TLandrixGaebCodePage;
+  ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out AItemsWithoutKind: Integer; out ADetection: TLandrixGaebDetection;
+  out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+
+{ The same for a stream from its current position to its end (it must
+  know its Size); the size limit is checked before anything is read.
+  DE: Dasselbe fuer einen Stream ab der aktuellen Position bis zum Ende
+  (er muss seine Groesse kennen); die Groessengrenze wird geprueft, bevor
+  etwas gelesen wird. }
+function LandrixGaebDA90ReadMappedStream(AStream: TStream; AMaxSize: Int64;
+  ACharset: TLandrixGaebCharset; AOemCodePage: TLandrixGaebCodePage;
+  ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out AItemsWithoutKind: Integer; out ADetection: TLandrixGaebDetection;
   out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
 
 implementation
@@ -311,7 +348,7 @@ type
     { counters }
     FNotMapped, FSkipped, FFields, FValues, FBadNumbers, FOrphans, FDates, FLimits: TCounts;
     FPadded, FControl, FDerived, FMixed, FMarkProblems, FTekz, FNumberProblems: Integer;
-    FMarkupValues, FBadKinds, FOldNotes, FStatus, FItems: Integer;
+    FMarkupValues, FBadKinds, FOldNotes, FStatus, FItems, FNoKind: Integer;
     FMaskSpaces: Boolean;
     FVergag: TLandrixGaebString;
     { items and execution descriptions by number, and the references to
@@ -430,6 +467,8 @@ type
     destructor Destroy; override;
     function Map(ADocument: TLandrixGaebDA90Document; ADiagnostics: TLandrixGaebDiagnostics;
       AInvalidTotals: TObjectList; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+    { Items and markup items made from a 23 without 21. }
+    property ItemsWithoutKind: Integer read FNoKind;
   end;
 
 function W(const S: string): TLandrixGaebString;
@@ -2501,6 +2540,8 @@ begin
       Markup.RNoIndex := IndexPart;
     Markup.MarkupType := 'IdentAsMark';
     Descr := Markup.Description;
+    if not Has21 then
+      Inc(FNoKind);
   end
   else
   begin
@@ -2511,6 +2552,8 @@ begin
     if IndexPart <> '' then
       Item.RNoIndex := IndexPart;
     Descr := Item.Description;
+    if not Has21 then
+      Inc(FNoKind);
   end;
   if not IsNote then
   begin
@@ -3620,6 +3663,118 @@ begin
   finally
     M.Free;
   end;
+end;
+
+function SizeLimit(AMaxSize: Int64): Int64;
+begin
+  Result := AMaxSize;
+  if Result <= 0 then
+    Result := LandrixGaebDefaultMaxSize;
+  if Result > MaxInt then
+    Result := MaxInt;
+end;
+
+procedure CheckSize(ASize, AMaxSize: Int64);
+begin
+  if ASize > SizeLimit(AMaxSize) then
+    raise ELandrixGaebError.Create('input of ' + IntToStr(ASize) +
+      ' bytes exceeds the size limit of ' + IntToStr(SizeLimit(AMaxSize)) + ' bytes');
+end;
+
+function LandrixGaebDA90ReadMapped(Buffer: Pointer; Size: Integer; AMaxSize: Int64;
+  ACharset: TLandrixGaebCharset; AOemCodePage: TLandrixGaebCodePage;
+  ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out AItemsWithoutKind: Integer; out ADetection: TLandrixGaebDetection;
+  out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+var
+  Own: TLandrixGaebDiagnostics;
+  I: TLandrixGaebListIndex;
+  D: TLandrixGaebDiagnostic;
+  Msg: string;
+  Doc: TLandrixGaebDA90Document;
+  M: TMapper;
+  K: Integer;
+
+  function TwoDigits(const S: TLandrixGaebString): string;
+  begin
+    Result := '';
+    if (Length(S) = 2) and IsDigits(S) then
+      Result := AsciiOf(S);
+  end;
+
+begin
+  AItemsWithoutKind := 0;
+  CheckSize(Size, AMaxSize);
+  Own := TLandrixGaebDiagnostics.Create;
+  try
+    ADetection := LandrixGaebDetectBuffer(Buffer, Size, False, Own);
+    if not ADetection.Accepted or (ADetection.Format <> gfDA90) then
+    begin
+      { the rule only: messages of the detection may name values of the
+        input }
+      Msg := 'input is not a readable GAEB 90 file';
+      for I := 0 to Own.Count - 1 do
+        if Own[I].Severity >= gsError then
+        begin
+          Msg := Msg + ' (' + Own[I].RuleId + ')';
+          Break;
+        end;
+      raise ELandrixGaebError.Create(Msg);
+    end;
+    { record 00 is taken from the records below, as the mapping takes it:
+      the detection only looks at the bytes }
+    if ADiagnostics <> nil then
+      for I := 0 to Own.Count - 1 do
+      begin
+        D := Own[I];
+        if D.RuleId <> 'GAEB-DET-016' then
+          ADiagnostics.AddAt(D.RuleId, D.Severity, D.Path, D.Line, D.Column, D.Offset, D.Message);
+      end;
+  finally
+    Own.Free;
+  end;
+  Doc := LandrixGaebDA90Parse(Buffer, Size, ACharset, AOemCodePage, ADiagnostics);
+  try
+    ADetection.SourcePhase := '';
+    ADetection.SourceVersion := '';
+    for K := 0 to Doc.Count - 1 do
+      if Doc.Kind(K) = '00' then
+      begin
+        ADetection.SourcePhase := TwoDigits(Doc.Field(K, 11, 12));
+        ADetection.SourceVersion := TwoDigits(Doc.Field(K, 72, 73));
+        Break;
+      end;
+    M := TMapper.Create;
+    try
+      Result := M.Map(Doc, ADiagnostics, AInvalidTotals, ATarget);
+      AItemsWithoutKind := M.ItemsWithoutKind;
+    finally
+      M.Free;
+    end;
+  finally
+    Doc.Free;
+  end;
+end;
+
+function LandrixGaebDA90ReadMappedStream(AStream: TStream; AMaxSize: Int64;
+  ACharset: TLandrixGaebCharset; AOemCodePage: TLandrixGaebCodePage;
+  ADiagnostics: TLandrixGaebDiagnostics; AInvalidTotals: TObjectList;
+  out AItemsWithoutKind: Integer; out ADetection: TLandrixGaebDetection;
+  out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
+var
+  Remaining: Int64;
+  Buffer: AnsiString;
+  Count: Integer;
+begin
+  Remaining := AStream.Size - AStream.Position;
+  CheckSize(Remaining, AMaxSize);
+  Count := Integer(Remaining);
+  Buffer := '';
+  SetLength(Buffer, Count);
+  if Count > 0 then
+    AStream.ReadBuffer(Buffer[1], Count);
+  Result := LandrixGaebDA90ReadMapped(Pointer(Buffer), Count, AMaxSize, ACharset, AOemCodePage,
+    ADiagnostics, AInvalidTotals, AItemsWithoutKind, ADetection, ATarget);
 end;
 
 end.

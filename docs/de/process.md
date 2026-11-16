@@ -55,7 +55,7 @@ des LV und liefert die Zahl der Summen, die sich nicht berechnen ließen. Gerech
 nie gerundet. `LandrixGaebFillMissingTotals(Bill, Kinds, Diags)` (seit 1.3) schreibt nur die fehlenden
 Summen und lässt die anderen stehen; es liefert die Zahl der geschriebenen und meldet sie als
 `GAEB-PRC-005`, die fehlend gebliebenen als `GAEB-PRC-006`. Ein X83 hat keine Summen und bleibt
-unverändert. Das Laden einer GAEB-DA-2000-Datei ruft es auf.
+unverändert. Das Laden einer GAEB-DA-2000- oder GAEB-90-Datei ruft es auf.
 
 ## Den Auftrag zusammensetzen
 

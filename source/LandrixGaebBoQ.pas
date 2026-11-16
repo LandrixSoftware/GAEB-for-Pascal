@@ -84,7 +84,8 @@ uses
   LandrixGaebDetect,
   LandrixGaebXmlBase,
   LandrixGaebXmlModel,
-  LandrixGaebDA2000Reader;
+  LandrixGaebDA2000Reader,
+  LandrixGaebDA90Reader;
 
 type
   { Kind of a node of the bill. Later releases add values: handle
@@ -901,8 +902,9 @@ type
       OutputTarget are the detected target (GAEB DA XML 3.0/3.1 is read
       only: OutputTarget is then 3.3/2021-05, noted as information
       GAEB-BOQ-001). ADiagnostics may be nil. Since 1.3.0 a GAEB DA 2000
-      file is read as by LoadFromDA2000File with the default options and
-      AMaxSize; Source tells which format was read.
+      file is read as by LoadFromDA2000File, since 1.4.0 a GAEB 90 file as
+      by LoadFromDA90File, with the default options and AMaxSize; Source
+      tells which format was read.
       Raises ELandrixGaebError for input that is no GAEB DA XML (also XML
       that is not well-formed within the part the detection reads), a
       target that cannot be read and input larger than AMaxSize,
@@ -914,9 +916,10 @@ type
       Target und OutputTarget sind das erkannte Ziel (GAEB DA XML 3.0/3.1
       wird nur gelesen: OutputTarget ist dann 3.3/2021-05, vermerkt als
       Hinweis GAEB-BOQ-001). ADiagnostics darf nil sein. Seit 1.3.0 wird
-      eine GAEB-DA-2000-Datei wie von LoadFromDA2000File mit den
-      Standardoptionen und AMaxSize gelesen; Source sagt, welches Format
-      gelesen wurde. Loest ELandrixGaebError aus fuer Eingaben, die kein GAEB DA XML
+      eine GAEB-DA-2000-Datei wie von LoadFromDA2000File, seit 1.4.0 eine
+      GAEB-90-Datei wie von LoadFromDA90File gelesen, mit den
+      Standardoptionen und AMaxSize; Source sagt, welches Format gelesen
+      wurde. Loest ELandrixGaebError aus fuer Eingaben, die kein GAEB DA XML
       sind (auch XML, das in dem Teil, den die Erkennung liest, nicht
       wohlgeformt ist), ein Ziel, das nicht gelesen werden kann, und
       Eingaben ueber AMaxSize, ELandrixXmlError (Unit LandrixXmlBase, mit
@@ -962,6 +965,39 @@ type
     class function LoadFromDA2000Stream(AStream: TStream;
       const AOptions: TLandrixGaebDA2000ReadOptions;
       ADiagnostics: TLandrixGaebDiagnostics): TLandrixGaebBillOfQuantities;
+    { Reads a GAEB 90 file (LandrixGaebDA90ReadFile with AOptions) into a
+      new bill that owns the document. Target and OutputTarget are GAEB DA
+      XML 3.3/2021-05 with the phase of the file, Source is the detection
+      of the file. Totals the file leaves out are computed where the sum is
+      known (LandrixGaebFillMissingTotals). A bid X84 counts by the kinds
+      its records 21 carry; when an item comes from a 23 without 21 (no
+      kind), missing totals of the bid are not computed (warning
+      GAEB-BOQ-004). A total the file holds in an unusable form stays
+      missing. Notes the reading as information GAEB-BOQ-003.
+      ADiagnostics may be nil. Raises the exceptions of
+      LandrixGaebDA90ReadFile. Since 1.4.0.
+      DE: Liest eine GAEB-90-Datei (LandrixGaebDA90ReadFile mit AOptions)
+      in ein neues LV, das das Dokument besitzt. Target und OutputTarget
+      sind GAEB DA XML 3.3/2021-05 mit der Phase der Datei, Source ist die
+      Erkennung der Datei. Summen, die die Datei auslaesst, werden
+      berechnet, wo die Summe bekannt ist (LandrixGaebFillMissingTotals).
+      Ein Angebot X84 zaehlt nach den Arten aus seinen Saetzen 21; stammt
+      eine Position aus einem 23 ohne 21 (ohne Art), werden fehlende
+      Summen des Angebots nicht berechnet (Warnung GAEB-BOQ-004). Eine
+      Summe, die die Datei in unbrauchbarer Form enthaelt, bleibt fehlend.
+      Vermerkt das Lesen als Hinweis GAEB-BOQ-003. ADiagnostics darf nil
+      sein. Loest die Ausnahmen von LandrixGaebDA90ReadFile aus. Seit
+      1.4.0. }
+    class function LoadFromDA90File(const AFileName: string;
+      const AOptions: TLandrixGaebDA90ReadOptions;
+      ADiagnostics: TLandrixGaebDiagnostics): TLandrixGaebBillOfQuantities;
+    { As LoadFromDA90File, from the position of AStream to its end
+      (LandrixGaebDA90ReadStream). Since 1.4.0.
+      DE: Wie LoadFromDA90File, ab der Position von AStream bis zu seinem
+      Ende (LandrixGaebDA90ReadStream). Seit 1.4.0. }
+    class function LoadFromDA90Stream(AStream: TStream;
+      const AOptions: TLandrixGaebDA90ReadOptions;
+      ADiagnostics: TLandrixGaebDiagnostics): TLandrixGaebBillOfQuantities;
     { Writes the document for OutputTarget with WriteOptions, with the
       exceptions of LandrixGaebXmlWriteFile and LandrixGaebXmlWriteStream
       (SaveToStream writes at the position of AStream). ADiagnostics may be
@@ -1002,15 +1038,18 @@ type
       beim Speichern. Ein Record: als Ganzes zuweisen. }
     property OutputTarget: TLandrixGaebTarget read FOutputTarget write FOutputTarget;
     { The detection of the input the bill was loaded from (LoadFromFile,
-      LoadFromStream, LoadFromDA2000File, LoadFromDA2000Stream): format,
-      for GAEB DA XML its target, for GAEB DA 2000 version, phase and
-      character set as found. A bill made with Create has Format
+      LoadFromStream, LoadFromDA2000File, LoadFromDA2000Stream,
+      LoadFromDA90File, LoadFromDA90Stream): format, for GAEB DA XML its
+      target, for GAEB DA 2000 version, phase and character set as found,
+      for GAEB 90 (since 1.4.0) VERSDTA and DP as found. A bill made with Create has Format
       gfUnknown and every field unknown. It never changes, also not when
       saving. Since 1.3.0.
       DE: Die Erkennung der Eingabe, aus der das LV geladen wurde
       (LoadFromFile, LoadFromStream, LoadFromDA2000File,
-      LoadFromDA2000Stream): Format, bei GAEB DA XML sein Ziel, bei GAEB DA
-      2000 Version, Phase und Zeichensatz wie gefunden. Ein mit Create
+      LoadFromDA2000Stream, LoadFromDA90File, LoadFromDA90Stream): Format,
+      bei GAEB DA XML sein Ziel, bei GAEB DA 2000 Version, Phase und
+      Zeichensatz wie gefunden, bei GAEB 90 (seit 1.4.0) VERSDTA und DP
+      wie gefunden. Ein mit Create
       angelegtes LV hat Format gfUnknown und alle Felder unbekannt. Sie
       aendert sich nie, auch nicht beim Speichern. Seit 1.3.0. }
     property Source: TLandrixGaebDetection read FSource;
@@ -1132,6 +1171,8 @@ uses
   LandrixGaebXmlWriter,
   LandrixGaebBoQTree,
   LandrixGaebDA2000Mapping,
+  LandrixGaebDA90Mapping,
+  LandrixGaebCharsets,
   LandrixGaebProcess;
 
 function YesOf(const S: TLandrixGaebString): Boolean;
@@ -3739,13 +3780,22 @@ var
   Doc: TLandrixGaebXmlGAEB;
   Det: TLandrixGaebDetection;
   Options: TLandrixGaebDA2000ReadOptions;
+  Options90: TLandrixGaebDA90ReadOptions;
 begin
   { the detection restores the position of the stream }
-  if LandrixGaebDetectStream(AStream, nil, AMaxSize).Format = gfDA2000 then
+  Det := LandrixGaebDetectStream(AStream, nil, AMaxSize);
+  if Det.Format = gfDA2000 then
   begin
     Options := LandrixGaebDA2000DefaultReadOptions;
     Options.MaxSize := AMaxSize;
     Result := LoadFromDA2000Stream(AStream, Options, ADiagnostics);
+    Exit;
+  end;
+  if Det.Format = gfDA90 then
+  begin
+    Options90 := LandrixGaebDA90DefaultReadOptions;
+    Options90.MaxSize := AMaxSize;
+    Result := LoadFromDA90Stream(AStream, Options90, ADiagnostics);
     Exit;
   end;
   Doc := LandrixGaebXmlReadStream(AStream, ADiagnostics, AMaxSize, Det);
@@ -3768,39 +3818,47 @@ begin
   end;
 end;
 
-class function TLandrixGaebBillOfQuantities.LoadFromDA2000Stream(AStream: TStream;
-  const AOptions: TLandrixGaebDA2000ReadOptions;
-  ADiagnostics: TLandrixGaebDiagnostics): TLandrixGaebBillOfQuantities;
+{ A bill that owns ADoc read from a legacy format (GAEB DA 2000, GAEB 90),
+  with the totals the file leaves out computed. AInvalid holds the totals
+  the file holds in an unusable form; they stay missing. A bid (84) counts
+  by the kinds of its file through a view as a request; with ANoKind items
+  without kind (GAEB 90: a 23 without 21) it is not filled and warned
+  about (GAEB-BOQ-004). Other phases are always filled. ANoteRule and
+  ANote are the information noting the reading. Every message is added
+  while the bill is guarded: if one raises, the bill is freed. }
+function BillOfLegacy(ADoc: TLandrixGaebXmlGAEB; const ADet: TLandrixGaebDetection;
+  const ATarget: TLandrixGaebTarget; AInvalid: TObjectList; ANoKind: Integer;
+  const ANoteRule, ANote: string; ADiagnostics: TLandrixGaebDiagnostics): TLandrixGaebBillOfQuantities;
 var
-  Invalid: TObjectList;
-  Doc: TLandrixGaebXmlGAEB;
-  Det: TLandrixGaebDetection;
-  T: TLandrixGaebTarget;
   I: Integer;
   View: TLandrixGaebBillOfQuantities;
   Kinds: TLandrixGaebMatching;
 begin
-  Invalid := TObjectList.Create(False);
+  { the bill owns the document from here on, also if its constructor
+    fails }
+  Result := TLandrixGaebBillOfQuantities.Create(ADoc, ATarget, True);
   try
-    Doc := LandrixGaebDA2000ReadMappedStream(AStream, AOptions.MaxSize, AOptions.Charset,
-      ADiagnostics, Invalid, Det, T);
-    { the bill owns the document from here on, also if its constructor
-      fails }
-    Result := TLandrixGaebBillOfQuantities.Create(Doc, T, True);
-    try
-      Result.FSource := Det;
-      { a Summe the file holds in an unusable form must not be replaced by
-        a computed value: held for the fill, cleared again afterwards (the
-        sums never take the Total of a category, so the stand-in changes
-        no computed value) }
-      for I := 0 to Integer(Invalid.Count) - 1 do
-        TLandrixGaebXmlTotals(Invalid[I]).Total.SetValue(0, 0);
-      if T.Phase = gp84 then
+    Result.FSource := ADet;
+    { a total the file holds in an unusable form must not be replaced by a
+      computed value: held for the fill, cleared again afterwards (the
+      sums never take the Total of a category, so the stand-in changes no
+      computed value) }
+    for I := 0 to Integer(AInvalid.Count) - 1 do
+      TLandrixGaebXmlTotals(AInvalid[I]).Total.SetValue(0, 0);
+    if ATarget.Phase = gp84 then
+    begin
+      { a bid has unknown count status as such; a bid of a legacy format
+        carries its kinds (Bedarf, ZZ...), so it counts by them, through a
+        view of the same document as a request; an item without kind
+        cannot tell whether it counts }
+      if (ANoKind > 0) and (ADiagnostics <> nil) then
+        ADiagnostics.AddDiagnostic('GAEB-BOQ-004', gsWarning, IntToStr(ANoKind) +
+          ' item(s) or markup item(s) of the bid without kind (23 without 21); ' +
+          'missing totals are not computed');
+      if ANoKind = 0 then
       begin
-        { a bid has unknown count status as such; a GAEB DA 2000 bid
-          carries its kinds (Bedarf, ZZ...), so it counts by them, through
-          a view of the same document as a request }
-        View := TLandrixGaebBillOfQuantities.Create(Doc, LandrixGaebTarget(T.Version, T.Edition, gp83), False);
+        View := TLandrixGaebBillOfQuantities.Create(ADoc,
+          LandrixGaebTarget(ATarget.Version, ATarget.Edition, gp83), False);
         try
           Kinds := TLandrixGaebMatching.Create(View, Result);
           try
@@ -3811,18 +3869,75 @@ begin
         finally
           View.Free;
         end;
-      end
-      else
-        LandrixGaebFillMissingTotals(Result, nil, ADiagnostics);
-      for I := 0 to Integer(Invalid.Count) - 1 do
-        TLandrixGaebXmlTotals(Invalid[I]).Total.Clear;
-      if ADiagnostics <> nil then
-        ADiagnostics.AddDiagnostic('GAEB-BOQ-002', gsInformation, 'read from GAEB DA 2000; ' +
-          'OutputTarget is initially GAEB DA XML 3.3 (2021-05)');
-    except
-      Result.Free;
-      raise;
-    end;
+      end;
+    end
+    else
+      LandrixGaebFillMissingTotals(Result, nil, ADiagnostics);
+    for I := 0 to Integer(AInvalid.Count) - 1 do
+      TLandrixGaebXmlTotals(AInvalid[I]).Total.Clear;
+    if ADiagnostics <> nil then
+      ADiagnostics.AddDiagnostic(ANoteRule, gsInformation, ANote);
+  except
+    Result.Free;
+    raise;
+  end;
+end;
+
+class function TLandrixGaebBillOfQuantities.LoadFromDA2000Stream(AStream: TStream;
+  const AOptions: TLandrixGaebDA2000ReadOptions;
+  ADiagnostics: TLandrixGaebDiagnostics): TLandrixGaebBillOfQuantities;
+var
+  Invalid: TObjectList;
+  Doc: TLandrixGaebXmlGAEB;
+  Det: TLandrixGaebDetection;
+  T: TLandrixGaebTarget;
+begin
+  Invalid := TObjectList.Create(False);
+  try
+    Doc := LandrixGaebDA2000ReadMappedStream(AStream, AOptions.MaxSize, AOptions.Charset,
+      ADiagnostics, Invalid, Det, T);
+    Result := BillOfLegacy(Doc, Det, T, Invalid, 0, 'GAEB-BOQ-002', 'read from GAEB DA 2000; ' +
+      'OutputTarget is initially GAEB DA XML 3.3 (2021-05)', ADiagnostics);
+  finally
+    Invalid.Free;
+  end;
+end;
+
+class function TLandrixGaebBillOfQuantities.LoadFromDA90File(const AFileName: string;
+  const AOptions: TLandrixGaebDA90ReadOptions;
+  ADiagnostics: TLandrixGaebDiagnostics): TLandrixGaebBillOfQuantities;
+var
+  Stream: TFileStream;
+begin
+  Stream := TFileStream.Create(AFileName, fmOpenRead or fmShareDenyWrite);
+  try
+    Result := LoadFromDA90Stream(Stream, AOptions, ADiagnostics);
+  finally
+    Stream.Free;
+  end;
+end;
+
+class function TLandrixGaebBillOfQuantities.LoadFromDA90Stream(AStream: TStream;
+  const AOptions: TLandrixGaebDA90ReadOptions;
+  ADiagnostics: TLandrixGaebDiagnostics): TLandrixGaebBillOfQuantities;
+var
+  Invalid: TObjectList;
+  Doc: TLandrixGaebXmlGAEB;
+  Det: TLandrixGaebDetection;
+  T: TLandrixGaebTarget;
+  NoKind: Integer;
+  Oem: TLandrixGaebCodePage;
+begin
+  if AOptions.OemCodePage = gocCp437 then
+    Oem := gcpCp437
+  else
+    Oem := gcpCp850;
+  Invalid := TObjectList.Create(False);
+  try
+    Doc := LandrixGaebDA90ReadMappedStream(AStream, AOptions.MaxSize, AOptions.Charset, Oem,
+      ADiagnostics, Invalid, NoKind, Det, T);
+    Result := BillOfLegacy(Doc, Det, T, Invalid, NoKind, 'GAEB-BOQ-003', 'read from GAEB 90; ' +
+      'OutputTarget is initially GAEB DA XML 3.3 (2021-05)', ADiagnostics);
   finally
     Invalid.Free;
   end;

@@ -74,9 +74,10 @@ konvertieren und die Ausgabe prüfen. Die Fassade setzt `OutputTarget` eines sol
 (`GAEB-XML-010`).
 
 Andere Phasen (etwa Zeitverträge, Mengenermittlung X31, Rechnungen X89), DP 88 und die
-Handelsphasen von 3.1, die Beta 3.4, GAEB DA 2000 außerhalb der Phasen 81 bis 86 und GAEB 90
-werden erkannt (`LandrixGaebDetectFile`), nicht gelesen. GAEB-DA-2000-Dateien der Phasen 81 bis
-86 werden seit 1.3 in das Modell 3.3 gelesen ([Lesen](reading.md#gaeb-da-2000)).
+Handelsphasen von 3.1, die Beta 3.4 sowie GAEB DA 2000 und GAEB 90 außerhalb der Phasen 81 bis
+86 werden erkannt (`LandrixGaebDetectFile`), nicht gelesen. GAEB-DA-2000-Dateien der Phasen 81
+bis 86 werden seit 1.3 in das Modell 3.3 gelesen ([Lesen](reading.md#gaeb-da-2000)),
+GAEB-90-Dateien seit 1.4 ([Lesen](reading.md#gaeb-90)).
 
 Ein Ziel nennt Version, Ausgabe und Austauschphase:
 

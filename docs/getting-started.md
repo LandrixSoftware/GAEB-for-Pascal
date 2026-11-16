@@ -69,9 +69,10 @@ bill to 3.3/2021-05 of the same phase. A list directly inside a list is read int
 (`GAEB-XML-010`).
 
 Other phases (for example time contracts, quantity determination X31, invoices X89), DP 88 and
-the trade phases of 3.1, the 3.4 beta, GAEB DA 2000 outside the phases 81 to 86 and GAEB 90
+the trade phases of 3.1, the 3.4 beta and GAEB DA 2000 and GAEB 90 outside the phases 81 to 86
 are detected (`LandrixGaebDetectFile`), not read. GAEB DA 2000 files of the phases 81 to 86 are
-read into the 3.3 model since 1.3 ([Reading](reading.md#gaeb-da-2000)).
+read into the 3.3 model since 1.3 ([Reading](reading.md#gaeb-da-2000)), GAEB 90 files since 1.4
+([Reading](reading.md#gaeb-90)).
 
 A target names version, edition and exchange phase:
 

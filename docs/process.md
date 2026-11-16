@@ -54,7 +54,7 @@ and of the bill and returns the number of sums it could not compute. Computing i
 never rounds. `LandrixGaebFillMissingTotals(Bill, Kinds, Diags)` (since 1.3) writes only the
 totals that are missing and keeps the others; it returns the number written and reports it as
 `GAEB-PRC-005`, the totals left missing as `GAEB-PRC-006`. An X83 has no totals and stays
-unchanged. Loading a GAEB DA 2000 file calls it.
+unchanged. Loading a GAEB DA 2000 or GAEB 90 file calls it.
 
 ## Building the award
 

@@ -27,7 +27,7 @@ Exceptions:
 
 | Exception | When |
 |---|---|
-| `ELandrixGaebError` | not GAEB DA XML (also XML that is not well-formed in the part the detection reads), a target that cannot be read, input larger than the limit |
+| `ELandrixGaebError` | not GAEB DA XML, GAEB DA 2000 or GAEB 90 (also XML that is not well-formed in the part the detection reads), a target that cannot be read, input larger than the limit |
 | `ELandrixXmlError` (unit `LandrixXmlBase`) | XML that turns out not to be well-formed later, with line and column |
 | `EFOpenError`, `EReadError` | file errors of the runtime library |
 
@@ -113,6 +113,74 @@ full text (`DetailAddText`) and a `Text` next to it the short text (`OutlineAddT
 `LandrixGaebDA2000ReadFile` (and `...Stream`, `...Buffer`) return only the syntax model, as it
 is mapped (no totals computed), with the detection of the file and the target of the model.
 
+## GAEB 90
+
+Since 1.4, `LoadFromFile` and `LoadFromStream` also read GAEB 90 files of the exchange phases
+81 to 86 (`.D81` to `.D86`, recognised by their content: records of 80 columns). As with GAEB
+DA 2000 the file is mapped into the GAEB DA XML 3.3 syntax model (`Target` and `OutputTarget`
+3.3/2021-05 with the phase of the file); `SourceFormat` is `gfDA90`, `Source.SourcePhase` the
+`DP` and `Source.SourceVersion` the `VERSDTA` of record `00` as found. The information
+`GAEB-BOQ-003` notes the reading.
+
+```pascal
+Options := LandrixGaebDA90DefaultReadOptions;
+Options.Charset := gcsOem;          // the file is OEM ...
+Options.OemCodePage := gocCp437;    // ... in code page 437
+Bill := TLandrixGaebBillOfQuantities.LoadFromDA90File('request.d83', Options, Diags);
+```
+
+GAEB 90 declares no character set. By default (`Charset` = `gcsUnknown`) a UTF-8 byte order
+mark or valid UTF-8 means UTF-8, otherwise the umlauts of the whole file decide between ANSI
+(Windows-1252) and OEM (`OemCodePage`, 850 by default); the choice is reported as
+`GAEB-D90-FILE-001`, `Source.SourceCharset` stays `gcsUnknown`. `Charset` and `OemCodePage`
+override the decision (unit `LandrixGaebDA90Reader`; always start from
+`LandrixGaebDA90DefaultReadOptions`); they do not change the recognition of the format, which
+looks at the bytes.
+
+Missing totals are computed as for GAEB DA 2000. A bid (84) counts by the kinds of its records
+`21`; when an item comes from a `23` without `21`, it has no kind, and the missing totals of the
+bid are not computed (warning `GAEB-BOQ-004`).
+
+The mapping follows the records: header records `00` to `08`, the hierarchy from the ordinal
+numbers and `OZMASKE` (categories without record `11` are derived), items, prices, texts with
+text complements, sub descriptions, quantity splits, references, execution descriptions,
+`STLB-Bau`, contract terms (`T0` to `T9`), lots and lot groups (a level `Lot` above the levels of
+the mask), wage changes, discounts and the cash discount. What has no counterpart is reported
+once per record type or field with a count (`GAEB-D90-MAP-001`, `-002`); messages name record
+types, fields and lines, never values. `ELandrixGaebError` is raised for input that is no GAEB
+90, a file without record `00` and phases other than 81 to 86 (for example 88).
+
+Files split into parts (`.001`, `.002`, ...) are not joined: a later part has no record `00`
+and is rejected. Join the parts only where you know how they were cut.
+
+### Tolerances
+
+| Rule | Severity | What happens |
+|---|---|---|
+| `GAEB-D90-FILE-001` | information | character set and how it was chosen |
+| `GAEB-D90-FILE-002` | warning | umlauts of both ANSI and OEM in one file |
+| `GAEB-D90-FILE-003` | information | line ends LF, CR LF, CR and CR CR LF, records chained by `NUL NUL`, Ctrl-Z at the end, blank lines, byte order mark |
+| `GAEB-D90-FILE-004` | information / warning | records shorter (padded with spaces) or longer (cut) than 80 columns |
+| `GAEB-D90-FILE-005` | warning | `NUL` or Ctrl-Z inside records (read as spaces), bytes that are no valid UTF-8 |
+| `GAEB-BR-D90-002` | warning | record numbers missing or not consecutive |
+| `GAEB-BR-D90-013` | warning | contract terms inside the bill (read as `Award/AddText`) |
+| `GAEB-BR-D90-014` | information | record types GAEB 90 does not define (free range 70 to 89, vendor records) are skipped |
+| `GAEB-D90-MAP-004` | warning | codes outside the values of GAEB 90 |
+| `GAEB-D90-MAP-008` | warning / information | numbers that are no digits are left out; spaces instead of leading zeros are read |
+| `GAEB-D90-MAP-009` | warning | records without the record they belong to are left out |
+| `GAEB-D90-MAP-014` | information | required parts GAEB 90 has no source for are filled (`BoQInfo/Name`, `PrjInfo/NamePrj`, an empty `LblTx`); `GAEBInfo/Date` stays missing |
+| `GAEB-D90-MAP-016` | warning | references (`28`, `35`, `45`) to a number not in the file are left out |
+
+The header of the unit `LandrixGaebDA90Mapping` lists all rules with their severity. The model
+read from the `.D83` of a bill equals the model read from its `.X83` written by the GAEB
+Toolbox, apart from IDs, text formatting and differences where GAEB 90 has no source or the
+Toolbox follows its own conventions: `PrjInfo/NamePrj` and `BoQInfo/Name` (filled, see
+`GAEB-D90-MAP-014`), a postal code the Toolbox takes out of the client's name line, the names and `Num` of
+the breakdown levels, the VAT rate of record `99` (X83 carries no totals) and `LumpSumItem`
+for the unit `psch`.
+`LandrixGaebDA90ReadFile` (and `...Stream`, `...Buffer`) return only the syntax model, as it is
+mapped (no totals computed).
+
 ## The tree
 
 | Member | Content |
@@ -185,5 +253,6 @@ Without the facade, `LandrixGaebXmlReadFile` (unit `LandrixGaebXmlReader`) reads
 (unit `LandrixGaebDetect`) only detects format and target, also for GAEB DA 2000 and GAEB 90.
 For GAEB DA 2000 it also reports the header as found: `SourceVersion` (1.0, 1.1, 1.2),
 `SourcePhase` (DP, also for phases without an XML counterpart) and `SourceCharset`
-(`Zeichensatz`); `Target` stays empty, it describes GAEB DA XML only. Reading GAEB DA 2000:
+(`Zeichensatz`); for GAEB 90 `SourceVersion` (`VERSDTA`) and `SourcePhase` (`DP`) of record
+`00`. `Target` stays empty, it describes GAEB DA XML only. Reading GAEB DA 2000 and GAEB 90:
 see above.

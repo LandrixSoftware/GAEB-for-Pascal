@@ -46,14 +46,19 @@
     GAEB-DET-015 warning  GAEB DA 2000: Zeichensatz UNICODE (encoding not
                           defined), unknown, unusable or not found at the
                           beginning
+    GAEB-DET-016 warning  GAEB 90: record 00 missing or not found at the
+                          beginning, or its DP no two digits
 
   A value of the GAEB DA 2000 header is taken only when it is 1 to 16
   letters, digits or dots on one line; anything else is reported as
-  unusable and left empty, so no file content reaches the result.
+  unusable and left empty, so no file content reaches the result. Of GAEB
+  90 only DP and VERSDTA of the first record 00 are taken, each only as
+  two digits.
   DE: Ein Wert aus dem Kopf von GAEB DA 2000 wird nur uebernommen, wenn er
   aus 1 bis 16 Buchstaben, Ziffern oder Punkten auf einer Zeile besteht;
   alles andere wird als unbrauchbar gemeldet und bleibt leer, damit kein
-  Dateiinhalt ins Ergebnis gelangt.
+  Dateiinhalt ins Ergebnis gelangt. Von GAEB 90 werden nur DP und VERSDTA
+  des ersten Satzes 00 uebernommen, jeweils nur als zwei Ziffern.
 
   DE: Die Meldungen oben haben dieselben Regelkennungen; die Texte sind
   englisch und enthalten keinen Dateiinhalt. }
@@ -105,23 +110,30 @@ type
       XML-Wurzelelements. }
     Namespace: TLandrixXmlUtf8;
     Accepted: Boolean;
-    { GAEB DA 2000 only: GAEBInfo/Version as found ('1.0', '1.1', '1.2'),
-      '' when missing or unusable. Since 1.3.0.
-      DE: Nur GAEB DA 2000: GAEBInfo/Version wie gefunden, '' wenn sie
-      fehlt oder unbrauchbar ist. Seit 1.3.0. }
+    { GAEB DA 2000: GAEBInfo/Version as found ('1.0', '1.1', '1.2');
+      GAEB 90 (since 1.4.0): VERSDTA of the first record 00 as found
+      ('90'); '' when missing or unusable, and for GAEB DA XML. Since
+      1.3.0.
+      DE: GAEB DA 2000: GAEBInfo/Version wie gefunden; GAEB 90 (seit
+      1.4.0): VERSDTA des ersten Satzes 00 wie gefunden ('90'); '' wenn sie fehlt oder
+      unbrauchbar ist, und bei GAEB DA XML. Seit 1.3.0. }
     SourceVersion: string;
-    { GAEB DA 2000 only: DP of the main object as found ('83', '88'),
-      also for phases this library does not read; '' when missing or
-      unusable. Since 1.3.0.
-      DE: Nur GAEB DA 2000: DP des Hauptobjekts wie gefunden, auch fuer
-      Phasen, die die Bibliothek nicht liest; '' wenn er fehlt oder
-      unbrauchbar ist. Seit 1.3.0. }
+    { GAEB DA 2000: DP of the main object; GAEB 90 (since 1.4.0): DP of
+      the first record 00; as found ('83', '88'), also for phases this library does not
+      read; '' when missing or unusable, and for GAEB DA XML. Since 1.3.0.
+      DE: GAEB DA 2000: DP des Hauptobjekts; GAEB 90 (seit 1.4.0): DP des
+      ersten Satzes 00; wie gefunden, auch fuer Phasen, die die Bibliothek nicht
+      liest; '' wenn er fehlt oder unbrauchbar ist, und bei GAEB DA XML.
+      Seit 1.3.0. }
     SourcePhase: string;
     { GAEB DA 2000 only: declared character set; gcsUnknown when missing,
-      unknown or not found at the beginning. Since 1.3.0.
+      unknown or not found at the beginning. GAEB 90 declares none: always
+      gcsUnknown (the reader decides from the bytes and reports its
+      choice as GAEB-D90-FILE-001). Since 1.3.0.
       DE: Nur GAEB DA 2000: angegebener Zeichensatz; gcsUnknown, wenn er
-      fehlt, unbekannt ist oder am Anfang nicht gefunden wurde. Seit
-      1.3.0. }
+      fehlt, unbekannt ist oder am Anfang nicht gefunden wurde. GAEB 90
+      gibt keinen an: immer gcsUnknown (der Leser entscheidet aus den
+      Bytes und meldet seine Wahl als GAEB-D90-FILE-001). Seit 1.3.0. }
     SourceCharset: TLandrixGaebCharset;
   end;
 
@@ -194,20 +206,119 @@ begin
   Result := (C >= '0') and (C <= '9');
 end;
 
-{ True if Line (without line end) looks like a GAEB 90 record: 80 columns,
-  record number in columns 75-80, record type in columns 1-2 (two digits,
-  or T and a digit for the text records T0/T1/T9). }
-function IsDA90Record(P: PAnsiChar; Len: Integer): Boolean;
+{ Number of characters of P[0..Len-1] when it is valid UTF-8 (as
+  LandrixXmlDecodeUtf8 decodes it, like the record reader) with at least one
+  multi-byte sequence, -1 otherwise. }
+function Utf8Columns(P: PAnsiChar; Len: Integer): Integer;
+var
+  I, N, Count: Integer;
+  CP: Cardinal;
+  Multi: Boolean;
+begin
+  Result := -1;
+  Count := 0;
+  Multi := False;
+  I := 0;
+  while I < Len do
+  begin
+    if Ord(P[I]) < $80 then
+      N := 1
+    else
+    begin
+      N := LandrixXmlDecodeUtf8(P + I, Len - I, CP);
+      if N <= 0 then
+        Exit;
+      Multi := True;
+    end;
+    Inc(I, N);
+    Inc(Count);
+  end;
+  if Multi then
+    Result := Count;
+end;
+
+{ Characters of P[0..Len-1] read as UTF-8 the way the record reader reads
+  a file with a byte order mark: a byte that cannot be decoded is one
+  character. }
+function Utf8LenientColumns(P: PAnsiChar; Len: Integer): Integer;
+var
+  I, N: Integer;
+  CP: Cardinal;
+begin
+  Result := 0;
+  I := 0;
+  while I < Len do
+  begin
+    if Ord(P[I]) < $80 then
+      N := 1
+    else
+    begin
+      N := LandrixXmlDecodeUtf8(P + I, Len - I, CP);
+      if N <= 0 then
+        N := 1;
+    end;
+    Inc(I, N);
+    Inc(Result);
+  end;
+end;
+
+{ Columns of a GAEB 90 line: after a UTF-8 byte order mark (ABom) its
+  characters; otherwise its characters when it is valid UTF-8 with
+  multi-byte sequences, else its bytes. }
+function DA90Columns(P: PAnsiChar; Len: Integer; ABom: Boolean): Integer;
+begin
+  if Len <= 80 then
+    Result := Len
+  else if ABom then
+    Result := Utf8LenientColumns(P, Len)
+  else
+    Result := Utf8Columns(P, Len);
+  if Result < 0 then
+    Result := Len;
+end;
+
+{ True if Line (without line end) looks like a GAEB 90 record: 80 columns
+  (characters of a UTF-8 line, see DA90Columns), record number in columns 75-80, record
+  type in columns 1-2 (two digits, or T and a digit for the text records
+  T0/T1/T9). }
+function IsDA90Record(P: PAnsiChar; Len: Integer; ABom: Boolean): Boolean;
 var
   I: Integer;
 begin
   Result := False;
-  if Len <> 80 then
+  if (Len < 80) or (DA90Columns(P, Len, ABom) <> 80) then
     Exit;
-  for I := 74 to 79 do
+  for I := Len - 6 to Len - 1 do
     if not IsDigit(P[I]) then
       Exit;
   Result := (IsDigit(P[0]) or (P[0] = 'T')) and IsDigit(P[1]);
+end;
+
+{ Byte offset of column AColumn (1-based) in a GAEB 90 line of Len bytes,
+  counting characters when AUtf8 (the line is valid UTF-8 with multi-byte
+  sequences, see Utf8Columns), bytes otherwise. Work is bounded by
+  AColumn. }
+function DA90ColumnOffset(P: PAnsiChar; Len, AColumn: Integer; AUtf8: Boolean): Integer;
+var
+  Col, N: Integer;
+  CP: Cardinal;
+begin
+  Result := AColumn - 1;
+  if not AUtf8 then
+    Exit;
+  Result := 0;
+  Col := 1;
+  while (Result < Len) and (Col < AColumn) do
+  begin
+    if Ord(P[Result]) < $80 then
+      N := 1
+    else
+      N := LandrixXmlDecodeUtf8(P + Result, Len - Result, CP);
+    if N <= 0 then
+      N := 1;
+    Inc(Result, N);
+    Inc(Col);
+  end;
 end;
 
 { Lower-case code of an ASCII letter, other bytes unchanged. }
@@ -224,7 +335,7 @@ const
 var
   P, Stop, LineStart: PAnsiChar;
   I, Lines, Matches: Integer;
-  Same: Boolean;
+  Same, Bom: Boolean;
 begin
   Result := gfUnknown;
   if Size <= 0 then
@@ -278,8 +389,12 @@ begin
   end;
   { GAEB 90: records of 80 columns; CR, LF and NUL separate records (NUL
     glued records occur in practice). One of the first five lines must be a
-    record: parts of split files may start with a foreign line. }
+    record: parts of split files may start with a foreign line. A UTF-8
+    byte order mark is skipped. }
   P := PAnsiChar(Buffer);
+  Bom := (Size >= 3) and (P[0] = #$EF) and (P[1] = #$BB) and (P[2] = #$BF);
+  if Bom then
+    Inc(P, 3);
   Lines := 0;
   Matches := 0;
   LineStart := P;
@@ -290,7 +405,7 @@ begin
       if P > LineStart then
       begin
         Inc(Lines);
-        if IsDA90Record(LineStart, Integer(P - LineStart)) then
+        if IsDA90Record(LineStart, Integer(P - LineStart), Bom) then
           Inc(Matches);
       end;
       LineStart := P + 1;
@@ -907,6 +1022,88 @@ begin
         'DP not found at the beginning of the document');
 end;
 
+{ Reads DP (columns 11-12) and VERSDTA (columns 72-73) of the first record
+  00 of a GAEB 90 file, each only when it is two digits. Records are cut as
+  the record reader cuts them: lines end at CR or LF, records of 80
+  characters may be chained by NUL NUL in columns 81 and 82; the first
+  record of type 00 counts, of any length. Messages never carry a value. }
+procedure DetectDA90(Buffer: Pointer; Size: Integer; AIsPrefix: Boolean;
+  ADiagnostics: TLandrixGaebDiagnostics; var R: TLandrixGaebDetection);
+var
+  P, Stop, LineStart, Rec: PAnsiChar;
+  Len, Rest, Off: Integer;
+  Found, Cut, Utf8, Bom: Boolean;
+
+  function TwoDigits(AColumn: Integer): string;
+  begin
+    Result := '';
+    Off := DA90ColumnOffset(Rec, Len, AColumn, Utf8);
+    if (Off >= 0) and (Off + 1 < Len) and IsDigit(Rec[Off]) and IsDigit(Rec[Off + 1]) then
+      Result := Chr(Ord(Rec[Off])) + Chr(Ord(Rec[Off + 1]));
+  end;
+
+begin
+  P := PAnsiChar(Buffer);
+  Stop := P + Size;
+  Bom := (Size >= 3) and (P[0] = #$EF) and (P[1] = #$BB) and (P[2] = #$BF);
+  if Bom then
+    Inc(P, 3);
+  LineStart := P;
+  Found := False;
+  { a prefix ends at a character: the UTF-8 test of its last line must not
+    fail on a sequence cut off }
+  if AIsPrefix then
+    Stop := PAnsiChar(Buffer) + CharBoundary(PAnsiChar(Buffer), Size);
+  while (P <= Stop) and not Found do
+  begin
+    if (P = Stop) or (P^ in [#10, #13]) then
+    begin
+      { the last record of a line cut off at the end of a prefix does not
+        count; records chained before it do }
+      Cut := AIsPrefix and (P = Stop);
+      Rec := LineStart;
+      Rest := Integer(P - LineStart);
+      { the encoding is decided once per line: deciding it per chained
+        record would read the rest of the line again each time; after a
+        byte order mark, as for the record reader, it is UTF-8 (a byte
+        that cannot be decoded is one column) }
+      Utf8 := Bom or (Utf8Columns(Rec, Rest) >= 0);
+      while Rest > 0 do
+      begin
+        Len := Rest;
+        Off := DA90ColumnOffset(Rec, Rest, 81, Utf8);
+        if (Off + 1 < Rest) and (Rec[Off] = #0) and (Rec[Off + 1] = #0) then
+          Len := Off;
+        if (Len = Rest) and Cut then
+          Break;
+        if (Len >= 2) and (Rec[0] = '0') and (Rec[1] = '0') then
+        begin
+          Found := True;
+          R.SourcePhase := TwoDigits(11);
+          R.SourceVersion := TwoDigits(72);
+          if R.SourcePhase = '' then
+            AddDiag(ADiagnostics, 'GAEB-DET-016', gsWarning, 0, 0, -1,
+              'GAEB 90: DP of record 00 is no two digits');
+          Break;
+        end;
+        if Len = Rest then
+          Break;
+        Inc(Rec, Len + 2);
+        Dec(Rest, Len + 2);
+      end;
+      LineStart := P + 1;
+    end;
+    Inc(P);
+  end;
+  if not Found then
+    if AIsPrefix then
+      AddDiag(ADiagnostics, 'GAEB-DET-016', gsWarning, 0, 0, -1,
+        'GAEB 90: record 00 not found at the beginning')
+    else
+      AddDiag(ADiagnostics, 'GAEB-DET-016', gsWarning, 0, 0, -1,
+        'GAEB 90: record 00 missing');
+end;
+
 function LandrixGaebDetectBuffer(Buffer: Pointer; Size: Integer; AIsPrefix: Boolean;
   ADiagnostics: TLandrixGaebDiagnostics): TLandrixGaebDetection;
 begin
@@ -922,6 +1119,8 @@ begin
       DetectXml(Buffer, Size, AIsPrefix, ADiagnostics, Result);
     gfDA2000:
       DetectDA2000(Buffer, Size, AIsPrefix, ADiagnostics, Result);
+    gfDA90:
+      DetectDA90(Buffer, Size, AIsPrefix, ADiagnostics, Result);
   else
     ;
   end;
