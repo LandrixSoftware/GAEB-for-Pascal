@@ -14,10 +14,18 @@
 
 { Creates a new bill of quantities and writes it as a request (X83, GAEB DA
   XML 3.3): the document frame through the syntax model, categories, items,
-  quantities, units and texts through the business facade. The writer checks the output against the schema of the
-  target and refuses an invalid document.
+  quantities, units and texts through the business facade. The writer
+  checks the output against the schema of the target and refuses an
+  invalid document.
 
-  Usage: WriteBoQ <output folder>       writes <output folder>/request.x83 }
+  DE: Legt ein neues LV an und schreibt es als Anfrage (X83, GAEB DA XML
+  3.3): den Rahmen des Dokuments ueber das Syntaxmodell, Bereiche,
+  Positionen, Mengen, Einheiten und Texte ueber die Fachfassade. Der
+  Schreiber prueft die Ausgabe gegen das Schema des Ziels und verweigert
+  ein ungueltiges Dokument.
+
+  Usage / Aufruf: WriteBoQ <output folder>
+  writes / schreibt <output folder>/request.x83 }
 
 program WriteBoQ;
 
@@ -30,7 +38,9 @@ program WriteBoQ;
 uses
 {$IFDEF FPC}
   {$IFDEF UNIX}
-  { converts between UTF-8 and the native string on Unix (output of texts) }
+  { converts between UTF-8 and the native string on Unix (output of texts)
+    DE: wandelt unter Unix zwischen UTF-8 und dem nativen String (Ausgabe von
+    Texten) }
   cwstring,
   {$ENDIF}
 {$ENDIF}
@@ -49,14 +59,17 @@ begin
 end;
 
 { The short text (outline text) and the long text (detail text) of an item;
-  every line of a text becomes a paragraph. }
+  every line of a text becomes a paragraph.
+  DE: Kurztext (Gliederungstext) und Langtext (Detailtext) einer Position;
+  jede Zeile eines Textes wird ein Absatz. }
 procedure SetTexts(AItem: TLandrixGaebItem; const AShort, ALong: TLandrixGaebString);
 begin
   AItem.SetShortText(AShort);
   AItem.SetLongText(ALong);
 end;
 
-{ A breakdown level of the ordinal number (OZ). }
+{ A breakdown level of the ordinal number (OZ).
+  DE: Eine Gliederungsstufe der Ordnungszahl (OZ). }
 procedure AddLevel(AInfo: TLandrixGaebXmlBoQInfo; const AType, ALabel: TLandrixGaebString; ALength: Integer);
 var
   Level: TLandrixGaebXmlBoQBkdn;
@@ -77,7 +90,8 @@ var
   Diags: TLandrixGaebDiagnostics;
   FileName: string;
 begin
-  { The frame: version, edition and DP are written from the target. }
+  { The frame: version, edition and DP are written from the target.
+    DE: Der Rahmen: Version, Ausgabe und DP werden aus dem Ziel geschrieben. }
   Doc := TLandrixGaebXmlGAEB.Create;
   try
     Doc.GAEBInfo.Date := TLandrixGaebString(FormatDateTime('yyyy"-"mm"-"dd', Date));
@@ -87,7 +101,8 @@ begin
     Doc.Award.BoQ.ID := 'BoQ1';
     Doc.Award.BoQ.BoQInfo.Name := 'LV';
     Doc.Award.BoQ.BoQInfo.LblBoQ := 'Example bill of quantities';
-    { the texts this document carries: short and long texts }
+    { the texts this document carries: short and long texts
+      DE: die Texte, die dieses Dokument traegt: Kurz- und Langtexte }
     Doc.Award.BoQ.BoQInfo.OutlCompl := 'AllTxt';
     AddLevel(Doc.Award.BoQ.BoQInfo, 'BoQLevel', 'Title', 2);
     AddLevel(Doc.Award.BoQ.BoQInfo, 'Item', '', 4);
@@ -97,7 +112,9 @@ begin
   end;
 
   { The bill owns the document from here on (also if its constructor
-    fails). }
+    fails).
+    DE: Ab hier gehoert das Dokument dem LV (auch wenn sein Konstruktor
+    scheitert). }
   Bill := TLandrixGaebBillOfQuantities.Create(Doc, LandrixGaebTarget(gv33, ge2021_05, gp83), True);
   Diags := nil;
   try
@@ -123,7 +140,9 @@ begin
       Bill.SaveToFile(FileName, Diags);
       WriteLn('written: ', FileName, ' (', Bill.AllItems.Count, ' items)');
     finally
-      { the findings of the writer, also when it refused the document }
+      { the findings of the writer, also when it refused the document
+        DE: die Befunde des Schreibers, auch wenn er das Dokument verweigert
+        hat }
       Write(Diags.ToText);
     end;
   finally

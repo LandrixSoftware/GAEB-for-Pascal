@@ -19,7 +19,15 @@
   writer then refuses the document (WriteOptions.Mode := gwmBestEffort
   leaves such elements out and reports them).
 
-  Usage: ConvertGaeb <input> <output> 3.2|3.3 }
+  DE: Wandelt eine GAEB-DA-XML-Datei in eine andere Version: GAEB DA XML
+  3.2 (Ausgabe 2013-10) oder 3.3 (Ausgabe 2021-05), gleiche Phase. Der
+  Schreiber prueft die Ausgabe gegen das Schema des Ziels; ein Element,
+  das das Ziel nicht kennt, ist ein Verlust (GAEB-WRT-001), und im
+  Standardmodus gwmNormal verweigert der Schreiber dann das Dokument
+  (WriteOptions.Mode := gwmBestEffort laesst solche Elemente weg und
+  meldet sie).
+
+  Usage / Aufruf: ConvertGaeb <input> <output> 3.2|3.3 }
 
 program ConvertGaeb;
 
@@ -32,7 +40,9 @@ program ConvertGaeb;
 uses
 {$IFDEF FPC}
   {$IFDEF UNIX}
-  { converts between UTF-8 and the native string on Unix (output of texts) }
+  { converts between UTF-8 and the native string on Unix (output of texts)
+    DE: wandelt unter Unix zwischen UTF-8 und dem nativen String (Ausgabe von
+    Texten) }
   cwstring,
   {$ENDIF}
 {$ENDIF}
@@ -53,7 +63,10 @@ begin
     Bill := TLandrixGaebBillOfQuantities.LoadFromFile(AInput, Diags, 0);
     try
       { Target is what the document is; OutputTarget what it is saved as.
-        A record: change a copy and assign it as a whole. }
+        A record: change a copy and assign it as a whole.
+        DE: Target ist, was das Dokument ist; OutputTarget, als was es
+        gespeichert wird. Ein Record: eine Kopie aendern und als Ganzes
+        zuweisen. }
       Target := Bill.Target;
       if AVersion = '3.2' then
       begin
@@ -76,7 +89,9 @@ begin
     end;
   finally
     { e.g. GAEB-WRT-001 for every element the target does not know; also
-      when writing failed }
+      when writing failed
+      DE: z. B. GAEB-WRT-001 fuer jedes Element, das das Ziel nicht kennt;
+      auch wenn das Schreiben gescheitert ist }
     Write(Diags.ToText);
     Diags.Free;
   end;

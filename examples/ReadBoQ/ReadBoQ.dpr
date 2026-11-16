@@ -16,7 +16,12 @@
   ordinal number (OZ), short text, quantity, unit, unit price and total of
   every item, the label of every category, and the total of the bill.
 
-  Usage: ReadBoQ <file> }
+  DE: Liest eine GAEB-DA-XML-Datei und gibt ihr LV als Baum aus:
+  Ordnungszahl (OZ), Kurztext, Menge, Einheit, Einheitspreis und
+  Gesamtbetrag jeder Position, die Bezeichnung jedes Bereichs und die
+  Summe des LV.
+
+  Usage / Aufruf: ReadBoQ <file> }
 
 program ReadBoQ;
 
@@ -29,7 +34,9 @@ program ReadBoQ;
 uses
 {$IFDEF FPC}
   {$IFDEF UNIX}
-  { converts between UTF-8 and the native string on Unix (output of texts) }
+  { converts between UTF-8 and the native string on Unix (output of texts)
+    DE: wandelt unter Unix zwischen UTF-8 und dem nativen String (Ausgabe von
+    Texten) }
   cwstring,
   {$ENDIF}
 {$ENDIF}
@@ -39,13 +46,15 @@ uses
   LandrixGaebDiagnostics,
   LandrixGaebBoQ;
 
-{ Texts of the library are UTF-16; the console takes the native string. }
+{ Texts of the library are UTF-16; the console takes the native string.
+  DE: Texte der Bibliothek sind UTF-16; die Konsole nimmt den nativen String. }
 function S(const AText: TLandrixGaebString): string;
 begin
   Result := LandrixXmlUtf8ToString(LandrixXmlWideToUtf8(AText));
 end;
 
-{ A decimal as written in the document, '-' if absent. }
+{ A decimal as written in the document, '-' if absent.
+  DE: Eine Dezimalzahl wie im Dokument, '-' wenn sie fehlt. }
 function D(const AValue: TLandrixGaebDecimal): string;
 begin
   if AValue.HasValue then
@@ -60,7 +69,9 @@ var
   Item: TLandrixGaebItem;
 begin
   { by class, so that a kind of node a later release adds lands in the last
-    branch }
+    branch
+    DE: nach Klasse, damit eine Knotenart, die eine spaetere Version
+    hinzufuegt, im letzten Zweig landet }
   if ANode is TLandrixGaebCategory then
   begin
     WriteLn(AIndent, S(ANode.OZ), '  ', S(TLandrixGaebCategory(ANode).Lbl),
@@ -106,7 +117,9 @@ begin
     end;
   finally
     { findings of reading, e.g. elements the target does not know; also
-      when reading failed }
+      when reading failed
+      DE: Befunde des Lesens, z. B. Elemente, die das Ziel nicht kennt; auch
+      wenn das Lesen gescheitert ist }
     Write(Diags.ToText);
     Diags.Free;
   end;

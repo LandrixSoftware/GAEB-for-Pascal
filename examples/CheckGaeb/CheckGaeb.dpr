@@ -12,7 +12,7 @@
   SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Landrix-Commercial
 }
 
-{ Checks GAEB DA XML files in three stages and prints every finding:
+{ Checks GAEB DA XML files in up to four stages and prints every finding:
   1. the content model check against the schema of the target the file
      declares (LandrixGaebXmlCheck),
   2. the business rules of its phase (LandrixGaebRules),
@@ -34,8 +34,32 @@
   also the XSD validation of the output. Exit code 0 if every check that
   ran passed, 1 otherwise.
 
-  Usage: CheckGaeb [-xsd=<folder>] <file> [<second file>]
-         CheckGaeb [-xsd=<folder>] -convert=3.2|3.3 <file> }
+  DE: Prueft GAEB-DA-XML-Dateien in bis zu vier Stufen und gibt jeden
+  Befund aus:
+  1. die Pruefung des Inhaltsmodells gegen das Schema des Ziels, das die
+     Datei angibt (LandrixGaebXmlCheck),
+  2. die Fachregeln ihrer Phase (LandrixGaebRules),
+  3. mit einer zweiten Datei die Paarregeln zwischen beiden (zum Beispiel
+     Anfrage X83 und Angebot X84),
+  4. mit -xsd=<Ordner> die Validierung gegen die originalen GAEB-Schemas
+     in diesem Ordner (LandrixGaebXmlXsd; tools/fetch-gaeb-xsd.ps1 laedt
+     sie herunter).
+  Exitcode 0, wenn keine Stufe einen Fehler fand, sonst 1.
+
+  Fuer eine Datei in GAEB DA XML 3.0 oder 3.1, die nur gelesen wird, gibt
+  es die Stufen 1 und 2 nicht; -xsd=<Ordner> validiert sie gegen ihre
+  originalen Schemas.
+
+  Mit -convert=3.2|3.3 wird die Datei nicht geprueft, wie sie ist, sondern
+  wie sie in dieser Version (gleiche Phase) gespeichert wuerde, zum
+  Beispiel eine Datei in GAEB DA XML 3.0 oder 3.1, die nur gelesen wird
+  (LandrixGaebConversion): Schreiben (Verluste), Pruefung des
+  Inhaltsmodells und Fachregeln der Ausgabe, mit -xsd=<Ordner> auch die
+  XSD-Validierung der Ausgabe. Exitcode 0, wenn jede gelaufene Pruefung
+  bestanden wurde, sonst 1.
+
+  Usage / Aufruf: CheckGaeb [-xsd=<folder>] <file> [<second file>]
+                  CheckGaeb [-xsd=<folder>] -convert=3.2|3.3 <file> }
 
 program CheckGaeb;
 
@@ -48,7 +72,9 @@ program CheckGaeb;
 uses
 {$IFDEF FPC}
   {$IFDEF UNIX}
-  { converts between UTF-8 and the native string on Unix (output of texts) }
+  { converts between UTF-8 and the native string on Unix (output of texts)
+    DE: wandelt unter Unix zwischen UTF-8 und dem nativen String (Ausgabe von
+    Texten) }
   cwstring,
   {$ENDIF}
 {$ENDIF}
@@ -67,10 +93,13 @@ uses
   LandrixGaebConversion;
 
 var
-  { the arguments without -xsd=; the schema folder, '' without }
+  { the arguments without -xsd=; the schema folder, '' without
+    DE: die Argumente ohne -xsd=; der Schema-Ordner, '' ohne }
   Files: array of string;
   XsdFolder: string;
-  { the version of -convert=; ConvertGiven tells whether the option was given }
+  { the version of -convert=; ConvertGiven tells whether the option was given
+    DE: die Version von -convert=; ConvertGiven sagt, ob die Option angegeben
+    war }
   ConvertTo: string;
   ConvertGiven: Boolean;
 
@@ -89,7 +118,9 @@ begin
 end;
 
 { Stages 1, 2 and 4 for one file; the document read for stage 3 is
-  returned. }
+  returned.
+  DE: Stufen 1, 2 und 4 fuer eine Datei; das fuer Stufe 3 gelesene Dokument
+  wird zurueckgegeben. }
 function CheckFile(const AFileName: string; ADiagnostics: TLandrixGaebDiagnostics;
   ASchemas: TLandrixGaebXmlXsdSchemas; out ATarget: TLandrixGaebTarget): TLandrixGaebXmlGAEB;
 var
@@ -98,7 +129,10 @@ var
 begin
   { GAEB DA XML 3.0 and 3.1 are read only: no content model check and no
     business rules of their own (-convert= checks them as 3.2 or 3.3), but
-    the XSD validation against their original schemas }
+    the XSD validation against their original schemas
+    DE: GAEB DA XML 3.0 und 3.1 werden nur gelesen: keine Pruefung des
+    Inhaltsmodells und keine eigenen Fachregeln (-convert= prueft sie als 3.2
+    oder 3.3), aber die XSD-Validierung gegen ihre originalen Schemas }
   Det := LandrixGaebDetectFile(AFileName, nil, 0);
   if Det.Accepted and (Det.Format = gfXml) and (Det.Target.Version in [gv30, gv31]) then
   begin
@@ -140,7 +174,9 @@ begin
   end;
 end;
 
-{ -convert=: the checks of the file as it would be saved in ConvertTo. }
+{ -convert=: the checks of the file as it would be saved in ConvertTo.
+  DE: -convert=: die Pruefungen der Datei, wie sie in ConvertTo gespeichert
+  wuerde. }
 procedure RunConversion;
 var
   ReadDiags, Diags: TLandrixGaebDiagnostics;
@@ -189,8 +225,10 @@ begin
     finally
       Schemas.Free;
       Bill.Free;
-      { findings of reading the file (paths of the file) apart from those of
-        the conversion (paths of the output) }
+      { findings of reading the file (paths of the file), listed apart from
+        those of the conversion (paths of the output)
+        DE: Befunde des Lesens der Datei (Pfade der Datei), getrennt von
+        denen der Umwandlung (Pfade der Ausgabe) }
       WriteLn('reading:');
       Write(ReadDiags.ToText);
       WriteLn('conversion:');
@@ -238,7 +276,10 @@ begin
       First.Free;
       { the findings of all stages, also when one of them failed; each names
         its rule, e.g. GAEB-CHK-002 or GAEB-BR-OZ-001, and the path of the
-        element }
+        element
+        DE: die Befunde aller Stufen, auch wenn eine davon gescheitert ist;
+        jeder nennt seine Regel, z. B. GAEB-CHK-002 oder GAEB-BR-OZ-001, und
+        den Pfad des Elements }
       Write(Diags.ToText);
       WriteLn(Diags.Count, ' finding(s)');
     end;

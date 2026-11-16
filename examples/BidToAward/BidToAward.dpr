@@ -17,7 +17,12 @@
   of items of the request (a bid does not carry them), builds the award
   (X86) from both and writes it.
 
-  Usage: BidToAward <request.x83> <bid.x84> <award.x86> }
+  DE: Der Vergabeprozess ueber die Fachfassade: ordnet eine Anfrage (X83)
+  und ein Angebot (X84) ueber die Ordnungszahl einander zu, berechnet die
+  Summe des Angebots mit den Positionsarten der Anfrage (ein Angebot
+  traegt sie nicht), baut daraus den Auftrag (X86) und schreibt ihn.
+
+  Usage / Aufruf: BidToAward <request.x83> <bid.x84> <award.x86> }
 
 program BidToAward;
 
@@ -30,7 +35,9 @@ program BidToAward;
 uses
 {$IFDEF FPC}
   {$IFDEF UNIX}
-  { converts between UTF-8 and the native string on Unix (output of texts) }
+  { converts between UTF-8 and the native string on Unix (output of texts)
+    DE: wandelt unter Unix zwischen UTF-8 und dem nativen String (Ausgabe von
+    Texten) }
   cwstring,
   {$ENDIF}
 {$ENDIF}
@@ -70,14 +77,19 @@ begin
     Request := TLandrixGaebBillOfQuantities.LoadFromFile(ARequest, Diags, 0);
     Bid := TLandrixGaebBillOfQuantities.LoadFromFile(ABid, Diags, 0);
 
-    { request left, bid right: every node of the bid finds its partner }
+    { request left, bid right: pairs by ordinal number; a node may also be
+      only in one of them or ambiguous
+      DE: Anfrage links, Angebot rechts: Paare ueber die Ordnungszahl; ein
+      Knoten kann auch nur in einem von beiden stehen oder mehrdeutig sein }
     Matching := TLandrixGaebMatching.Create(Request, Bid);
     WriteLn('matched: ', Matching.CountOf(gmkPair), ' pair(s), ', Matching.CountOf(gmkOnlyLeft),
       ' only in the request, ', Matching.CountOf(gmkOnlyRight), ' only in the bid, ',
       Matching.CountOf(gmkAmbiguous), ' ambiguous');
 
     { the bid alone does not tell which items count (alternatives,
-      eventual items); the kinds come from the request }
+      eventual items); the kinds come from the request
+      DE: das Angebot allein sagt nicht, welche Positionen zaehlen
+      (Alternativen, Bedarfspositionen); die Arten kommen aus der Anfrage }
     Sum := LandrixGaebComputeSum(Bid, nil, Matching);
     if Sum.Known then
       WriteLn('total of the bid: ', D(Sum.Value), ' (stated: ', D(Bid.Total), ')')
@@ -87,7 +99,9 @@ begin
       WriteLn('total of the bid too large');
 
     Award := LandrixGaebBuildAward(Request, Bid, Diags);
-    { the request names no owner; an award needs one with an address }
+    { the request names no owner; an award needs one with an address
+      DE: die Anfrage nennt keinen Auftraggeber; ein Auftrag braucht einen mit
+      Anschrift }
     Award.Owner.Name1 := 'Example owner';
     Award.Owner.Street := 'Example street 1';
     Award.Owner.PCode := '12345';
@@ -95,7 +109,9 @@ begin
     Award.SaveToFile(AAward, Diags);
     WriteLn('award written: ', AAward, ', contractor ', S(Award.Contractor.Name1), ', total ', D(Award.Total));
   finally
-    { findings of reading, building and writing, also after a failure }
+    { findings of reading, building and writing, also after a failure
+      DE: Befunde des Lesens, Bauens und Schreibens, auch nach einem
+      Fehlschlag }
     Write(Diags.ToText);
     Matching.Free;
     Award.Free;
