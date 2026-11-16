@@ -215,7 +215,9 @@ begin
     CheckEquals(1, Integer(C2.LblTx.Children.Count), 'empty label of a derived category');
     CheckEqualsGaebStr('V-1', Info.Name, 'BoQInfo/Name from VERGAG');
     CheckEqualsGaebStr('Neubau Halle', G.PrjInfo.NamePrj, 'NamePrj from PROBEZ');
-    CheckEquals(4, Diags.CountOf('GAEB-D90-MAP-014'), 'Name, NamePrj, GAEBInfo/Date and empty labels reported');
+    CheckEquals(5, Diags.CountOf('GAEB-D90-MAP-014'), 'Name, NamePrj, GAEBInfo/Date, empty labels and address reported');
+    Check(Pos('OWN/Address: Street, PCode and City', DiagnosticText(Diags, 'GAEB-D90-MAP-014')) > 0,
+      'incomplete address of 03 reported');
     It := TLandrixGaebXmlItem(C2.BoQBody.Itemlist.Children[0]);
     CheckEqualsGaebStr('10', It.RNoPart, 'item part without spaces');
     CheckEqualsGaebStr('A', It.RNoIndex, 'index');

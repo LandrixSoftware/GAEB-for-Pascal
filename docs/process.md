@@ -5,6 +5,35 @@
 The unit `LandrixGaebProcess` works on two bills of the same project: request (X83) and bid
 (X84), bid and award (X86).
 
+## Creating the bid
+
+The bidder loads the request, prices its items and saves it as a bid; the example
+[CreateBid](../examples/CreateBid/CreateBid.dpr) does it in full.
+
+```pascal
+Bill := TLandrixGaebBillOfQuantities.LoadFromFile('request.x83', Diags, 0);  // also GAEB 90, GAEB DA 2000
+T := Bill.OutputTarget;                // 3.3 also for a request read from 3.0/3.1
+T.Phase := gp84;
+Bill.OutputTarget := T;                // saved as a bid, the document stays a request
+Options := Bill.WriteOptions;
+Options.Mode := gwmBestEffort;         // a bid drops texts, units, labels (GAEB-WRT-001)
+Bill.WriteOptions := Options;
+Bill.Contractor.Name1 := 'Builder Ltd';      // the X84 needs the full address
+Bill.Contractor.Street := 'Main street 2';
+Bill.Contractor.PCode := '12345';
+Bill.Contractor.City := 'Sample town';
+Item.SetUP(UP);                        // for every item
+Item.SetIT(Total);                     // Qty x UP, rounded half away from zero to cents
+if not Item.QtyTBD then
+  Item.ClearQty;                       // a bid states only the quantities left open
+LandrixGaebApplyTotals(Bill, nil);     // totals of categories and bill
+Bill.SaveToFile('bid.x84', Diags);
+```
+
+The bidder's text complements are filled with `SetBodyText` or `SetBodyNumber`. Because the
+document stays a request, the kinds of its items (alternatives, eventual items) are known and
+decide what counts. `CheckGaeb request.x83 bid.x84` checks the result with the pair rules.
+
 ## Matching
 
 ```pascal

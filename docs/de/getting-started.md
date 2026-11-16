@@ -107,8 +107,10 @@ end.
 ```
 
 Die Beispiele unter [examples/](../../examples/) sind vollständige Konsolenprogramme: ein neues LV
-schreiben (`WriteBoQ`), lesen (`ReadBoQ`), prüfen (`CheckGaeb`), konvertieren (`ConvertGaeb`) und
-aus Anfrage und Angebot den Auftrag bilden (`BidToAward`). `tools/build.ps1` übersetzt und startet
+schreiben (`WriteBoQ`), lesen (`ReadBoQ`), aus einer Anfrage ein Angebot erstellen (`CreateBid`),
+prüfen (`CheckGaeb`), konvertieren (`ConvertGaeb`), aus Anfrage und Angebot den Auftrag bilden
+(`BidToAward`) und GAEB 90 oder GAEB DA 2000 nach GAEB DA XML wandeln (`LegacyToXml`). Kurze
+Antworten auf häufige Aufgaben stehen in den [Kurzrezepten](recipes.md). `tools/build.ps1` übersetzt und startet
 sie nach den Tests mit jeder Windows- und Linux-Toolchain (nicht in den Varianten mit
 Bereichsprüfung und nicht unter macOS).
 

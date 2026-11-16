@@ -171,6 +171,19 @@ once per record type or field with a count (`GAEB-D90-MAP-001`, `-002`); message
 types, fields and lines, never values. `ELandrixGaebError` is raised for input that is no GAEB
 90, a file without record `00` and phases other than 81 to 86 (for example 88).
 
+GAEB 90 knows the owner (`03`) and the bidder (`04`) by a free name line only. GAEB DA XML
+requires street, postal code and town in their address (`OWN` in X83, `CTR` in X84); the
+library does not guess them from the name line. Complete them before passing the file on:
+
+```pascal
+if Bill.Owner.Exists and (Bill.Owner.Street = '') then
+begin
+  Bill.Owner.Street := 'Rathausplatz 1';
+  Bill.Owner.PCode := '12345';
+  Bill.Owner.City := 'Musterstadt';
+end;
+```
+
 Files split into parts (`.001`, `.002`, ...) are not joined: a later part has no record `00`
 and is rejected. Join the parts only where you know how they were cut.
 
@@ -189,7 +202,7 @@ and is rejected. Join the parts only where you know how they were cut.
 | `GAEB-D90-MAP-004` | warning | codes outside the values of GAEB 90 |
 | `GAEB-D90-MAP-008` | warning / information | numbers that are no digits are left out; spaces instead of leading zeros are read |
 | `GAEB-D90-MAP-009` | warning | records without the record they belong to are left out |
-| `GAEB-D90-MAP-014` | information | required parts GAEB 90 has no source for are filled (`BoQInfo/Name`, `PrjInfo/NamePrj`, an empty `LblTx`, `GAEBInfo/Date` from `LVDATUM`); without a usable `LVDATUM`, `GAEBInfo/Date` stays missing |
+| `GAEB-D90-MAP-014` | information | required parts GAEB 90 has no source for are filled (`BoQInfo/Name`, `PrjInfo/NamePrj`, an empty `LblTx`, `GAEBInfo/Date` from `LVDATUM`); without a usable `LVDATUM`, `GAEBInfo/Date` stays missing; the address of owner (`03`) and bidder (`04`) has only the name, `Street`, `PCode` and `City` stay missing |
 | `GAEB-D90-MAP-016` | warning | references (`28`, `35`, `45`) to a number not in the file are left out |
 
 The header of the unit `LandrixGaebDA90Mapping` lists all rules with their severity. The model

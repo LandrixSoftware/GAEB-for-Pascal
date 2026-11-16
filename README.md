@@ -44,9 +44,11 @@ end;
   [English](docs/writing.md)
 - Prüfen / Checking: [Deutsch](docs/de/checking.md), [English](docs/checking.md)
 - Vergabeprozess / Bid process: [Deutsch](docs/de/process.md), [English](docs/process.md)
+- Kurzrezepte / Recipes: [Deutsch](docs/de/recipes.md), [English](docs/recipes.md) (häufige
+  Aufgaben in wenigen Zeilen / frequent tasks in a few lines)
 - [Beispiele / Examples](examples/): Konsolenprogramme für Delphi und Free Pascal / console
-  programs for Delphi and Free Pascal (`WriteBoQ`, `ReadBoQ`, `CheckGaeb`, `ConvertGaeb`,
-  `BidToAward`)
+  programs for Delphi and Free Pascal (`WriteBoQ`, `ReadBoQ`, `CreateBid`, `CheckGaeb`,
+  `ConvertGaeb`, `BidToAward`, `LegacyToXml`)
 
 ## Öffentliche API / Public API
 

@@ -154,7 +154,11 @@
                                  from LVDATUM (owner decision 16.11.2026;
                                  without a usable LVDATUM it stays
                                  missing, reported), an empty LblTx for
-                                 categories without record 12
+                                 categories without record 12; reported
+                                 too: Street, PCode and City of the
+                                 address of 03/04, which GAEB 90 does not
+                                 have (owner decision 16.11.2026: not
+                                 split from the name line)
     GAEB-D90-MAP-015 information KURZAN of 28 other than the first line of
                                  the short text (the short text kept)
     GAEB-D90-MAP-016 warning     references (28, 35, 45) to a number that no
@@ -454,7 +458,7 @@ type
     procedure MapHeader00(AIndex: Integer);
     procedure MapHeader01(AIndex: Integer);
     procedure MapProject(var AIndex: Integer);
-    procedure MapParty(AIndex: Integer; AAddress: TLandrixGaebXmlAddress);
+    procedure MapParty(AIndex: Integer; AAddress: TLandrixGaebXmlAddress; const AWhat: string);
     procedure MapComponents(AIndex: Integer);
     procedure MapCurrency(AIndex: Integer);
     procedure MapGroup(var AIndex: Integer);
@@ -2002,7 +2006,16 @@ end;
 
 { 03/04: the name, up to 40 characters to Name1, the rest (cut at the
   last space before) to Name2. }
-procedure TMapper.MapParty(AIndex: Integer; AAddress: TLandrixGaebXmlAddress);
+{ 03 and 04: the name of the party, a free line of 60 characters. GAEB DA
+  XML requires Street, PCode and City in the address of OWN (X83) and CTR
+  (X84); GAEB 90 has none, and the line is not split by guessing (owner
+  decision 16.11.2026): the caller completes them, which is reported.
+  DE: 03 und 04: der Name der Partei, eine freie Zeile mit 60 Zeichen.
+  GAEB DA XML verlangt Street, PCode und City in der Adresse von OWN (X83)
+  und CTR (X84); GAEB 90 hat sie nicht, und die Zeile wird nicht durch
+  Raten zerlegt (Entscheidung Nutzer 16.11.2026): der Aufrufer ergaenzt
+  sie, das wird gemeldet. }
+procedure TMapper.MapParty(AIndex: Integer; AAddress: TLandrixGaebXmlAddress; const AWhat: string);
 var
   S: TLandrixGaebString;
   Cut: Integer;
@@ -2011,6 +2024,9 @@ begin
   Unmapped(AIndex, 63, 74, 'FILLER');
   if S = '' then
     Exit;
+  if not AAddress.Present then
+    Report(AIndex, RuleFilled, gsInformation, AWhat + '/Address: Street, PCode and City (required) ' +
+      'stay missing, GAEB 90 has only the name; the caller completes them');
   AAddress.Present := True;
   if Length(S) <= 40 then
   begin
@@ -3461,12 +3477,12 @@ begin
         if K = '03' then
         begin
           FG.Award.OWN.Present := True;
-          MapParty(I, FG.Award.OWN.Address);
+          MapParty(I, FG.Award.OWN.Address, 'OWN');
         end
         else
         begin
           FG.Award.CTR.Present := True;
-          MapParty(I, FG.Award.CTR.Address);
+          MapParty(I, FG.Award.CTR.Address, 'CTR');
         end;
         Inc(I);
       end

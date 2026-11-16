@@ -107,13 +107,20 @@ function Count-OwnDiagnostics([string[]]$Lines) {
 # Examples in run order with their arguments (run in build/<toolchain>/examples/);
 # later ones read what WriteBoQ wrote; the process files are synthetic test data.
 $ProcessData = '../../../tests/data/process'
+$LegacyData = '../../../tests/data/legacy-formats'
 $Examples = @(
   @{ Name = 'WriteBoQ';    Args = @('.') },
   @{ Name = 'ReadBoQ';     Args = @('request.x83') },
+  @{ Name = 'CreateBid';   Args = @('request.x83', 'bid.x84') },
+  @{ Name = 'CheckGaeb';   Args = @('request.x83', 'bid.x84') },
   @{ Name = 'CheckGaeb';   Args = @('request.x83') },
   @{ Name = 'CheckGaeb';   Args = @('-convert=3.3', '../../../tests/data/version3x/v31-2009-12.x83') },
   @{ Name = 'ConvertGaeb'; Args = @('request.x83', 'request-3.2.x83', '3.2') },
-  @{ Name = 'BidToAward';  Args = @("$ProcessData/request.x83", "$ProcessData/bid.x84", 'award.x86') }
+  @{ Name = 'BidToAward';  Args = @("$ProcessData/request.x83", "$ProcessData/bid.x84", 'award.x86') },
+  @{ Name = 'BidToAward';  Args = @('request.x83', 'bid.x84', 'award-own.x86') },
+  @{ Name = 'LegacyToXml'; Args = @("$LegacyData/request.d83", 'request-d83.x83') },
+  @{ Name = 'LegacyToXml'; Args = @("$LegacyData/bid.d84", 'bid-d84.x84', "$LegacyData/request.d83") },
+  @{ Name = 'LegacyToXml'; Args = @("$LegacyData/request.p83", 'request-p83.x83') }
 )
 
 # Compiles and runs the examples with one toolchain; returns the number of

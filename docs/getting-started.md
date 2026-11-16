@@ -102,8 +102,10 @@ end.
 ```
 
 The examples under [examples/](../examples/) are complete console programs: writing a new
-bill (`WriteBoQ`), reading (`ReadBoQ`), checking (`CheckGaeb`), converting (`ConvertGaeb`)
-and building an award from request and bid (`BidToAward`). `tools/build.ps1` compiles and
+bill (`WriteBoQ`), reading (`ReadBoQ`), creating a bid from a request (`CreateBid`), checking
+(`CheckGaeb`), converting (`ConvertGaeb`), building an award from request and bid
+(`BidToAward`) and converting GAEB 90 or GAEB DA 2000 to GAEB DA XML (`LegacyToXml`). Short
+answers to frequent tasks are in the [recipes](recipes.md). `tools/build.ps1` compiles and
 runs them after the tests with every Windows and Linux toolchain (not with the variants with
 range checks and not on macOS).
 

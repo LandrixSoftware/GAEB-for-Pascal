@@ -5,6 +5,36 @@
 Die Unit `LandrixGaebProcess` arbeitet auf zwei LV desselben Projekts: Anfrage (X83) und Angebot
 (X84), Angebot und Auftrag (X86).
 
+## Das Angebot erstellen
+
+Der Bieter lädt die Anfrage, bepreist ihre Positionen und speichert sie als Angebot; das
+Beispiel [CreateBid](../../examples/CreateBid/CreateBid.dpr) zeigt es vollständig.
+
+```pascal
+Bill := TLandrixGaebBillOfQuantities.LoadFromFile('anfrage.x83', Diags, 0);  // auch GAEB 90, GAEB DA 2000
+T := Bill.OutputTarget;                // 3.3 auch für eine aus 3.0/3.1 gelesene Anfrage
+T.Phase := gp84;
+Bill.OutputTarget := T;                // als Angebot gespeichert, das Dokument bleibt Anfrage
+Options := Bill.WriteOptions;
+Options.Mode := gwmBestEffort;         // ein Angebot lässt Texte, Einheiten, Bezeichnungen weg (GAEB-WRT-001)
+Bill.WriteOptions := Options;
+Bill.Contractor.Name1 := 'Bau GmbH';         // die X84 braucht die volle Anschrift
+Bill.Contractor.Street := 'Hauptstr. 2';
+Bill.Contractor.PCode := '12345';
+Bill.Contractor.City := 'Musterstadt';
+Item.SetUP(EP);                        // für jede Position
+Item.SetIT(Betrag);                    // Menge x EP, halb weg von null auf Cent gerundet
+if not Item.QtyTBD then
+  Item.ClearQty;                       // ein Angebot nennt nur die offen gelassenen Mengen
+LandrixGaebApplyTotals(Bill, nil);     // Summen der Bereiche und des LV
+Bill.SaveToFile('angebot.x84', Diags);
+```
+
+Die Ergänzungen des Bieters werden mit `SetBodyText` oder `SetBodyNumber` gefüllt. Weil das
+Dokument eine Anfrage bleibt, sind die Arten seiner Positionen (Alternativen,
+Bedarfspositionen) bekannt und entscheiden, was zählt. `CheckGaeb anfrage.x83 angebot.x84`
+prüft das Ergebnis mit den Paarregeln.
+
 ## Zuordnung
 
 ```pascal

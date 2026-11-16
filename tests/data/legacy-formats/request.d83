@@ -1,0 +1,21 @@
+00        83LV-2026-01                                        11PPPP00090 000001
+01Rohbau Musterhalle                      16.11.26                        000002
+02Neubau Musterhalle                                                      000003
+03Stadt Musterstadt                                                       000004
+08EUR   Euro                                                              000005
+1101       N                                                              000006
+12Erdarbeiten                                                             000007
+21010010   NNN         00000012500m3      X                               000008
+25Boden ausheben                                                          000009
+26   Oberboden abtragen und seitlich lagern.                              000010
+2601BFabrikat '....'                                                      000011
+21010020   NNN         00000030000m2                                      000012
+25Planum herstellen                                                       000013
+21010030   NEN         00000001000psch                                    000014
+25Wasserhaltung, nur bei Bedarf                                           000015
+1102       N                                                              000016
+12Mauerarbeiten                                                           000017
+21020010   NNN         00000045000m2                                      000018
+25Mauerwerk 24 cm                                                         000019
+26   Kalksandstein, Dicke 24 cm.                                          000020
+99                                                                   00004000021

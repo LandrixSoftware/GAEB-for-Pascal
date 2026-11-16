@@ -178,6 +178,19 @@ Satzart oder Feld einmal mit Anzahl gemeldet (`GAEB-D90-MAP-001`, `-002`); die M
 Satzarten, Felder und Zeilen, nie Werte. `ELandrixGaebError` wird ausgelöst für Eingaben, die
 kein GAEB 90 sind, eine Datei ohne Satz `00` und andere Phasen als 81 bis 86 (etwa 88).
 
+GAEB 90 kennt Auftraggeber (`03`) und Bieter (`04`) nur über eine freie Namenszeile. GAEB DA XML
+verlangt in ihrer Adresse Straße, Postleitzahl und Ort (`OWN` in X83, `CTR` in X84); die
+Bibliothek rät sie nicht aus der Namenszeile. Vor der Weitergabe ergänzen:
+
+```pascal
+if Bill.Owner.Exists and (Bill.Owner.Street = '') then
+begin
+  Bill.Owner.Street := 'Rathausplatz 1';
+  Bill.Owner.PCode := '12345';
+  Bill.Owner.City := 'Musterstadt';
+end;
+```
+
 In Teile zerlegte Dateien (`.001`, `.002`, ...) werden nicht zusammengefügt: ein späterer Teil
 hat keinen Satz `00` und wird abgewiesen. Teile nur zusammenfügen, wo bekannt ist, wie sie
 geschnitten wurden.
@@ -197,7 +210,7 @@ geschnitten wurden.
 | `GAEB-D90-MAP-004` | Warnung | Kennzeichen außerhalb der Werte von GAEB 90 |
 | `GAEB-D90-MAP-008` | Warnung / Hinweis | Zahlen, die keine Ziffern sind, werden ausgelassen; Leerzeichen statt führender Nullen werden gelesen |
 | `GAEB-D90-MAP-009` | Warnung | Sätze ohne den Satz, zu dem sie gehören, werden ausgelassen |
-| `GAEB-D90-MAP-014` | Hinweis | Pflichtteile, für die GAEB 90 keine Quelle hat, werden gefüllt (`BoQInfo/Name`, `PrjInfo/NamePrj`, ein leeres `LblTx`, `GAEBInfo/Date` aus `LVDATUM`); ohne brauchbares `LVDATUM` bleibt `GAEBInfo/Date` fehlend |
+| `GAEB-D90-MAP-014` | Hinweis | Pflichtteile, für die GAEB 90 keine Quelle hat, werden gefüllt (`BoQInfo/Name`, `PrjInfo/NamePrj`, ein leeres `LblTx`, `GAEBInfo/Date` aus `LVDATUM`); ohne brauchbares `LVDATUM` bleibt `GAEBInfo/Date` fehlend; die Adresse von Auftraggeber (`03`) und Bieter (`04`) hat nur den Namen, `Street`, `PCode` und `City` bleiben fehlend |
 | `GAEB-D90-MAP-016` | Warnung | Bezüge (`28`, `35`, `45`) auf eine Nummer, die nicht in der Datei steht, werden ausgelassen |
 
 Der Kopf der Unit `LandrixGaebDA90Mapping` nennt alle Regeln mit ihrer Schwere. Das aus der
