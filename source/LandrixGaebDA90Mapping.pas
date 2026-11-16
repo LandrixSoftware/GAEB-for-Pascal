@@ -21,7 +21,8 @@
   - 00: DP -> Award/DP, KURZLANG L/K -> BoQInfo/OutlCompl AllTxt/OutTxt,
     VERGAG -> OWN/AwardNo, DVNRAG -> OWN/DPNo, BIETERAG -> CTR/BidderNo,
     VERGAN -> CTR/AwardNo, DVNRAN -> CTR/DPNo, OZMASKE -> BoQBkdn;
-  - 01: LVBEZ -> BoQInfo/LblBoQ, LVDATUM -> BoQInfo/Date, DATANG and
+  - 01: LVBEZ -> BoQInfo/LblBoQ, LVDATUM -> BoQInfo/Date and
+    GAEBInfo/Date, DATANG and
     DATUHR -> AwardInfo/OpenDate and OpenTime, DATZUS -> AwardInfo/EvalEnd;
   - 02: the first line -> PrjInfo/LblPrj, all lines -> PrjInfo/Descrip;
     03 -> OWN, 04 -> CTR (Address/Name1, beyond 40 characters Name2);
@@ -149,9 +150,11 @@
                                  VERGAG or the first 20 characters of LVBEZ,
                                  PrjInfo/NamePrj from the first line of
                                  PROBEZ, else VERGAG, else LVBEZ (owner
-                                 decisions 15.11.2026), an empty LblTx
-                                 for categories without record 12
-                                 (GAEBInfo/Date stays missing)
+                                 decisions 15.11.2026), GAEBInfo/Date
+                                 from LVDATUM (owner decision 16.11.2026;
+                                 without a usable LVDATUM it stays
+                                 missing, reported), an empty LblTx for
+                                 categories without record 12
     GAEB-D90-MAP-015 information KURZAN of 28 other than the first line of
                                  the short text (the short text kept)
     GAEB-D90-MAP-016 warning     references (28, 35, 45) to a number that no
@@ -3247,13 +3250,16 @@ begin
 end;
 
 { Required parts of GAEB DA XML without a source in GAEB 90 (owner
-  decision 15.11.2026): BoQInfo/Name from VERGAG, else from the first 20
+  decisions 15.11.2026): BoQInfo/Name from VERGAG, else from the first 20
   characters of LVBEZ; an empty LblTx for a category without record 12.
-  GAEBInfo/Date stays missing.
-  DE: Pflichtteile von GAEB DA XML ohne Quelle in GAEB 90 (Entscheidung
+  GAEBInfo/Date (the date of the file) from LVDATUM, the date of the bill
+  (owner decision 16.11.2026); without a usable LVDATUM it stays missing.
+  DE: Pflichtteile von GAEB DA XML ohne Quelle in GAEB 90 (Entscheidungen
   Nutzer 15.11.2026): BoQInfo/Name aus VERGAG, sonst aus den ersten 20
   Zeichen von LVBEZ; ein leeres LblTx fuer einen Bereich ohne Satz 12.
-  GAEBInfo/Date bleibt fehlend. }
+  GAEBInfo/Date (Datum der Datei) aus LVDATUM, dem Datum des LV
+  (Entscheidung Nutzer 16.11.2026); ohne brauchbares LVDATUM bleibt es
+  fehlend. }
 procedure TMapper.FillRequired;
 var
   Info: TLandrixGaebXmlBoQInfo;
@@ -3262,6 +3268,13 @@ var
   P: TLandrixGaebXmlPMLText;
 begin
   Info := FG.Award.BoQ.BoQInfo;
+  if Info.Date <> '' then
+  begin
+    FG.GAEBInfo.Date := Info.Date;
+    Report(-1, RuleFilled, gsInformation, 'GAEBInfo/Date (required, GAEB 90 has none) taken from LVDATUM');
+  end
+  else
+    Report(-1, RuleFilled, gsInformation, 'GAEBInfo/Date (required) stays missing: no usable LVDATUM');
   From := '';
   if Info.Name = '' then
   begin

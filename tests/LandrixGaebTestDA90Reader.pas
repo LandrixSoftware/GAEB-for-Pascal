@@ -38,6 +38,7 @@ uses
   LandrixGaebXmlWriter,
   LandrixGaebXmlCheck,
   LandrixGaebBoQ,
+  LandrixGaebProcess,
   LandrixGaebDA90Reader,
   LandrixGaebTestXmlCompare,
   LandrixGaebTestFramework;
@@ -451,6 +452,8 @@ procedure TestLoadBill;
 var
   S: AnsiString;
   Stream: TMemoryStream;
+  Request: TLandrixGaebBillOfQuantities;
+  Matching: TLandrixGaebMatching;
   Diags: TLandrixGaebDiagnostics;
   B: TLandrixGaebBillOfQuantities;
   Options: TLandrixGaebDA90ReadOptions;
@@ -538,6 +541,23 @@ begin
       CheckEquals(1, Diags.CountOf('GAEB-BOQ-004'), 'bid without kinds: warned');
       Check(Pos('3 item(s)', Diags.ToText) > 0, 'items counted: ' + Diags.ToText);
       CheckEquals(0, Diags.CountOf('GAEB-PRC-005'), 'bid without kinds: nothing filled');
+      { the kinds of the request fill them (the documented way) }
+      Stream.Free;
+      Stream := StreamOf(Priced('83', True));
+      Request := TLandrixGaebBillOfQuantities.LoadFromStream(Stream, nil, 0);
+      try
+        Matching := TLandrixGaebMatching.Create(Request, B);
+        try
+          CheckEquals(2, LandrixGaebFillMissingTotals(B, Matching, Diags), 'filled with the request');
+          CheckEqualsStr('20', TotalText(TLandrixGaebCategory(B.Root[0]).Totals), 'kinds of the request');
+          CheckEqualsStr('999.00', TotalText(TLandrixGaebCategory(B.Root[1]).Totals), 'total of the file kept');
+          CheckEqualsStr('25', TotalText(B.Totals), 'total of the bill with the request');
+        finally
+          Matching.Free;
+        end;
+      finally
+        Request.Free;
+      end;
     finally
       B.Free;
     end;

@@ -972,7 +972,8 @@ type
       known (LandrixGaebFillMissingTotals). A bid X84 counts by the kinds
       its records 21 carry; when an item comes from a 23 without 21 (no
       kind), missing totals of the bid are not computed (warning
-      GAEB-BOQ-004). A total the file holds in an unusable form stays
+      GAEB-BOQ-004); LandrixGaebFillMissingTotals with a
+      TLandrixGaebMatching to the request computes them. A total the file holds in an unusable form stays
       missing. Notes the reading as information GAEB-BOQ-003.
       ADiagnostics may be nil. Raises the exceptions of
       LandrixGaebDA90ReadFile. Since 1.4.0.
@@ -983,7 +984,9 @@ type
       berechnet, wo die Summe bekannt ist (LandrixGaebFillMissingTotals).
       Ein Angebot X84 zaehlt nach den Arten aus seinen Saetzen 21; stammt
       eine Position aus einem 23 ohne 21 (ohne Art), werden fehlende
-      Summen des Angebots nicht berechnet (Warnung GAEB-BOQ-004). Eine
+      Summen des Angebots nicht berechnet (Warnung GAEB-BOQ-004);
+      LandrixGaebFillMissingTotals mit einer TLandrixGaebMatching zur
+      Anfrage berechnet sie. Eine
       Summe, die die Datei in unbrauchbarer Form enthaelt, bleibt fehlend.
       Vermerkt das Lesen als Hinweis GAEB-BOQ-003. ADiagnostics darf nil
       sein. Loest die Ausnahmen von LandrixGaebDA90ReadFile aus. Seit
@@ -3854,7 +3857,8 @@ begin
       if (ANoKind > 0) and (ADiagnostics <> nil) then
         ADiagnostics.AddDiagnostic('GAEB-BOQ-004', gsWarning, IntToStr(ANoKind) +
           ' item(s) or markup item(s) of the bid without kind (23 without 21); ' +
-          'missing totals are not computed');
+          'missing totals are not computed (LandrixGaebFillMissingTotals with a matching to the ' +
+          'request computes them)');
       if ANoKind = 0 then
       begin
         View := TLandrixGaebBillOfQuantities.Create(ADoc,

@@ -75,6 +75,7 @@ The code is documented directly in the source, in English and German:
 
 * In the library sources (`source/`), every public declaration in an `interface` section and every GAEB business rule in an implementation (exchange phase rules, mandatory elements, special cases) has a comment block: first English, then a paragraph starting with `DE:` in German.
 * Purely technical comments inside implementations are English only, and so are tests and tools.
+* The examples (`examples/`) are written for users: their header block and every comment that explains a step are English first, then `DE:` in German.
 * Self-explanatory code needs no comment.
 * Sources stay ASCII-only, so German umlauts are written as `ae`, `oe`, `ue` and `ss`.
 

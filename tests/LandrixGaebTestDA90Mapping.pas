@@ -215,7 +215,7 @@ begin
     CheckEquals(1, Integer(C2.LblTx.Children.Count), 'empty label of a derived category');
     CheckEqualsGaebStr('V-1', Info.Name, 'BoQInfo/Name from VERGAG');
     CheckEqualsGaebStr('Neubau Halle', G.PrjInfo.NamePrj, 'NamePrj from PROBEZ');
-    CheckEquals(3, Diags.CountOf('GAEB-D90-MAP-014'), 'Name, NamePrj and empty labels reported');
+    CheckEquals(4, Diags.CountOf('GAEB-D90-MAP-014'), 'Name, NamePrj, GAEBInfo/Date and empty labels reported');
     It := TLandrixGaebXmlItem(C2.BoQBody.Itemlist.Children[0]);
     CheckEqualsGaebStr('10', It.RNoPart, 'item part without spaces');
     CheckEqualsGaebStr('A', It.RNoIndex, 'index');
@@ -348,7 +348,8 @@ begin
 end;
 
 { Regressions of the first review of the mapping, and a file that is valid
-  against the content model apart from GAEBInfo/Date (owner decision). }
+  against the content model (GAEBInfo/Date from LVDATUM, owner decision
+  16.11.2026). }
 procedure TestReviewCases;
 var
   Diags, CheckDiags: TLandrixGaebDiagnostics;
@@ -359,7 +360,7 @@ var
   M: TLandrixGaebXmlMarkupItem;
   Xml: TLandrixXmlUtf8;
   List: TLandrixGaebXmlItemlist;
-  I, Errors, Warnings: Integer;
+  Errors, Warnings: Integer;
   Options: TLandrixGaebXmlWriteOptions;
 begin
   { phase 84: a negative price below a cent, a markup item from a 23 }
@@ -395,6 +396,8 @@ begin
   G := MapText(S, Diags, T);
   try
     CheckEqualsGaebStr('', G.Award.BoQ.BoQInfo.Date, '31.02. is no date');
+    CheckEqualsGaebStr('', G.GAEBInfo.Date, 'GAEBInfo/Date without LVDATUM');
+    Check(Pos('stays missing', DiagnosticText(Diags, 'GAEB-D90-MAP-014')) > 0, 'GAEBInfo/Date missing reported');
     CheckEquals(1, Diags.CountOf('GAEB-D90-MAP-010'), 'date reported');
     It := TLandrixGaebXmlItem(TLandrixGaebXmlBoQCtgy(G.Award.BoQ.BoQBody.Children[0]).BoQBody.Itemlist.Children[0]);
     Check(not It.Qty.HasValue, 'spaces behind: no number');
@@ -405,7 +408,7 @@ begin
     G.Free;
     Diags.Free;
   end;
-  { valid apart from GAEBInfo/Date }
+  { valid against the content model: GAEBInfo/Date from LVDATUM }
   NextNo := 0;
   S := R(F(F(B('00'), 11, '81L'), 63, '11PPPP000')) +
     R(F(F(B('01'), 3, 'Rohbau'), 43, '15.11.26')) +
@@ -425,11 +428,11 @@ begin
     Options.Check := False;
     Xml := LandrixGaebXmlWriteCollect(G, T, Options, Diags, Errors, Warnings);
     CheckEquals(0, Errors, 'written without error');
-    LandrixGaebXmlCheckTarget(Pointer(Xml), Length(Xml), T, CheckDiags);
-    for I := 0 to Integer(CheckDiags.Count) - 1 do
-      Check((CheckDiags[I].RuleId = 'GAEB-CHK-002') and (Pos('GAEBInfo', CheckDiags[I].Path) > 0) and
-        (Pos('expected Date', CheckDiags[I].Message) > 0), 'only GAEBInfo/Date missing: ' + CheckDiags[I].Message);
-    CheckEquals(1, Integer(CheckDiags.Count), 'one finding of the check');
+    CheckEqualsGaebStr('2026-11-15', G.GAEBInfo.Date, 'GAEBInfo/Date from LVDATUM');
+    Check(Pos('taken from LVDATUM', DiagnosticText(Diags, 'GAEB-D90-MAP-014')) > 0, 'GAEBInfo/Date reported');
+    Check(LandrixGaebXmlCheckTarget(Pointer(Xml), Length(Xml), T, CheckDiags),
+      'valid against the content model: ' + CheckDiags.ToText);
+    CheckEquals(0, Integer(CheckDiags.Count), 'no finding of the check');
   finally
     G.Free;
     CheckDiags.Free;

@@ -145,7 +145,29 @@ schaut, ändern sie nicht.
 
 Fehlende Summen werden wie bei GAEB DA 2000 berechnet. Ein Angebot (84) zählt nach den Arten
 seiner Sätze `21`; stammt eine Position aus einem `23` ohne `21`, hat sie keine Art, und die
-fehlenden Summen des Angebots werden nicht berechnet (Warnung `GAEB-BOQ-004`).
+fehlenden Summen des Angebots werden nicht berechnet (Warnung `GAEB-BOQ-004`). Die meisten
+GAEB-90-Angebote sind so geschrieben; ihre Arten kommen über eine Zuordnung aus der Anfrage
+([Der Vergabeprozess](process.md#summen)):
+
+```pascal
+Anfrage := TLandrixGaebBillOfQuantities.LoadFromFile('anfrage.d83', Diags, 0);
+try
+  Angebot := TLandrixGaebBillOfQuantities.LoadFromFile('angebot.d84', Diags, 0);  // GAEB-BOQ-004
+  try
+    Matching := TLandrixGaebMatching.Create(Anfrage, Angebot);
+    try
+      LandrixGaebFillMissingTotals(Angebot, Matching, Diags);  // GAEB-PRC-005, GAEB-PRC-006
+    finally
+      Matching.Free;
+    end;
+    Angebot.SaveToFile('angebot.x84', Diags);
+  finally
+    Angebot.Free;
+  end;
+finally
+  Anfrage.Free;
+end;
+```
 
 Die Abbildung folgt den Sätzen: Kopfsätze `00` bis `08`, die Gliederung aus Ordnungszahlen und
 `OZMASKE` (Bereiche ohne Satz `11` werden abgeleitet), Positionen, Preise, Texte mit
@@ -175,7 +197,7 @@ geschnitten wurden.
 | `GAEB-D90-MAP-004` | Warnung | Kennzeichen außerhalb der Werte von GAEB 90 |
 | `GAEB-D90-MAP-008` | Warnung / Hinweis | Zahlen, die keine Ziffern sind, werden ausgelassen; Leerzeichen statt führender Nullen werden gelesen |
 | `GAEB-D90-MAP-009` | Warnung | Sätze ohne den Satz, zu dem sie gehören, werden ausgelassen |
-| `GAEB-D90-MAP-014` | Hinweis | Pflichtteile, für die GAEB 90 keine Quelle hat, werden gefüllt (`BoQInfo/Name`, `PrjInfo/NamePrj`, ein leeres `LblTx`); `GAEBInfo/Date` bleibt fehlend |
+| `GAEB-D90-MAP-014` | Hinweis | Pflichtteile, für die GAEB 90 keine Quelle hat, werden gefüllt (`BoQInfo/Name`, `PrjInfo/NamePrj`, ein leeres `LblTx`, `GAEBInfo/Date` aus `LVDATUM`); ohne brauchbares `LVDATUM` bleibt `GAEBInfo/Date` fehlend |
 | `GAEB-D90-MAP-016` | Warnung | Bezüge (`28`, `35`, `45`) auf eine Nummer, die nicht in der Datei steht, werden ausgelassen |
 
 Der Kopf der Unit `LandrixGaebDA90Mapping` nennt alle Regeln mit ihrer Schwere. Das aus der

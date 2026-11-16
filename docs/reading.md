@@ -139,7 +139,28 @@ looks at the bytes.
 
 Missing totals are computed as for GAEB DA 2000. A bid (84) counts by the kinds of its records
 `21`; when an item comes from a `23` without `21`, it has no kind, and the missing totals of the
-bid are not computed (warning `GAEB-BOQ-004`).
+bid are not computed (warning `GAEB-BOQ-004`). Most GAEB 90 bids are written that way; their
+kinds come from the request, through a matching ([The bid process](process.md#totals)):
+
+```pascal
+Request := TLandrixGaebBillOfQuantities.LoadFromFile('request.d83', Diags, 0);
+try
+  Bid := TLandrixGaebBillOfQuantities.LoadFromFile('bid.d84', Diags, 0);  // GAEB-BOQ-004
+  try
+    Matching := TLandrixGaebMatching.Create(Request, Bid);
+    try
+      LandrixGaebFillMissingTotals(Bid, Matching, Diags);  // GAEB-PRC-005, GAEB-PRC-006
+    finally
+      Matching.Free;
+    end;
+    Bid.SaveToFile('bid.x84', Diags);
+  finally
+    Bid.Free;
+  end;
+finally
+  Request.Free;
+end;
+```
 
 The mapping follows the records: header records `00` to `08`, the hierarchy from the ordinal
 numbers and `OZMASKE` (categories without record `11` are derived), items, prices, texts with
@@ -168,7 +189,7 @@ and is rejected. Join the parts only where you know how they were cut.
 | `GAEB-D90-MAP-004` | warning | codes outside the values of GAEB 90 |
 | `GAEB-D90-MAP-008` | warning / information | numbers that are no digits are left out; spaces instead of leading zeros are read |
 | `GAEB-D90-MAP-009` | warning | records without the record they belong to are left out |
-| `GAEB-D90-MAP-014` | information | required parts GAEB 90 has no source for are filled (`BoQInfo/Name`, `PrjInfo/NamePrj`, an empty `LblTx`); `GAEBInfo/Date` stays missing |
+| `GAEB-D90-MAP-014` | information | required parts GAEB 90 has no source for are filled (`BoQInfo/Name`, `PrjInfo/NamePrj`, an empty `LblTx`, `GAEBInfo/Date` from `LVDATUM`); without a usable `LVDATUM`, `GAEBInfo/Date` stays missing |
 | `GAEB-D90-MAP-016` | warning | references (`28`, `35`, `45`) to a number not in the file are left out |
 
 The header of the unit `LandrixGaebDA90Mapping` lists all rules with their severity. The model
