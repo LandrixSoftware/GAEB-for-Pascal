@@ -1108,13 +1108,9 @@ function LandrixGaebDetectBuffer(Buffer: Pointer; Size: Integer; AIsPrefix: Bool
   ADiagnostics: TLandrixGaebDiagnostics): TLandrixGaebDetection;
 begin
   InitDetection(Result, LandrixGaebDetectFormat(Buffer, Size));
+  { gfUnknown in the else branch: a case naming every value of the
+    enumeration would make the else unreachable (FPC 3.3.1 warns) }
   case Result.Format of
-    gfUnknown:
-      if Size <= 0 then
-        AddDiag(ADiagnostics, 'GAEB-DET-002', gsFatal, 0, 0, -1, 'empty input')
-      else
-        AddDiag(ADiagnostics, 'GAEB-DET-002', gsFatal, 0, 0, -1,
-          'format not recognised (neither GAEB DA XML, GAEB DA 2000 nor GAEB 90)');
     gfXml:
       DetectXml(Buffer, Size, AIsPrefix, ADiagnostics, Result);
     gfDA2000:
@@ -1122,7 +1118,11 @@ begin
     gfDA90:
       DetectDA90(Buffer, Size, AIsPrefix, ADiagnostics, Result);
   else
-    ;
+    if Size <= 0 then
+      AddDiag(ADiagnostics, 'GAEB-DET-002', gsFatal, 0, 0, -1, 'empty input')
+    else
+      AddDiag(ADiagnostics, 'GAEB-DET-002', gsFatal, 0, 0, -1,
+        'format not recognised (neither GAEB DA XML, GAEB DA 2000 nor GAEB 90)');
   end;
 end;
 

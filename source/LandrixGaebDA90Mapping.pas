@@ -772,7 +772,7 @@ begin
     Inc(FPadded);
   V := 0;
   for I := 1 to Length(T) do
-    V := V * 10 + (Ord(T[I]) - Ord('0'));
+    V := V * 10 + (Int64(Ord(T[I])) - Ord('0'));
   if ASign > 0 then
   begin
     S := FDoc.Field(AIndex, ASign, ASign);
@@ -806,7 +806,7 @@ begin
   begin
     if IsDigits(D) then
     begin
-      V := V * 10 + (Ord(D[1]) - Ord('0'));
+      V := V * 10 + (Int64(Ord(D[1])) - Ord('0'));
       ADecimal.SetValue(V, 3);
     end
     else
